@@ -1,0 +1,94 @@
+#
+# You rarely need to edit this file. To add or remove files to your
+# project edit the "src" folders contents and run `mulle-sde reflect`
+#
+#
+# A convenient way to add a new source fils is:
+#    mulle-sde add src/foo.m
+#
+cmake_minimum_required( VERSION 3.13)
+
+project( MulleGLFW C)
+
+
+set( MULLE_PROJECT_TYPE "Library")
+
+add_definitions( -DMULLE_GLFW_EXTERN_GLOBAL=extern)
+
+### mulle-sde environment
+
+# add cmake module paths to search path
+list( INSERT CMAKE_MODULE_PATH 0 "${PROJECT_SOURCE_DIR}/cmake/share")
+list( INSERT CMAKE_MODULE_PATH 0 "${PROJECT_SOURCE_DIR}/cmake/reflect")
+list( INSERT CMAKE_MODULE_PATH 0 "${PROJECT_SOURCE_DIR}/cmake")
+
+include( Environment)
+
+include( Files)
+
+if( "${MULLE_PROJECT_TYPE}" STREQUAL "Executable")
+
+   ### Executable
+
+   include( Dependencies)
+   include( Executable)
+   include( InstallExecutable)
+
+   # only for Executable
+   include( Motd OPTIONAL)
+
+
+elseif( "${MULLE_PROJECT_TYPE}" STREQUAL "Framework")
+
+   ### Framework
+
+   if( LINK_PHASE)
+      include( Dependencies)
+   endif()
+
+   include( Framework)
+   set_target_properties( "${FRAMEWORK_NAME}" PROPERTIES
+     FRAMEWORK_VERSION A
+   )
+
+   target_link_options( "${FRAMEWORK_NAME}" PRIVATE
+      -undefined dynamic_lookup
+   )
+      
+   include( InstallFramework)
+
+elseif( "${MULLE_PROJECT_TYPE}" STREQUAL "Library")
+
+   ### Library
+
+   if( HEADER_PHASE)
+      install( FILES ${INSTALL_PUBLIC_HEADERS}  DESTINATION "include/${PROJECT_NAME}")
+      install( FILES ${INSTALL_PRIVATE_HEADERS} DESTINATION "include/${PROJECT_NAME}/private")
+      install( FILES ${CMAKE_INCLUDES}          DESTINATION "include/${PROJECT_NAME}/cmake")
+
+      # short cut out
+      if( NOT COMPILE_PHASE AND NOT LINK_PHASE)
+         return()
+      endif()
+   endif()
+
+   if( LINK_PHASE)
+      include( Dependencies OPTIONAL)
+   endif()
+
+   include( Library)
+   include( InstallLibrary)
+
+else()
+
+   message( ERROR "Unknown project type \"${MULLE_PROJECT_TYPE}\"")
+
+endif()
+
+include( FinalOutput OPTIONAL)
+
+
+# extension : mulle-sde/cmake
+# directory : project/library
+# template  : .../CMakeLists.txt
+# Suppress this comment with `export MULLE_SDE_GENERATE_FILE_COMMENTS=NO`
