@@ -57,9 +57,6 @@ src/GLFWWindow+UIEvent.h
 src/GLFWWindow.h
 src/MulleGLFW.h
 src/MulleObjCLoader+MulleGLFW.h
-src/UIApplication.h
-src/UIEvent.h
-src/UIWindowTypes.h
 src/reflect/_MulleGLFW-include-public.h
 )
 

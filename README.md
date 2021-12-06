@@ -2,13 +2,51 @@
 
 #### 🌐 MulleGLFW provides platform windows and events
 
-
 This is an Objective-C wrapper around GLFW3 to provide windows and events.
-This the home of **UIEvent** and **UIApplication**, but not of UIWindow.
+It provides the meat and potatoes code for **UIEvent** and **UIApplication**
+through categories. **UIWindow** owns one more more **GLFWWindows**.
 
-The window object is **GLFWWindow**. Each GLFWWindow has an implicit graphics
-context, that will be later exposed by a CGContext. A UIWindow can be composed
-of one visible GLFWWindow and one or more hidden ones.
+The GLFW3 window object is **GLFWWindow**. Each GLFWWindow has an implicit
+graphics context, that will be later used by a CGContext.
+
+
+### Platform notes
+
+#### Linux
+
+On Linux (X11/Wayland) the following libraries are linked, but most of the
+headers are included by glfw so they are maked `no-header` as to not create
+duplicate include directives by `reflect`:
+
+Library  | Header
+---------|---------------------------
+GL       | `GL/glext.h`
+GLU      |
+X11      |
+Xrandr   |
+Xxf86vm  |
+Xinerama |
+Xcursor  |
+m        |
+
+#### macOS
+
+On macOS, glfw needs to link with
+
+Framework      | Header
+---------------|------------------------
+Cocoa          |
+IOKit          |
+CoreFoundation |
+CoreGraphics   |
+CoreServices   |
+AppKit         |
+Foundation     |
+
+The header files of these frameworks are Apple Objective-C and not mulle-objc
+compatible, so they aren't available (See the `no-header` mark with
+`mulle-sde lib`). glfw doesn't expose them either.
+
 
 
 ## mulle-sde

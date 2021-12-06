@@ -24,6 +24,8 @@ static void   error_callback(int code, const char* description)
 {
    assert( [NSThread mulleIsMainThread]);
 
+   glfwSetErrorCallback( error_callback);
+
    // This function initializes the GLFW library. Before most GLFW functions
    // can be used, GLFW must be initialized, and before an application
    // terminates GLFW should be terminated in order to free any resources
@@ -38,7 +40,6 @@ static void   error_callback(int code, const char* description)
       abort();
    }
    // calling glSwapInterval here is too early, as the window isn't there yet
-   glfwSetErrorCallback( error_callback);
 }
 
 

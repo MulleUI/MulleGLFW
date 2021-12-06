@@ -5,8 +5,6 @@
 
 #import "import-private.h"
 
-#import "UIEvent.h"
-
 
 @interface GLFWWindow( UIEventFuture)
 

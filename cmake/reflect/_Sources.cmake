@@ -14,9 +14,7 @@ set( SOURCES
 src/GLFWWindow+UIEvent.m
 src/GLFWWindow.m
 src/UIApplication+GLFW.m
-src/UIApplication.m
 src/UIEvent+GLFW.m
-src/UIEvent.m
 )
 
 #

@@ -12,6 +12,3 @@
 #import "GLFWWindow+UIEvent.h"
 #import "GLFWWindow.h"
 #import "MulleObjCLoader+MulleGLFW.h"
-#import "UIApplication.h"
-#import "UIEvent.h"
-#import "UIWindowTypes.h"

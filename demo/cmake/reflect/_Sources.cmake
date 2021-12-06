@@ -11,5 +11,10 @@ endif()
 # contents selected with patternfile ??-source--sources
 #
 set( SOURCES
+src/main-glfw-gears.m
 src/main-glfw-texture.m
+src/main-glfw-triangle-opengles.m
+src/main-glfw-triangle-opengl.m
+src/main-glfw-wave.m
+src/main-glfw-wave-original.m
 )

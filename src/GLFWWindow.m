@@ -5,7 +5,6 @@
 
 #import "import-private.h"
 
-#import "UIEvent.h"
 #import "GLFWWindow+UIEvent.h"
 
 
@@ -38,15 +37,17 @@ static struct
 } Self;
 
 
-// as we don't know if we even use OpenGL here
-static void   defaultRenderCallback( GLFWWindow *window,
-                                      struct CGFrameInfo *info)
+// as we don't know, if we even use OpenGL here
+static void   defaultRenderCallback( GLFWWindow *window, CARelativeTime time)
 {
-   fprintf( stderr, "The GLFW windows needs a renderCallback.\n"
-"Typically you can use minimally something like this with OpenGL:\n"
-"   static void  render( GLFWWindow *window, struct CGFrameInfo *info)\n"
+   fprintf( stderr, "The GLFW window needs a renderCallback.\n"
+"Typically you can use something like this with OpenGL:\n"
+"   static void  render( GLFWWindow *window, CARelativeTime now)\n"
 "   {\n"
-"      glViewport( 0, 0, info->framebufferSize.width, info->framebufferSize.height);\n"
+"      struct CGBitmapSize   framebufferSize;\n"
+"\n"
+"      framebufferSize = [window os_framebufferSize];\n"
+"      glViewport( 0, 0, framebufferSize.width, framebufferSize.height);\n"
 "      glColor( 0, 0, 0, 0);\n"
 "      glClear( GL_COLOR_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);\n"
 "   }\n"
@@ -55,36 +56,134 @@ static void   defaultRenderCallback( GLFWWindow *window,
    abort();
 }
 
+
++ (instancetype) windowWithFrame:(CGRect) frame
+                 titleUTF8String:(char *) title
+                       styleMask:(NSUInteger) styleMask
+                   graphicsHints:(enum GLFWGraphicsHints) graphicsHints
+{
+   return( [[[self alloc] initWithFrame:frame
+                        titleUTF8String:title
+                              styleMask:styleMask
+                          graphicsHints:graphicsHints] autorelease]);
+}
+
+// sharingWindow is retained. We will be able to share textures with it
++ (instancetype) windowWithFrame:(CGRect) frame
+                 titleUTF8String:(char *) title
+                       styleMask:(NSUInteger) styleMask
+                   graphicsHints:(enum GLFWGraphicsHints) graphicsHints
+                   sharingWindow:(GLFWWindow *) sharingWindow
+{
+   return( [[[self alloc] initWithFrame:frame
+                        titleUTF8String:title
+                              styleMask:styleMask
+                          graphicsHints:graphicsHints
+                          sharingWindow:sharingWindow] autorelease]);
+}
+
+
 // hope for fractional positioning in future ?
 - (instancetype) initWithFrame:(CGRect) frame
                titleUTF8String:(char *) title
-                    styleMask:(NSUInteger) styleMask
-                graphicsHints:(enum GLFWGraphicsHints) hints
-                sharingWindow:(GLFWWindow *) sharingWindow
+                     styleMask:(NSUInteger) styleMask
+                 graphicsHints:(enum GLFWGraphicsHints) hints
+                 sharingWindow:(GLFWWindow *) sharingWindow
 {
-   NSUInteger   core;
-   NSUInteger   major;
-   NSUInteger   minor;
+   int   profile;
+   int   forward;
+   int   major;
+   int   minor;
+   int   api;
+   int   lib;
+   int   first_lib;
 
    assert( [NSThread mulleIsMainThread]);
+
+   if( ! styleMask)
+      styleMask = GLFWWindowStyleMaskDefault;
+
 //
 // These function can only be called from main thread (see above)
 //
-   if( hints)
+   if( styleMask & UIWindowOpenGLDeprecated)
    {
-      major = GLFWGraphicsHintsGetMajor( hints);
-      minor = GLFWGraphicsHintsGetMinor( hints);
-      core  = GLFWGraphicsHintsGetCore( hints);
-      glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, major);
-      glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, minor);
-      glfwWindowHint( GLFW_OPENGL_PROFILE, core
-                     ? GLFW_OPENGL_CORE_PROFILE
-                     : GLFW_OPENGL_ANY_PROFILE);
+      hints = GLFWGraphicsHintsBySettingAPI( hints, 2);     // setOpenGL
+      hints = GLFWGraphicsHintsBySettingProfile( hints, 0); // no core profile (guess)
+      hints = GLFWGraphicsHintsBySettingForward( hints, 0); // no forward
+
+      assert( ! (styleMask & UIWindowOpenGLForwardCompatible));
+      assert( ! (styleMask & (UIWindowOpenGLCoreProfile|UIWindowOpenGLCompatProfile)));
    }
 
-	glfwWindowHint( GLFW_RESIZABLE, (styleMask & UIWindowStyleResizable) ? GL_TRUE : GL_FALSE);
-	glfwWindowHint( GLFW_VISIBLE,   (styleMask & UIWindowStyleInvisible) ? GL_FALSE : GL_TRUE);
+   profile = styleMask & (UIWindowOpenGLCoreProfile|UIWindowOpenGLCompatProfile);
+   if( profile)
+      hints = GLFWGraphicsHintsBySettingProfile( hints, (profile >> UIWindowOpenGLProfileShift) & 0x3);
+   forward = styleMask & UIWindowOpenGLForwardCompatible;
+   if( forward)
+      hints = GLFWGraphicsHintsBySettingForward( hints, 1);
 
+   // rememer which was opened first for retries
+   first_lib = GLFW_NATIVE_CONTEXT_API;
+
+   if( hints)
+   {
+      switch( GLFWGraphicsHintsGetAPILibrary( hints))
+      {
+      default : lib = GLFW_NATIVE_CONTEXT_API; break;
+      case 1  : lib = GLFW_EGL_CONTEXT_API; break;
+      case 2  : lib = GLFW_OSMESA_CONTEXT_API; break;
+      }
+      first_lib = lib;
+
+retry:
+      glfwWindowHint( GLFW_CONTEXT_CREATION_API, lib);
+
+      switch( GLFWGraphicsHintsGetAPI( hints))
+      {
+      default : api = GLFW_NO_API; break;
+      case 1  : api = GLFW_OPENGL_ES_API; break;
+      case 2  : api = GLFW_OPENGL_API; break;
+      }
+      glfwWindowHint( GLFW_CLIENT_API, api);
+
+
+      switch( GLFWGraphicsHintsGetProfile( hints))
+      {
+      default : profile = GLFW_OPENGL_ANY_PROFILE; break;
+      case 1  : profile = GLFW_OPENGL_CORE_PROFILE; break;
+      case 2  : profile = GLFW_OPENGL_COMPAT_PROFILE; break;
+      }
+      // you can't set this or GLFW_OPENGL_CORE_PROFILE or GLFW_OPENGL_COMPAT_PROFILE on GL < 3.2
+      if( profile != GLFW_OPENGL_ANY_PROFILE)
+         glfwWindowHint( GLFW_OPENGL_PROFILE, profile);
+
+      // forward compatibility is actually fairly restrictive
+      // https://www.glfw.org/docs/3.3/window_guide.html#GLFW_OPENGL_FORWARD_COMPAT_hint
+      forward = GLFWGraphicsHintsGetForward( hints);
+      if( forward)
+         glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);  // why not ?
+
+      major = GLFWGraphicsHintsGetMajor( hints);
+      glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, major);
+
+      minor = GLFWGraphicsHintsGetMinor( hints);
+      glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, minor);
+   }
+
+	glfwWindowHint( GLFW_DOUBLEBUFFER, (styleMask & UIWindowStyleSingleBuffer) ? GLFW_FALSE : GLFW_TRUE);
+	glfwWindowHint( GLFW_TRANSPARENT_FRAMEBUFFER, (styleMask & UIWindowStyleTransparent) ? GLFW_TRUE : GLFW_FALSE);
+
+   // https://www.glfw.org/docs/3.4/window_guide.html#GLFW_RESIZABLE_hint
+   glfwWindowHint( GLFW_RESIZABLE, (styleMask & UIWindowStyleResizable) ? GLFW_TRUE : GLFW_FALSE);
+	glfwWindowHint( GLFW_VISIBLE,   (styleMask & UIWindowStyleInvisible) ? GLFW_FALSE : GLFW_TRUE);
+	glfwWindowHint( GLFW_FLOATING,  (styleMask & UIWindowStyleFloating)  ? GLFW_TRUE : GLFW_FALSE);
+	glfwWindowHint( GLFW_DECORATED, (styleMask & UIWindowStyleDecorated) ? GLFW_TRUE : GLFW_FALSE);
+
+   // https://www.glfw.org/docs/3.4/window_guide.html#GLFW_CLIENT_API_hint
+#ifdef DEBUG
+   glfwWindowHint( GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+#endif
    // not super sure about this, but lets try to avoid "old" OpenGL
    // calls. alas, we are doing OpenGLES 2.0 minimum, so I don't know
    // if this is useful.
@@ -107,6 +206,62 @@ static void   defaultRenderCallback( GLFWWindow *window,
       code = glfwGetError( &description);
       switch( code)
       {
+      case 65542 :
+         if( styleMask & UIWindowOpenGLLibraryFallback)
+         {
+            switch( first_lib)
+            {
+            case GLFW_NATIVE_CONTEXT_API :   // native
+               // native -> mesa -> egl
+               if( lib == first_lib)
+               {
+                  lib = GLFW_OSMESA_CONTEXT_API;
+                  goto retry;
+               }
+               else
+                  if( lib == GLFW_OSMESA_CONTEXT_API)
+                  {
+                     lib = GLFW_EGL_CONTEXT_API;
+                     goto retry;
+                  }
+               break;
+
+            case GLFW_EGL_CONTEXT_API :
+               // egl -> native -> mesa
+               if( lib == first_lib)
+               {
+                  lib = GLFW_NATIVE_CONTEXT_API;
+                  goto retry;
+               }
+               else
+                  if( lib == GLFW_NATIVE_CONTEXT_API)
+                  {
+                     lib = GLFW_OSMESA_CONTEXT_API;
+                     goto retry;
+                  }
+               break;
+
+            case GLFW_OSMESA_CONTEXT_API :
+               // mesa -> native -> egl
+               if( lib == first_lib)
+               {
+                  lib = GLFW_NATIVE_CONTEXT_API;
+                  goto retry;
+               }
+               else
+                  if( lib == GLFW_NATIVE_CONTEXT_API)
+                  {
+                     lib = GLFW_EGL_CONTEXT_API;
+                     goto retry;
+                  }
+               break;
+
+            default :
+               abort();
+            }
+         }
+         break;
+
       case 65537 :
          fprintf( stderr, "UIApplication is likely not initialized yet\n");
       }
@@ -119,7 +274,10 @@ static void   defaultRenderCallback( GLFWWindow *window,
    if( ! _sharingWindow)
       _shareId = (NSInteger) _mulle_atomic_pointer_increment( &Self.shareIds) + 1;
 
-   fprintf( stderr, "window %p (sharing with %p) created\n", _window, _sharingWindow ? _sharingWindow->_window : NULL);
+   if( _sharingWindow)
+      fprintf( stderr, "window %p (sharing with %p) created\n", _window, _sharingWindow);
+   else
+      fprintf( stderr, "window %p created\n", _window);
 
    // this is basically the "rendezvous" point where nanoVG latches unto
    // its also the receiver for OpenGL calls. That's why we need a window
@@ -130,6 +288,8 @@ static void   defaultRenderCallback( GLFWWindow *window,
    // zero origin, let window manager choose
    if( ! CGPointEqualToPoint( frame.origin, CGPointNull))
       glfwSetWindowPos( _window, (int) frame.origin.x, (int) frame.origin.y);
+
+   _styleMask              = styleMask;
 
    _mouseLocation          = CGPointMake( -1.0, -1.0);
    _scrollWheelSensitivity = 20.0;
@@ -144,9 +304,9 @@ static void   defaultRenderCallback( GLFWWindow *window,
 
 
 - (instancetype) initWithFrame:(CGRect) frame
-                  titleUTF8String:(char *) title
-                    styleMask:(NSUInteger) styleMask
-                graphicsHints:(enum GLFWGraphicsHints) hints
+               titleUTF8String:(char *) title
+                     styleMask:(NSUInteger) styleMask
+                 graphicsHints:(enum GLFWGraphicsHints) hints
 {
    return( [self initWithFrame:frame
                   titleUTF8String:title
@@ -226,6 +386,12 @@ static void   defaultRenderCallback( GLFWWindow *window,
 }
 
 
+- (void *) os_window
+{
+   return( _window);
+}
+
+
 - (CGRect) os_windowFrame
 {
    int      xpos;
@@ -277,6 +443,84 @@ static void   defaultRenderCallback( GLFWWindow *window,
 
    glfwMakeContextCurrent( NULL);
    [_contextLock unlock];
+}
+
+
+static char  *context_vendor_utf8string( int value)
+{
+   switch( value)
+   {
+   case GLFW_NATIVE_CONTEXT_API : return( "native");
+   case GLFW_EGL_CONTEXT_API    : return( "egl");
+   case GLFW_OSMESA_CONTEXT_API : return( "mesa");
+   default                      : return( "?");
+   }
+}
+
+
+static char  *context_api_utf8string( int value)
+{
+   switch( value)
+   {
+   case GLFW_NO_API        : return( "NONE");
+   case GLFW_OPENGL_ES_API : return( "GLES");
+   case GLFW_OPENGL_API    : return( "GL");
+   default                 : return( "???");
+   }
+}
+
+
+static char  *context_profile_utf8string( int value)
+{
+   switch( value)
+   {
+   case GLFW_OPENGL_ANY_PROFILE    : return( "");
+   case GLFW_OPENGL_CORE_PROFILE   : return( "core");
+   case GLFW_OPENGL_COMPAT_PROFILE : return( "compat");
+   default                         : return( "?");
+   }
+}
+
+
+- (char *) os_contextInfoUTF8String
+{
+   int   api;
+   int   vendor;
+   int   profile;
+   int   major;
+   int   minor;
+   int   revision;
+   int   forward;
+   char  *s;
+   char  *profile_s;
+   char  *profile_prefix;
+   char  *forward_s;
+   char  *forward_prefix;
+
+   api      = glfwGetWindowAttrib( _window, GLFW_CLIENT_API);
+   vendor   = glfwGetWindowAttrib( _window, GLFW_CONTEXT_CREATION_API);
+   profile  = glfwGetWindowAttrib( _window, GLFW_OPENGL_PROFILE);
+   major    = glfwGetWindowAttrib( _window, GLFW_CONTEXT_VERSION_MAJOR);
+   minor    = glfwGetWindowAttrib( _window, GLFW_CONTEXT_VERSION_MINOR);
+   revision = glfwGetWindowAttrib( _window, GLFW_CONTEXT_REVISION);
+   forward  = glfwGetWindowAttrib( _window, GLFW_OPENGL_FORWARD_COMPAT);
+
+   profile_s      = context_profile_utf8string( profile);
+   profile_prefix = *profile_s ? " " : "";
+   forward_s      = forward ? "forward" : "";
+   forward_prefix = *forward_s ? " " : "";
+
+   s = MulleObjC_asprintf( "%s %u.%u.%u%s%s%s%s (%s)",
+                           context_api_utf8string( api),
+                           major,
+                           minor,
+                           revision,
+                           profile_prefix,
+                           profile_s,
+                           forward_prefix,
+                           forward_s,
+                           context_vendor_utf8string( vendor));
+   return( s);
 }
 
 
@@ -380,17 +624,23 @@ static void   defaultRenderCallback( GLFWWindow *window,
 }
 
 
-- (void) renderFrame
+- (void) renderFrame:(CARelativeTime) now
 {
-   struct CGFrameInfo    frameInfo;
-
-   frameInfo = CGFrameInfoSFMake( [self os_windowSize],
-                                  [self os_framebufferSize],
-                                  1.0);
-   if( self->_renderCallback)
-      (*self->_renderCallback)( self, &frameInfo);
+   (*self->_renderCallback)( self, now);
 
    [self os_swapBuffers];
+}
+
+
+- (void) renderFrame
+{
+   [self renderFrame:glfwGetTime()];
+}
+
+
+- (CARelativeTime) os_getRelativeTime
+{
+   return( glfwGetTime());
 }
 
 
@@ -399,19 +649,20 @@ static void   defaultRenderCallback( GLFWWindow *window,
  */
 - (void) renderLoopHz:(CGFloat) frameRate
 {
-   CAAbsoluteTime    now;
+   CARelativeTime   now;
 
    // to get like GLU a reshape function called immediately we
    // fake such a thing
    [self _framebufferResizeCallback:[self os_framebufferSize]];
 
+   now = glfwGetTime();
    while( ! glfwWindowShouldClose( _window))
    {
-      [self renderFrame];
+      [self renderFrame:now];
 
       [UIEvent waitForEventsHz:frameRate];
 
-      now = CAAbsoluteTimeNow();
+      now = glfwGetTime();
       if( now >= _lastTimerCall + _timerDelay)
       {
          if( _timerCallback)
@@ -427,7 +678,7 @@ static void   defaultRenderCallback( GLFWWindow *window,
                  userInfo:(id) userInfo
 {
    _timerCallback = timerCallback;
-   _lastTimerCall = CAAbsoluteTimeNow();
+   _lastTimerCall = glfwGetTime();
    _timerDelay    = delay;
 
    [_timerUserInfo autorelease];

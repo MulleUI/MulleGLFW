@@ -11,4 +11,65 @@ if( MULLE_TRACE_INCLUDE)
    message( STATUS "# Include \"${CMAKE_CURRENT_LIST_FILE}\"" )
 endif()
 
-# there are no libraries in the sourcetree
+#
+# Generated from sourcetree: 39912D90-862B-4036-A61E-44ADAA1BD386;CoreVideo;no-build,no-cmake-inherit,no-delete,no-dependency,no-fs,no-header,no-share,no-update,only-framework,only-platform-darwin;
+# Disable with : `mulle-sourcetree mark CoreVideo `
+# Disable for this platform: `mulle-sourcetree mark CoreVideo no-cmake-platform-${MULLE_UNAME}`
+#
+if( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+   if( NOT CORE_VIDEO_FRAMEWORK)
+      find_library( CORE_VIDEO_FRAMEWORK NAMES CoreVideo)
+      message( STATUS "CORE_VIDEO_FRAMEWORK is ${CORE_VIDEO_FRAMEWORK}")
+      #
+      # The order looks ascending, but due to the way this file is read
+      # it ends up being descending, which is what we need.
+      #
+      if( CORE_VIDEO_FRAMEWORK)
+         #
+         # Add CORE_VIDEO_FRAMEWORK to ALL_LOAD_OS_SPECIFIC_FRAMEWORKS list.
+         # Disable with: `mulle-sourcetree mark CoreVideo no-cmake-add`
+         #
+         set( ALL_LOAD_OS_SPECIFIC_FRAMEWORKS
+            ${ALL_LOAD_OS_SPECIFIC_FRAMEWORKS}
+            ${CORE_VIDEO_FRAMEWORK}
+            CACHE INTERNAL "need to cache this"
+         )
+         # intentionally left blank
+      else()
+         # Disable with: `mulle-sourcetree mark CoreVideo no-require-link`
+         message( FATAL_ERROR "CORE_VIDEO_FRAMEWORK was not found")
+      endif()
+   endif()
+endif()
+
+
+#
+# Generated from sourcetree: 14556B07-4D91-45B6-9969-9662E1422495;OpenGL;no-build,no-cmake-inherit,no-delete,no-dependency,no-fs,no-header,no-share,no-update,only-framework,only-platform-darwin;
+# Disable with : `mulle-sourcetree mark OpenGL `
+# Disable for this platform: `mulle-sourcetree mark OpenGL no-cmake-platform-${MULLE_UNAME}`
+#
+if( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+   if( NOT OPEN_GL_FRAMEWORK)
+      find_library( OPEN_GL_FRAMEWORK NAMES OpenGL)
+      message( STATUS "OPEN_GL_FRAMEWORK is ${OPEN_GL_FRAMEWORK}")
+      #
+      # The order looks ascending, but due to the way this file is read
+      # it ends up being descending, which is what we need.
+      #
+      if( OPEN_GL_FRAMEWORK)
+         #
+         # Add OPEN_GL_FRAMEWORK to ALL_LOAD_OS_SPECIFIC_FRAMEWORKS list.
+         # Disable with: `mulle-sourcetree mark OpenGL no-cmake-add`
+         #
+         set( ALL_LOAD_OS_SPECIFIC_FRAMEWORKS
+            ${ALL_LOAD_OS_SPECIFIC_FRAMEWORKS}
+            ${OPEN_GL_FRAMEWORK}
+            CACHE INTERNAL "need to cache this"
+         )
+         # intentionally left blank
+      else()
+         # Disable with: `mulle-sourcetree mark OpenGL no-require-link`
+         message( FATAL_ERROR "OPEN_GL_FRAMEWORK was not found")
+      endif()
+   endif()
+endif()

@@ -84,10 +84,10 @@ static void   init_texture()
 
 
 //
-// pretty much unchanged. The call signature with "window" and "info"
+// pretty much unchanged. The call signature with "window" and "now"
 // is different, but they aren't used
 //
-static void   display( GLFWWindow *window, struct CGFrameInfo *info)
+static void   display( GLFWWindow *window, CAAbsoluteTime now)
 {
    static GLint faces[][4] = {{4,5,6,7},
                               {1,2,6,5},
@@ -181,6 +181,7 @@ void   update()
    glRotatef(angle[2], 0.0, 0.0, 1.0);
 }
 
+
 // this loses some functions, also the signature is different
 static void   timer( GLFWWindow *window, CAAbsoluteTime now, id userInfo)
 {
@@ -189,6 +190,7 @@ static void   timer( GLFWWindow *window, CAAbsoluteTime now, id userInfo)
 //  glutPostRedisplay();
 //  glutTimerFunc(delay, timer, 0);
 }
+
 
 // This is new.
 static void   receiveWindowEvents( GLFWWindow *window, UIWindowEvent *event)
@@ -221,6 +223,8 @@ int   main( int argc, char *argv[])
 
    app = [UIApplication sharedInstance];
 //   glutInit( &argc, argv);
+
+   @autoreleasepool
    {
       //
       // we are using an GLFWWindow here because we just want to do OpenGL
@@ -228,11 +232,11 @@ int   main( int argc, char *argv[])
       window = [[[GLFWWindow alloc] initWithFrame:CGRectMake( 0.0, 0.0, 500.0, 500.0)
                                   titleUTF8String:"Demo"
                                         styleMask:UIWindowStyleResizable
-                                    graphicsHints:GLFW_GL3] autorelease];
+                                    graphicsHints:GLFW_GL3_CONTEXT] autorelease];
 //    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 //    glutInitWindowSize(500, 500);
 //    glutCreateWindow("Demo");
-
+      [app addWindow:window];
       assert( window);
 
       [window setWindowEventsCallback:receiveWindowEvents];

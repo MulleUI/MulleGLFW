@@ -26,28 +26,4 @@
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #include <GLFW/glfw3.h>   // glfw
 
-// You can tweak the following #include with these commands.
-// (Use B00D7D91-27A5-4D77-A4BC-6D58D3FD031B instead of mulle-geometry if there are duplicate entries)
-//    remove:             `mulle-sde dependency mark mulle-geometry no-header`
-//    rename:             `mulle-sde dependency|library set mulle-geometry include whatever.h`
-//    reorder:            `mulle-sde dependency move mulle-geometry <up|down>`
-//    toggle #include:    `mulle-sde dependency mark mulle-geometry [no-]import`
-//    toggle public:      `mulle-sde dependency mark mulle-geometry [no-]public`
-//    toggle optional:    `mulle-sde dependency mark mulle-geometry [no-]require`
-//    remove for platform:`mulle-sde dependency mark mulle-geometry no-platform-<uname>`
-//        (use `mulle-sourcetree-to-c --unames` to list known values)
-#include <mulle-geometry/mulle-geometry.h>   // mulle-geometry
-
-// You can tweak the following #include with these commands.
-// (Use DF8BFAF0-CA9A-4CF1-9ACE-A44B228FCEC7 instead of mulle-bitmap if there are duplicate entries)
-//    remove:             `mulle-sde dependency mark mulle-bitmap no-header`
-//    rename:             `mulle-sde dependency|library set mulle-bitmap include whatever.h`
-//    reorder:            `mulle-sde dependency move mulle-bitmap <up|down>`
-//    toggle #include:    `mulle-sde dependency mark mulle-bitmap [no-]import`
-//    toggle public:      `mulle-sde dependency mark mulle-bitmap [no-]public`
-//    toggle optional:    `mulle-sde dependency mark mulle-bitmap [no-]require`
-//    remove for platform:`mulle-sde dependency mark mulle-bitmap no-platform-<uname>`
-//        (use `mulle-sourcetree-to-c --unames` to list known values)
-#include <mulle-bitmap/mulle-bitmap.h>   // mulle-bitmap
-
 #endif
