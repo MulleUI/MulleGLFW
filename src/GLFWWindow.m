@@ -357,7 +357,7 @@ retry:
 }
 
 
-+ (CGFloat) os_primaryMonitorPPI
+- (CGFloat) os_primaryMonitorPPI
 {
    GLFWmonitor      *monitor;
    GLFWvidmode      *mode;
@@ -553,7 +553,7 @@ static char  *context_profile_utf8string( int value)
 }
 
 
-+ (CGFloat) os_primaryMonitorRefreshRate
+- (CGFloat) os_primaryMonitorRefreshRate
 {
    GLFWmonitor   *monitor;
    GLFWvidmode   *mode;

@@ -15,6 +15,9 @@
 @class CGContext;
 @class GLFWWindow;
 
+
+#define  GLFWWindowStyleMaskDefault (UIWindowStyleDecorated)
+
 //   3         2         1         0
 //  10987654321098765432109876543210
 //
@@ -122,13 +125,6 @@ static int   GLFWGraphicsHintsBySettingAPILibrary( enum GLFWGraphicsHints t, int
 
 
 
-@protocol GLFWWindowEventReceiver
-
-- (void) handleWindowEvent:(UIEvent *) event;
-- (void) queueRetainedEvent:(UIEvent *) event;
-
-@end
-
 //
 // Why is it relative time ? For animation purposes its more useful
 // to use CLOCK_MONOTONIC:
@@ -170,11 +166,11 @@ typedef void   (*GLFWTimerCallback_t)( GLFWWindow *window, CARelativeTime now, i
 
 // window events are called via -handleEvent:
 // event is autoreleased
-@property( assign) id <GLFWWindowEventReceiver>        windowEventsReceiver;
+@property( assign) id <UIEventReceiver>        windowEventsReceiver;
 
 // window events are called via -queueRetainedEvent:
 // event must be released by receiver!
-@property( assign) id <GLFWWindowEventReceiver>        eventsReceiver;
+@property( assign) id <UIEventReceiver>        eventsReceiver;
 
 // if you chose to overwrite eventsCallback, the eventsReceiver
 // and the windowEventsReceiver will not get anything. Setting either will
@@ -194,12 +190,6 @@ typedef void   (*GLFWTimerCallback_t)( GLFWWindow *window, CARelativeTime now, i
 @property( assign, getter=isScrollWheelNatural) BOOL   scrollWheelNatural;
 
 @property( assign, readonly) NSUInteger                styleMask;
-
-
-- (NSInteger) shareId;
-
-+ (CGFloat) os_primaryMonitorPPI;
-+ (CGFloat) os_primaryMonitorRefreshRate;
 
 
 + (instancetype) windowWithFrame:(CGRect) frame
@@ -225,6 +215,13 @@ typedef void   (*GLFWTimerCallback_t)( GLFWWindow *window, CARelativeTime now, i
                      styleMask:(NSUInteger) styleMask
                  graphicsHints:(enum GLFWGraphicsHints) graphicsHints
                  sharingWindow:(GLFWWindow *) sharingWindow;
+
+- (NSInteger) shareId;
+
+// all defined in the protocol already
+
+- (CGFloat) os_primaryMonitorPPI;
+- (CGFloat) os_primaryMonitorRefreshRate;
 
 - (void) os_destroyWindow;
 
