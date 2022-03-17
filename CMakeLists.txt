@@ -13,7 +13,6 @@ project( MulleGLFW C)
 
 set( MULLE_PROJECT_TYPE "Library")
 
-add_definitions( -DMULLE_GLFW_EXTERN_GLOBAL=extern)
 
 ### mulle-sde environment
 
@@ -47,9 +46,7 @@ elseif( "${MULLE_PROJECT_TYPE}" STREQUAL "Framework")
    endif()
 
    include( Framework)
-   set_target_properties( "${FRAMEWORK_NAME}" PROPERTIES
-     FRAMEWORK_VERSION A
-   )
+
 
    target_link_options( "${FRAMEWORK_NAME}" PRIVATE
       -undefined dynamic_lookup

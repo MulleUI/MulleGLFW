@@ -1,10 +1,10 @@
 //
 // Copyright (c) 2021 Nat!, Mulle kybernetiK
 //
-// prefer a local GLFWWindow over one in import.h
+// prefer a local GLFWOSWindow over one in import.h
 #ifdef __has_include
-# if __has_include( "GLFWWindow.h")
-#  import "GLFWWindow.h"
+# if __has_include( "GLFWOSWindow.h")
+#  import "GLFWOSWindow.h"
 # endif
 #endif
 
@@ -12,7 +12,7 @@
 #import "import.h"
 
 
-@interface GLFWWindow( UIEvent)
+@interface GLFWOSWindow( UIEvent)
 
 // convenience for os_initWindowEvents and os_initInputEvents
 - (void) os_initEvents;

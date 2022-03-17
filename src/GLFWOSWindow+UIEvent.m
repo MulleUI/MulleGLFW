@@ -1,14 +1,17 @@
 //
 // Copyright (c) 2021 Nat!, Mulle kybernetiK
 //
-#import "GLFWWindow+UIEvent.h"
+#import "GLFWOSWindow+UIEvent.h"
 
 #import "import-private.h"
 
 
-@interface GLFWWindow( UIEventFuture)
+// #define CALLBACK_DEBUG
 
-- (void) _framebufferResizeCallback:(struct CGBitmapSize) size;
+
+@interface GLFWOSWindow( UIEventFuture)
+
+- (void) _windowFramebufferResizeCallback:(struct CGBitmapSize) size;
 - (void) _windowResizeCallback:(struct CGBitmapSize) size;
 - (void) _windowCloseCallback;
 - (void) _windowRefreshCallback;
@@ -17,16 +20,219 @@
 @end
 
 
-@implementation GLFWWindow ( UIEvent)
+@implementation GLFWOSWindow ( UIEvent)
 
 
+void   GLFWOSWindowEventDefaultCallback( GLFWOSWindow *window, UIWindowEvent *event)
+{
+   [window->_windowEventsReceiver handleWindowEvent:event];
+}
+
+
+void   GLFWOSWindowRetainedEventDefaultCallback( GLFWOSWindow *window,
+                                                 NS_CONSUMED UIEvent *retainedEvent)
+{
+   [window->_eventsReceiver handleRetainedEvent:retainedEvent];
+}
+
+
+
+static void   windowMoveCallback( GLFWwindow* window, int xpos, int ypos)
+{
+   GLFWOSWindow   *self;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   self = glfwGetWindowUserPointer( window);
+   [self _windowMoveCallback:CGBitmapPointMake( xpos, ypos)];
+}
+
+
+static void   windowRefreshCallback( GLFWwindow* window)
+{
+   GLFWOSWindow   *self;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   self = glfwGetWindowUserPointer( window);
+   [self _windowRefreshCallback];
+}
+
+
+static void   windowCloseCallback( GLFWwindow* window)
+{
+   GLFWOSWindow   *self;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   self = glfwGetWindowUserPointer( window);
+   [self _windowCloseCallback];
+}
+
+
+// framebufferResize is more interesting though
+static void   windowResizeCallback( GLFWwindow* window, int width, int height)
+{
+   GLFWOSWindow   *self;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   self = glfwGetWindowUserPointer( window);
+   [self _windowResizeCallback:CGBitmapSizeMake( width, height)];
+}
+
+
+static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, int height)
+{
+   GLFWOSWindow   *self;
+   CGRect      frame;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   self = glfwGetWindowUserPointer( window);
+   [self _windowFramebufferResizeCallback:CGBitmapSizeMake( width, height)];
+}
+
+
+- (void) os_initWindowEvents
+{
+   assert( _window);
+
+   assert( [NSThread mulleIsMainThread]);
+
+   // window events
+   glfwSetWindowSizeCallback( _window, windowResizeCallback);
+   glfwSetWindowPosCallback( _window, windowMoveCallback);
+   glfwSetFramebufferSizeCallback( _window, windowFramebufferResizeCallback);
+   glfwSetWindowRefreshCallback( _window, windowRefreshCallback);
+   glfwSetWindowCloseCallback( _window, windowCloseCallback);
+}
+
+
+/*
+ * Special window events to be handled by UIApplication
+ */
+//
+// callbacks from window events (via GLFW). It is NOT known if the event coming
+// in is a direct callback from the host OS or if it has been queued by glfw
+// and released during "waitForEvents" or "pollEvents." (See glfw3 events dox)
+//
+// What is unknown is, if the executing thread of a callback is always the
+// mainThread. It is assumed here, though. The "core" windows events are
+// handled immediately and they are handled on the main thread (or the main
+// UIEvent thread).
+//
+- (void) _windowResizeCallback:(struct CGBitmapSize) size
+{
+   UIWindowEvent    *event;
+   GLFWOSWindow     *window;
+
+#if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
+    mulle_fprintf( stderr, "%s %@ w=%td h=%td\n",
+                     __PRETTY_FUNCTION__,
+                     self,
+                     size.width,
+                     size.height);
+#endif
+
+   // this assert can fail... it doesn't fail often but it can.
+   // reason being, because the window manager is resizing in another
+   // process
+
+   // assert( CGSizeEqualToSize( [self os_windowSize], CGBitmapSizeGetSize( size)));
+   _windowInfo.frame.size = CGBitmapSizeGetSize( size);
+
+   event = [[[UIWindowResizeEvent alloc] initWithMouseLocation:self->_mouseLocation
+                                                     modifiers:self->_modifiers
+                                                          size:size] autorelease];
+   _windowEventsCallback( self, event);
+}
+
+
+- (void) _windowFramebufferResizeCallback:(struct CGBitmapSize) size
+{
+   UIWindowEvent   *event;
+
+#if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
+   mulle_fprintf( stderr, "%s %@ w=%ld h=%ld\n",
+                     __PRETTY_FUNCTION__,
+                     self,
+                     (long) size.width,
+                     (long) size.height);
+#endif
+   _windowInfo.framebufferSize = size;
+
+   event = [[[UIWindowFramebufferResizeEvent alloc] initWithMouseLocation:self->_mouseLocation
+                                                                modifiers:self->_modifiers
+                                                                     size:size] autorelease];
+
+   // TODO: we should do this atomically
+   //
+   _windowEventsCallback( self, event);
+}
+
+
+//
+// Move callback like refresh callback induces flicker
+//
+- (void) _windowMoveCallback:(struct CGBitmapPoint) position
+{
+   UIWindowEvent   *event;
+
+#ifdef CALLBACK_DEBUG
+   mulle_fprintf( stderr, "%s %@\n", __PRETTY_FUNCTION__, self);
+#endif
+
+//   fprintf( stderr, "%p moved: x=%d y=%d\n", self, xpos, ypos);
+   _windowInfo.frame.origin = CGBitmapPointGetPoint( position);
+
+   event = [[[UIWindowMoveEvent alloc] initWithMouseLocation:self->_mouseLocation
+                                                   modifiers:self->_modifiers
+                                                      origin:position] autorelease];
+   _windowEventsCallback( self, event);
+}
+
+
+- (void) _windowRefreshCallback
+{
+   UIWindowEvent   *event;
+
+#if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
+   mulle_fprintf( stderr, "%s %@\n", __PRETTY_FUNCTION__, self);
+#endif
+
+   event = [[[UIWindowRefreshEvent alloc] initWithMouseLocation:self->_mouseLocation
+                                                      modifiers:self->_modifiers] autorelease];
+//   [self handleRetainedEvent:event];
+
+   _windowEventsCallback( self, event);
+}
+
+
+- (void) _windowCloseCallback
+{
+   UIWindowEvent   *event;
+
+#ifdef CALLBACK_DEBUG
+   mulle_fprintf( stderr, "%s %@\n", __PRETTY_FUNCTION__, self);
+#endif
+
+   event = [[[UIWindowCloseEvent alloc] initWithMouseLocation:self->_mouseLocation
+                                                    modifiers:self->_modifiers] autorelease];
+  _windowEventsCallback( self, event);
+}
+
+
+/*
+ * Regular events to be handled by UIWindow
+ */
 static void   keyCallback( GLFWwindow* window,
                            int key,
                            int scancode,
                            int action,
                            int mods)
 {
-   GLFWWindow   *self;
+   GLFWOSWindow   *self;
 
    assert( [NSThread mulleIsMainThread]);
 
@@ -40,7 +246,7 @@ static void   keyCallback( GLFWwindow* window,
 
 void   charCallback(GLFWwindow* window, unsigned int codepoint)
 {
-   GLFWWindow   *self;
+   GLFWOSWindow   *self;
 
    assert( [NSThread mulleIsMainThread]);
 
@@ -54,7 +260,7 @@ static void   mouseButtonCallback( GLFWwindow* window,
                                    int action,
                                    int mods)
 {
-   GLFWWindow   *self;
+   GLFWOSWindow   *self;
 
    assert( [NSThread mulleIsMainThread]);
 
@@ -69,7 +275,7 @@ static void   mouseMotionCallback( GLFWwindow* window,
                                  double xpos,
                                  double ypos)
 {
-   GLFWWindow   *self;
+   GLFWOSWindow   *self;
 
    assert( [NSThread mulleIsMainThread]);
 
@@ -82,86 +288,13 @@ static void   mouseScrollCallback( GLFWwindow *window,
                                    double xoffset,
                                    double yoffset)
 {
-   GLFWWindow   *self;
+   GLFWOSWindow   *self;
 
    assert( [NSThread mulleIsMainThread]);
 
    self  = glfwGetWindowUserPointer( window);
    [self _mouseScrollCallback:CGPointMake( xoffset, yoffset)];
 }
-
-
-static void   windowMoveCallback( GLFWwindow* window, int xpos, int ypos)
-{
-   GLFWWindow   *self;
-
-   assert( [NSThread mulleIsMainThread]);
-
-   self = glfwGetWindowUserPointer( window);
-   [self _windowMoveCallback:CGBitmapPointMake( xpos, ypos)];
-}
-
-
-static void   windowRefreshCallback( GLFWwindow* window)
-{
-   GLFWWindow   *self;
-
-   assert( [NSThread mulleIsMainThread]);
-
-   self = glfwGetWindowUserPointer( window);
-   [self _windowRefreshCallback];
-}
-
-
-static void   windowCloseCallback( GLFWwindow* window)
-{
-   GLFWWindow   *self;
-
-   assert( [NSThread mulleIsMainThread]);
-
-   self = glfwGetWindowUserPointer( window);
-   [self _windowCloseCallback];
-}
-
-
-// framebufferResize is more interesting though
-static void   windowResizeCallback( GLFWwindow* window, int width, int height)
-{
-   GLFWWindow   *self;
-
-   assert( [NSThread mulleIsMainThread]);
-
-   self = glfwGetWindowUserPointer( window);
-   [self _windowResizeCallback:CGBitmapSizeMake( width, height)];
-}
-
-
-static void   framebufferResizeCallback( GLFWwindow* window, int width, int height)
-{
-   GLFWWindow   *self;
-   CGRect      frame;
-
-   assert( [NSThread mulleIsMainThread]);
-
-   self = glfwGetWindowUserPointer( window);
-   [self _framebufferResizeCallback:CGBitmapSizeMake( width, height)];
-}
-
-
-- (void) os_initWindowEvents
-{
-   assert( _window);
-
-   assert( [NSThread mulleIsMainThread]);
-
-   // window events
-   glfwSetWindowSizeCallback( _window, windowResizeCallback);
-   glfwSetWindowPosCallback( _window, windowMoveCallback);
-   glfwSetFramebufferSizeCallback( _window, framebufferResizeCallback);
-   glfwSetWindowRefreshCallback( _window, windowRefreshCallback);
-   glfwSetWindowCloseCallback( _window, windowCloseCallback);
-}
-
 
 
 - (void) os_initInputEvents
@@ -178,114 +311,11 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
    glfwSetScrollCallback( _window, mouseScrollCallback);
 }
 
+
 - (void) os_initEvents
 {
    [self os_initWindowEvents];
    [self os_initInputEvents];
-}
-
-
-
-//
-// callbacks from window events (via GLFW). It is NOT known if the event coming
-// in is a direct callback from the host OS or if it has been queued by glfw
-// and released during "waitForEvents" or "pollEvents." (See glfw3 events dox)
-//
-// What is unknown is, if the executing thread of a callback is always the
-// mainThread. It is assumed here, though. The "core" windows events are 
-// handled immediately and they are handled on the main thread (or the main
-// UIEvent thread).
-//
-- (void) _windowResizeCallback:(struct CGBitmapSize) size
-{
-   UIWindowEvent    *event;
-   GLFWWindow       *window;
-
-#if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
-   fprintf( stderr, "%s %s w=%.1f h=%.1f\n",
-                     __PRETTY_FUNCTION__,
-                     [self UTF8String],
-                     size.width,
-                     size.height);
-#endif
-   event = [[[UIWindowResizeEvent alloc] initWithMouseLocation:self->_mouseLocation
-                                                     modifiers:self->_modifiers
-                                                         size:size] autorelease];
-   _windowEventsCallback( self, event);
-}
-
-
-- (void) _framebufferResizeCallback:(struct CGBitmapSize) size
-{
-   UIWindowEvent   *event;
-
-#if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
-   fprintf( stderr, "%s %s w=%ld h=%ld\n",
-                     __PRETTY_FUNCTION__,
-                     [self UTF8String],
-                     (long) size.width,
-                     (long) size.height);
-#endif
-   event = [[[UIWindowFramebufferResizeEvent alloc] initWithMouseLocation:self->_mouseLocation
-                                                                modifiers:self->_modifiers
-                                                                     size:size] autorelease];
-
-   // TODO: we should do this atomically
-   //
-   _windowEventsCallback( self, event);
-}
-
-
-
-//
-// Move callback like refresh callback induces flicker
-//
-- (void) _windowMoveCallback:(struct CGBitmapPoint) position
-{
-   UIWindowEvent   *event;
-
-#ifdef CALLBACK_DEBUG
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self UTF8String]);
-#endif
-
-//   fprintf( stderr, "%p moved: x=%d y=%d\n", self, xpos, ypos);
-
-   event = [[[UIWindowMoveEvent alloc] initWithMouseLocation:self->_mouseLocation
-                                                   modifiers:self->_modifiers
-                                                      origin:position] autorelease];
-   _windowEventsCallback( self, event);
-}
-
-
-
-- (void) _windowRefreshCallback
-{
-   UIWindowEvent   *event;
-
-#if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self UTF8String]);
-#endif
-
-   event = [[[UIWindowRefreshEvent alloc] initWithMouseLocation:self->_mouseLocation
-                                                      modifiers:self->_modifiers] autorelease];
-//   [self queueRetainedEvent:event];
-
-   _windowEventsCallback( self, event);
-}
-
-
-
-- (void) _windowCloseCallback
-{
-   UIWindowEvent   *event;
-
-#ifdef CALLBACK_DEBUG
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self UTF8String]);
-#endif
-
-   event = [[[UIWindowCloseEvent alloc] initWithMouseLocation:self->_mouseLocation
-                                                   modifiers:self->_modifiers] autorelease];
-  _windowEventsCallback( self, event);
 }
 
 
@@ -297,7 +327,7 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
    UIEvent   *event;
 
 #ifdef CALLBACK_DEBUG
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self UTF8String]);
+   mulle_fprintf( stderr, "%s %@\n", __PRETTY_FUNCTION__, self);
 #endif
 
    self->_modifiers = mods;
@@ -309,7 +339,7 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
                                                       key:key
                                                  scanCode:scancode
                                                    action:action];
-  _otherEventsCallback( self, event);
+  _otherRetainedEventsCallback( self, event);
 }
 
 
@@ -318,7 +348,7 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
    UIEvent    *event;
 
 #ifdef CALLBACK_DEBUG
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self UTF8String]);
+   mulle_fprintf( stderr, "%s %@\n", __PRETTY_FUNCTION__, self);
 #endif
 
    if( self->_discardEventsMask & UIEventTypeUnicode)
@@ -327,7 +357,7 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
    event = [[UIUnicodeEvent alloc] initWithMouseLocation:self->_mouseLocation
                                                modifiers:self->_modifiers
                                                character:codepoint];
-  _otherEventsCallback( self, event);
+  _otherRetainedEventsCallback( self, event);
 }
 
 
@@ -339,7 +369,7 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
    uint64_t   bit;
 
 #if defined( CALLBACK_DEBUG) || defined( MOUSE_BUTTON_CALLBACK_DEBUG)
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self UTF8String]);
+   mulle_fprintf( stderr, "%s %@\n", __PRETTY_FUNCTION__, self);
 #endif
 
    bit = 1LL << button;
@@ -355,7 +385,7 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
                                                    modifiers:mods
                                                       button:button
                                                       action:action];
-  _otherEventsCallback( self, event);
+  _otherRetainedEventsCallback( self, event);
 
    // [self dump];
 }
@@ -367,7 +397,7 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
    CGRect     frame;
 
 #if defined( CALLBACK_DEBUG) || defined( MOUSE_MOTION_CALLBACK_DEBUG)
-   fprintf( stderr, "%s %s (%.1f, %.1f)\n", __PRETTY_FUNCTION__, [self UTF8String], pos.x, pos.y);
+   fprintf( stderr, "%s %@ (%.1f, %.1f)\n", __PRETTY_FUNCTION__, self, pos.x, pos.y);
 #endif
 
    //
@@ -395,7 +425,7 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
    event = [[UIMouseMotionEvent alloc] initWithMouseLocation:self->_mouseLocation
                                                    modifiers:self->_modifiers
                                                 buttonStates:self->_mouseButtonStates];
-  _otherEventsCallback( self, event);
+  _otherRetainedEventsCallback( self, event);
 }
 
 
@@ -407,7 +437,7 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
    CGFloat    sensitivity;
 
 #ifdef CALLBACK_DEBUG
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, [self UTF8String]);
+   mulle_fprintf( stderr, "%s %@\n", __PRETTY_FUNCTION__, self);
 #endif
 
    if( self->_discardEventsMask)
@@ -428,7 +458,7 @@ static void   framebufferResizeCallback( GLFWwindow* window, int width, int heig
    event = [[UIMouseScrollEvent alloc] initWithMouseLocation:self->_mouseLocation
                                                    modifiers:self->_modifiers
                                                 scrollOffset:scrollOffset];
-  _otherEventsCallback( self, event);
+  _otherRetainedEventsCallback( self, event);
 }
 
 @end

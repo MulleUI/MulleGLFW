@@ -1,21 +1,30 @@
 # demos
 
-Demos of MulleGLFW.
+OpenGL demos of MulleGLFW. These demos should run on all platforms that
+are supported by glfw3 and have OpenGL.
+
 
 ```
 TODO:  Fullscreen demo
        Multiple Monitor demo
 ```
+### glfw-window
+
+This most basic demo, just puts up a window with nothing in it. You can
+pass `--async`, `--synced`, `--unsynced` as command line arguments. The
+window background should be a green color.
 
 
 ### glfw-wave
 
 Based on glfw-wave-original.
 
-Shows UIEvents being accepted. The draw code has been moved to a render loop. Animations has been moved to a timer.
-Window creation is done with GLFWWindows. Overall, setup is simplified. Event
+Shows UIEvents being accepted. The draw code has been moved to a render loop.
+Animations have been moved to a timer.
+Window creation is done with GLFWOSWindows. Overall, setup is simplified. Event
 handling is more complicated, but UIEvents will be a win starting when we
-distribute them to individual UIViews in later projects.
+distribute them to individual UIViews in later projects. The framerate is set
+to the VSYNC of the monitor.
 
 
 ![Screenshot of glfw-wavegears](glfw-wave.png)
@@ -33,8 +42,9 @@ not having "Glad". This is meant as a reference for
 ### glfw-texture
 
 Most basic OpenGL texture mapping demo. **UIApplication** is used to
-initialize GLFW. Then a GLFWWindows is created and a render callback installed.
-Finally UIEvent handles event processing and sets a fixed framerate.
+initialize GLFW. Then a GLFWOSWindows is created and a render callback
+installed. Finally UIEvent handles event processing and sets a fixed
+framerate.
 
 ![Screenshot of glfw-texture](glfw-texture.png)
 
@@ -52,6 +62,9 @@ OpenGL API to be used. Use `glfw-triangle-opengles -h` to see whats available.
 
 [src/main-glfw-triangle-opengl.m](src/main-glfw-triangle-opengl.m)
 
+The slightly modified original code, that runs without glad on macOS.
+
+[src/main-glfw-triangle-opengl-original.m](src/main-glfw-triangle-opengl-original.m)
 
 ### glfw-gears
 
@@ -61,6 +74,24 @@ window adornments and to draw with transparencey.
 ![Screenshot of glfw-gears](glfw-gears.png)
 
 [src/main-glfw-gears.m](src/main-glfw-gears.m)
+
+
+
+### glfw-events-c / glfw-events-objc / glfw-events
+
+glfw-events-c is the most basic window opener and event catcher. This demo is
+useful to get going on an unknown platform first. There is no Objective-C
+involved yet. This leads to glfw-events-objc which is the same, but uses
+GLFWOSWindow. Finally glfw-events used UIEvents and UIApplication.
+
+![Screenshot of glfw-events](glfw-events.png)
+
+[src/main-glfw-events-c.m](src/main-glfw-events-c.m)
+
+[src/main-glfw-events-objc.m](src/main-glfw-events-objc.m)
+
+[src/main-glfw-events.m](src/main-glfw-events.m)
+
 
 
 ## Build

@@ -6,10 +6,13 @@
  * Modified for variable frame rate by Marcus Geelnard
  * 2003-Jan-31: Minor cleanups and speedups / MG
  * 2010-10-24: Formatting and cleanup - Camilla Löwy
+ * 2021-12-01: Remove glad dependency + fix for linux - Nat!
  *****************************************************************************/
+// MEMO: need this for linux (M_PI)
 #define _GNU_SOURCE
 
-//#import "import.h"
+#import "import.h"
+
 
 #if defined(_MSC_VER)
  // Make MS math.h define M_PI
@@ -20,16 +23,10 @@
 #include <stdlib.h>
 #include <math.h>
 
+// MEMO: don't need glad, use GL headers instead
+// 
 //#define GLAD_GL_IMPLEMENTATION
-//#include <glad/gl.h>
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
-
-#include "linmath.h"
-
-
-// GLFW_INCLUDE_... keep undefined for OpenGL3
-// see: https://www.glfw.org/docs/latest/build_guide.html
+// #include <glad/gl.h>
 #define GL_GLEXT_PROTOTYPES
 #ifdef __APPLE__
 # include <OpenGL/gl.h>
@@ -38,6 +35,11 @@
 # include <GL/gl.h>
 # include <GL/glext.h>
 #endif
+
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
+
+#include <linmath.h>
 
 // Maximum delta T to allow for differential calculations
 #define MAX_DELTA_T 0.01
@@ -112,6 +114,8 @@ void init_vertices(void)
     {
         for (x = 0;  x < QUADW;  x++)
         {
+            p = 4 * (y * QUADW + x);
+
             quad[p + 0] = y       * GRIDW + x;     // Some point
             quad[p + 1] = y       * GRIDW + x + 1; // Neighbor at the right side
             quad[p + 2] = (y + 1) * GRIDW + x + 1; // Upper right neighbor
@@ -158,7 +162,7 @@ void init_grid(void)
 
 //========================================================================
 // Draw scene
-//==========================================glfwWindow==============================
+//========================================================================
 
 void draw_scene(GLFWwindow* window)
 {
@@ -398,89 +402,187 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 }
 
 
+static void   receiveWindowEvents( GLFWOSWindow *window, UIWindowEvent *event)
+{
+   struct CGBitmapSize   size;
+
+   switch( [event eventType])
+   {
+   default  :
+      break;
+
+   case UIWindowEventTypeFramebufferResize :
+      size = [(UIWindowFramebufferResizeEvent *) event size];
+      framebuffer_size_callback( [window os_window], size.width, size.height);
+   }
+}
+
+
+static void   receiveOtherEvents( GLFWOSWindow *window, UIEvent *event)
+{
+   CGPoint   scrollOffset;
+   CGPoint   position;
+
+   switch( [event eventType])
+   {
+   case UIEventTypePresses :
+      key_callback( [window os_window],
+                    [(UIKeyboardEvent *) event key],
+                    [(UIKeyboardEvent *) event scanCode],
+                    [(UIKeyboardEvent *) event action],
+                    [(UIKeyboardEvent *) event modifiers]);
+      break;
+
+   case UIEventTypeMotion  :
+      position = [event locationInWindow];
+      cursor_position_callback( [window os_window],
+                                position.x,
+                                position.y);
+      break;
+
+   case UIEventTypeTouches :
+      mouse_button_callback( [window os_window],
+                             [(UIMouseButtonEvent *) event button],
+                             [(UIMouseButtonEvent *) event action],
+                             [(UIMouseButtonEvent *) event modifiers]);
+      break;
+
+   case UIEventTypeScroll  :
+      scrollOffset = [(UIMouseScrollEvent *) event scrollOffset];
+      scroll_callback( [window os_window], scrollOffset.x, scrollOffset.y);
+      break;
+
+   default  : break;
+   }
+}
+
 //========================================================================
 // main
 //========================================================================
 
 int main(int argc, char* argv[])
 {
-   GLFWwindow* window;
+    GLFWwindow* window;
     double t, dt_total, t_old;
     int width, height;
-//   UIApplication   *app;
-//   GLFWWindow      *myWindow;
+   UIApplication  *app;
+   GLFWOSWindow     *gWindow;
+   struct CGBitmapSize   framebufferSize;
 
-   // TODO: move to UIApplication
-    glfwSetErrorCallback(error_callback);
+//    glfwSetErrorCallback(error_callback);
+//
+//    if (!glfwInit())
+//        exit(EXIT_FAILURE);
+   app = [UIApplication sharedInstance];
 
-   
-   if (!glfwInit())
-        exit(EXIT_FAILURE);
-//   app = [UIApplication sharedInstance];
-
-   window = glfwCreateWindow(640, 480, "Demo", NULL, NULL);
-   if (!window)
+   @autoreleasepool
    {
-       glfwTerminate();
-       exit(EXIT_FAILURE);
-   }
-//   myWindow = [GLFWWindow windowWithFrame:CGRectMake( 0, 0, 640, 480)
-//                          titleUTF8String:"Demo"
-//                                styleMask:UIWindowStyleResizable
-//                            graphicsHints:0];
-//    window = [myWindow os_window];
-    glfwSetKeyCallback(window, key_callback);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
-    glfwSetCursorPosCallback(window, cursor_position_callback);
-    glfwSetScrollCallback(window, scroll_callback);
+//    window = glfwCreateWindow(640, 480, "Wave Simulation", NULL, NULL);
+//    if (!window)
+//    {
+//        glfwTerminate();
+//        exit(EXIT_FAILURE);
+//    }
 
-    glfwMakeContextCurrent(window);
-    // gladLoadGL(glfwGetProcAddress);
-    glfwSwapInterval(1);
+        gWindow = [GLFWOSWindow windowWithFrame:CGRectMake( 0, 0, 640, 480)
+                                titleUTF8String:"Demo"
+                                      styleMask:UIWindowStyleBare|UIWindowStyleResizable
+                                  graphicsHints:0];
+        [app addWindow:gWindow];
+        window = [gWindow os_window];
+//
+//        glfwSetKeyCallback(window, key_callback);
+//        glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+//        glfwSetMouseButtonCallback(window, mouse_button_callback);
+//        glfwSetCursorPosCallback(window, cursor_position_callback);
+//        glfwSetScrollCallback(window, scroll_callback);
 
-    glfwGetFramebufferSize(window, &width, &height);
-    framebuffer_size_callback(window, width, height);
+        glfwMakeContextCurrent(window);
+    // don't need glad    
+    //    gladLoadGL(glfwGetProcAddress);
+        glfwSwapInterval(1);
 
-    // Initialize OpenGL
-    init_opengl();
+        glfwGetFramebufferSize(window, &width, &height);
+        framebuffer_size_callback(window, width, height);
 
-    // Initialize simulation
-    init_vertices();
-    init_grid();
-    adjust_grid();
+        // Initialize OpenGL
+        init_opengl();
 
-    // Initialize timer
-    t_old = glfwGetTime() - 0.01;
-
-    while (!glfwWindowShouldClose(window))
-    {
-        t = glfwGetTime();
-        dt_total = t - t_old;
-        t_old = t;
-
-        // Safety - iterate if dt_total is too large
-        while (dt_total > 0.f)
-        {
-            // Select iteration time step
-            dt = dt_total > MAX_DELTA_T ? MAX_DELTA_T : dt_total;
-            dt_total -= dt;
-
-            // Calculate wave propagation
-            calc_grid();
-        }
-
-        // Compute height of each vertex
+        // Initialize simulation
+        init_vertices();
+        init_grid();
         adjust_grid();
 
-        // Draw wave grid to OpenGL display
-        draw_scene(window);
+        // Initialize timer
+        t_old = mulle_absolutetime_now() - 0.01;
 
-        glfwPollEvents();
-    }
-    glfwTerminate();
-    exit(EXIT_SUCCESS);
-//    [app terminate];
-//    return( 0);
+        while (!glfwWindowShouldClose(window))
+        {
+            t        = mulle_absolutetime_now();
+            dt_total = t - t_old;
+            t_old    = t;
+
+            printf( "%s %.3g %.3g\n", __FUNCTION__, t, dt_total);
+            fflush( stdout);
+
+            // Safety - iterate if dt_total is too large
+            while (dt_total > 0.f)
+            {
+                // Select iteration time step
+                dt = dt_total > MAX_DELTA_T ? MAX_DELTA_T : dt_total;
+                dt_total -= dt;
+
+                // Calculate wave propagation
+                calc_grid();
+            }
+
+            // Compute height of each vertex
+            adjust_grid();
+
+            // Draw wave grid to OpenGL display
+            draw_scene(window);
+
+            glfwPollEvents();
+       }
+   }
+   return( [app terminate]);
 }
+
+
+
+//
+//                           ,╓≤æKª╨╙╙▓█D"╙╙╙*╨¥W▄╓,
+//                      ╓▄ª╙└╧▓        █           ⁿ▓▓ª╦w
+//                  ╓#╜^*█⌐   `╕       █           ╓▌    `╙%w
+//               ╓ΦΓ      █    ╙⌐     ,█,,,Φ      ╓▌         ╙¥▄
+//            ,▄▀ █▄       █µ,╓╝,╓≤╗≡≡ª╨╨╨¥≡∞╗w╓,ª█,  ,       ]▄▀V,
+//          ,Φ└   ║"▀▄     ,▄▀╨"                 "╙¥▓▓       ▄▀  º▄¥,
+//        ,#▌Φ▓▄╓  Φ `█Q▄M╙                           ╙¥▄ ,▄▀ ╙▄⌐`  `Φ
+//       ▄▀   `V,"▀▀¼╓╩└                                 ╙¥▓╗ ,       ╙▄
+//      Φ       `¥═▄▀                            ╒          ▀▄          ▓
+//    .▓         ╓▓]V▄H       ▓                 ,Å            ▀,         ▀
+//    █      ,-ª▓╛  `██▀½      "▄  ,╓╓╓╓;╓▄▄▄▄╗▄█,             ╙▄         ▀
+//   █  `██▄   ▓. - Φ█═.~     ,≤█▄▀-      `   █└"▀▀▀▀▄╓╓╓╓       ▌    ██▄, █
+//  ║⌐  " ▀   ▓╨⌐   }▀`      ,█  `           █      .█▀▄▄███▄     ▌  ` ▀    ▌
+//  ▌        ▐M A   '┴      ▌                ▀        ╙█▌████▌    ╙▄        ║⌐
+// ║⌐        █⌐'║▄ Γr2«    ║▀                 ▄▄▄      ╙▌▄███      █         ▌
+// █]     ,▄▐H  ██████═ª  ╓` ▄█▀▀▀▀█▄        ████     ╓███` `╙╙║█  ▐H        █
+// █ "% ,▄▀ ║░╠K█═╣███^   ╛╓█▀      ▐█         ,╓╓═ª╙└   █      ╙█▄▐▌▓######▌╫
+// █║▄▄▄█▄▄▄║H:  "╙▀███▄╓▄,█▌╓▄,,▄∩  ██p$ΦΦ▀▀▀▀▀ΦΦΦR≡≥▄╓ ║▄       ╙j▌` ▄▀╙╗ `╫
+// █"      ╙▐H-═M ▄███████¥█H "^╙    '█, ,«^``     `     ║▌        ▐M▄▀    "Φ█
+// ║        !█▄▄████≤═^`╓█ █▌╓▀╦▄▀█   ╙█⌐               ╓█▌        ▓ `       █
+//  ▌      ,▄██╫██ ▄█═╜" █▌▐█╣Hj⌐ █    █▌╙¥w,           ██▄       ╓▌        ▐M
+//  ╢"▄▄#▀▀╙╟█Ü███▀`▀█  ║██J█▄▌jH █    ██    ╙▀W▄;    ,██  `╙w,   █▄     ,╓ █
+//   █╙     ▐███▌▀█w ▀█ ╠██████j▌║█▌   ▀██▄       `╙▓██▀w,     ╙╗█'`"▀█▀╙"`║`
+//   ╙▌     Φ████████▄██ ███████████    ═██▀W▄,   ╓█▀└         ╓▀ "    ╙▄ ╓▀
+//    ╙▄     ╙▀███╙█▄▐██▄,╙▀█████▄▀▄▀▄   ,█M╗ ▀▄██▀╙""*ⁿ═─≈-,,▄▌,        ▄▀
+//     `▌╙µ,▄Φ▀x███▄██████████▀V███▀╙└ ,▄#▌████▀`"*«,      .█▀▄▀▄,      ▄╛
+//       ▀Ö█  ;▓████████▄▄█▀▄╙W "V▄██▀▀│▄███▀└ ▀╦     "*═╥▄▀ ║,  ║▀▄  ,▓
+//        ╙W▀ '█████╨▀▀█████████   "▀▀████└      ╙▄   ,▄▀'   `▀▀╣H ▐▀▄▀
+//          ╙▄  ▀▀Γ╓▌  ▄▀ⁿ`╙▀███      ██▌         ╓█R▀▄A█        ▀▀▄▀
+//            ╙W,Φ╙  ║█        ▄╙╙ª%≡╦██≤≤╗╗≡≡╜▀▀   ╣▌   █╕     ,▄▀
+//              `▀▄M█┘        ║▀▌   ╫"    *Φ▄  █       Φ` ▀▌, ▄M╙
+//                 "▀╦,       M ╙▌  ▀       `█W▐▌       wæQ▄▀╙
+//                     ╙▀W╥,╓╣   ╙█║        ╫M  █    ,╓▄╝╙`
+//                          ╙╙▀%▄▄▄▌,≤▄_▄≡,▐▓▓▄▄#ª▀"`
 

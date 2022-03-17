@@ -226,6 +226,38 @@ void calc_grid(void)
 }
 
 
+
+static void   timer_callback( NSTimer *timer, id userInfo)
+{
+   mulle_relativetime_t         dt_total;
+   mulle_absolutetime_t         t;
+   mulle_absolutetime_t         now;
+   static mulle_absolutetime_t  t_old;
+
+   now = mulle_absolutetime_now();
+   if( ! t_old)
+       t_old = now - 0.01;
+
+   t        = now;
+   dt_total = t - t_old;
+   t_old    = t;
+
+   // Safety - iterate if dt_total is too large
+   while( dt_total > 0.f)
+   {
+      printf( "%s %g\n", __FUNCTION__, dt_total);
+      fflush( stdout);
+
+         // Select iteration time step
+      dt = dt_total > MAX_DELTA_T ? MAX_DELTA_T : dt_total;
+      dt_total -= dt;
+       // Calculate wave propagation
+      calc_grid();
+   }
+}
+
+
+
 ////========================================================================
 //// Print errors
 ////========================================================================
@@ -352,7 +384,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 }
 
 
-static void   receiveWindowEvents( GLFWWindow *window, UIWindowEvent *event)
+static void   receiveWindowEvents( GLFWOSWindow *window, UIWindowEvent *event)
 {
    struct CGBitmapSize   size;
 
@@ -363,12 +395,14 @@ static void   receiveWindowEvents( GLFWWindow *window, UIWindowEvent *event)
 
    case UIWindowEventTypeFramebufferResize :
       size = [(UIWindowFramebufferResizeEvent *) event size];
-      framebuffer_size_callback( [window os_window], size.width, size.height); 
+      [window os_activateGraphicsContext];
+      framebuffer_size_callback( [window os_window], size.width, size.height);
+      [window os_deactivateGraphicsContext];
    }
 }
 
 
-static void   receiveOtherEvents( GLFWWindow *window, UIEvent *event)
+static void   receiveOtherEvents( GLFWOSWindow *gWindow, UIEvent *event)
 {
    CGPoint   scrollOffset;
    CGPoint   position;
@@ -376,67 +410,46 @@ static void   receiveOtherEvents( GLFWWindow *window, UIEvent *event)
    switch( [event eventType])
    {
    case UIEventTypePresses :
-      key_callback( [window os_window], 
+      key_callback( [gWindow os_window],
                     [(UIKeyboardEvent *) event key],
                     [(UIKeyboardEvent *) event scanCode],
                     [(UIKeyboardEvent *) event action],
-                    [(UIKeyboardEvent *) event modifiers]); 
+                    [(UIKeyboardEvent *) event modifiers]);
       break;
 
-   case UIEventTypeMotion  : 
+   case UIEventTypeMotion  :
       position = [event locationInWindow];
-      cursor_position_callback( [window os_window], 
+      cursor_position_callback( [gWindow os_window],
                                 position.x,
                                 position.y);
       break;
 
-   case UIEventTypeTouches : 
-      mouse_button_callback( [window os_window], 
+   case UIEventTypeTouches :
+      mouse_button_callback( [gWindow os_window],
                              [(UIMouseButtonEvent *) event button],
                              [(UIMouseButtonEvent *) event action],
                              [(UIMouseButtonEvent *) event modifiers]);
       break;
 
-   case UIEventTypeScroll  : 
+   case UIEventTypeScroll  :
       scrollOffset = [(UIMouseScrollEvent *) event scrollOffset];
-      scroll_callback( [window os_window], scrollOffset.x, scrollOffset.y); 
+      scroll_callback( [gWindow os_window], scrollOffset.x, scrollOffset.y);
       break;
 
    default  : break;
-   } 
-}
-
-static void   timer( GLFWWindow *window, CAAbsoluteTime now, id userInfo)
-{
-  double         t, dt_total;
-  static double  t_old;
-  
-  if( ! t_old)
-      t_old = now - 0.01;
-
-  t = now;
-  dt_total = t - t_old;
-  t_old = t;
-
-  // Safety - iterate if dt_total is too large
-  while (dt_total > 0.f)
-  {
-      // Select iteration time step
-      dt = dt_total > MAX_DELTA_T ? MAX_DELTA_T : dt_total;
-      dt_total -= dt;
-
-      // Calculate wave propagation
-      calc_grid();
-  }           
+   }
 }
 
 
+/*
+ * Open GL part
+ */
 
 //========================================================================
 // Draw scene
 //========================================================================
 
-void draw_scene(GLFWwindow* window)
+void draw_scene()
 {
     // Clear the color and depth buffers
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -453,7 +466,8 @@ void draw_scene(GLFWwindow* window)
 
     glDrawElements(GL_QUADS, 4 * QUADNUM, GL_UNSIGNED_INT, quad);
 
-    glfwSwapBuffers(window);
+// don't do this, GLFWOSWindow will do it
+//    glfwSwapBuffers(window);
 }
 
 
@@ -481,12 +495,12 @@ void init_opengl(void)
 }
 
 
-static void   display( GLFWWindow *gWindow, CAAbsoluteTime now)
+static void   display( GLFWOSWindow *gWindow)
 {
     // Compute height of each vertex
     adjust_grid();
     // Draw wave grid to OpenGL display
-    draw_scene( [gWindow os_window]);   
+    draw_scene();
 }
 
 
@@ -496,11 +510,11 @@ static void   display( GLFWWindow *gWindow, CAAbsoluteTime now)
 
 int main(int argc, char* argv[])
 {
-    GLFWwindow* window;
 //    double t, dt_total, t_old;
 //    int width, height;
-   UIApplication  *app;
-   GLFWWindow     *gWindow;
+   UIApplication         *app;
+   GLFWOSWindow          *gWindow;
+   NSTimer               *timer;
    struct CGBitmapSize   framebufferSize;
 
 //    glfwSetErrorCallback(error_callback);
@@ -518,13 +532,12 @@ int main(int argc, char* argv[])
 //        exit(EXIT_FAILURE);
 //    }
 
-   gWindow = [GLFWWindow windowWithFrame:CGRectMake( 0, 0, 640, 480)
+   gWindow = [GLFWOSWindow windowWithFrame:CGRectMake( 0, 0, 640, 480)
                           titleUTF8String:"Demo"
-                                styleMask:UIWindowStyleResizable
+                                styleMask:UIWindowStyleBare|UIWindowStyleResizable
                             graphicsHints:0];
    [app addWindow:gWindow];
-    window = [gWindow os_window];
-    
+
 //   glfwSetKeyCallback(window, key_callback);
 //   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 //   glfwSetMouseButtonCallback(window, mouse_button_callback);
@@ -534,32 +547,15 @@ int main(int argc, char* argv[])
    // default of GLFWindow is 20
    [gWindow setScrollWheelSensitivity:1.0];
    [gWindow setWindowEventsCallback:receiveWindowEvents];
-   [gWindow setOtherEventsCallback:receiveOtherEvents];
-
-//    glfwMakeContextCurrent(window);
-   [gWindow os_activateContext];
-    // gladLoadGL(glfwGetProcAddress);
-//    glfwSwapInterval(1);
-   [gWindow os_setSwapInterval:1];
-
-//    glfwGetFramebufferSize(window, &width, &height);
-    framebufferSize = [gWindow os_framebufferSize];
-    framebuffer_size_callback(window, framebufferSize.width, framebufferSize.height);
-
-    // Initialize OpenGL
-    init_opengl();
+   [gWindow setOtherRetainedEventsCallback:receiveOtherEvents];
 
     // Initialize simulation
     init_vertices();
     init_grid();
     adjust_grid();
+//    glfwGetFramebufferSize(window, &width, &height);
 
-    // Initialize timer
-    // t_old = glfwGetTime() - 0.01;
-    [gWindow setTimerCallback:timer
-                        delay:MAX_DELTA_T // ?
-                     userInfo:nil];
-
+//
 //    while (!glfwWindowShouldClose(window))
 //    {
 // moved to display
@@ -578,7 +574,13 @@ int main(int argc, char* argv[])
 //            calc_grid();
 //        }
 // moved to timer()
-
+    // Initialize timer
+    timer = [[[NSTimer alloc] mulleInitWithTimeInterval:0.0
+                                         repeatInterval:MAX_DELTA_T / 10.0
+                                               callback:timer_callback
+                                               userInfo:nil] autorelease];
+    [app addTimer:timer];
+//
 //        // Compute height of each vertex
 //        adjust_grid();
 //
@@ -586,13 +588,29 @@ int main(int argc, char* argv[])
 //        draw_scene(window);
 //        glfwPollEvents();
 // moved to display
-      [gWindow setRenderCallback:display];
-      [gWindow renderLoopHz:100.0];
+//    glfwMakeContextCurrent(window);
+    [gWindow os_activateGraphicsContext];
+    {
+    // gladLoadGL(glfwGetProcAddress);
+//    glfwSwapInterval(1);
+      [gWindow os_setSwapInterval:1];
+
+      [gWindow setRenderFrameCallback:display];
+
+      framebufferSize = [gWindow os_framebufferSize];
+      framebuffer_size_callback( [gWindow os_window], framebufferSize.width, framebufferSize.height);
+
+      // Initialize OpenGL
+      init_opengl();
+    }
+    [gWindow os_deactivateGraphicsContext];
+
+
 //    }
 //    glfwTerminate();
 //    exit(EXIT_SUCCESS);
    }
-   return( [app terminate]);
+   return( [app run]);
 }
 
 

@@ -62,7 +62,7 @@ static const Vertex vertices[3] =
     { {   0.f,  0.6f }, { 0.f, 0.f, 1.f } }
 };
 
-#ifdef USE_GL 
+#ifdef USE_GL
 
 static const char* vertex_shader_text =
 "#version 330\n"
@@ -85,7 +85,7 @@ static const char* fragment_shader_text =
 "    fragment = vec4(color, 1.0);\n"
 "}\n";
 
-#else 
+#else
 
 static const char* vertex_shader_text =
 "#version 100\n"
@@ -124,7 +124,8 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 }
 
 GLuint program;
-GLint mvp_location;
+GLint  mvp_location;
+GLuint vertex_array;
 
 static void   init_scene( void)
 {
@@ -151,19 +152,26 @@ static void   init_scene( void)
     const GLint vpos_location = glGetAttribLocation(program, "vPos");
     const GLint vcol_location = glGetAttribLocation(program, "vCol");
 
+    glGenVertexArrays(1, &vertex_array);
+    glBindVertexArray(vertex_array);
+
     glEnableVertexAttribArray(vpos_location);
     glEnableVertexAttribArray(vcol_location);
     glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
                           sizeof(Vertex), (void*) offsetof(Vertex, pos));
     glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
-                          sizeof(Vertex), (void*) offsetof(Vertex, col));   
+                          sizeof(Vertex), (void*) offsetof(Vertex, col));
 }
 
 
-static void   display( GLFWWindow *gWindow, CAAbsoluteTime now)
+static void   display( GLFWOSWindow *gWindow)
 {
-   struct CGBitmapSize   framebufferSize;
-   float                 ratio;
+   struct CGBitmapSize    framebufferSize;
+   float                  ratio;
+   mulle_absolutetime_t   now;
+
+//   printf( "%s %g\n", __FUNCTION__, now);
+//   fflush( stdout);
 
    framebufferSize = [gWindow os_framebufferSize];
    ratio           = framebufferSize.width / (float) framebufferSize.height;
@@ -175,28 +183,40 @@ static void   display( GLFWWindow *gWindow, CAAbsoluteTime now)
    mat4x4_identity(m);
 
    //
-   // fix float overflow because "now" is a calendar date so to speak
-   // whereas glfwGetTime() produces relative time (0-...)
+   // fix float overflow
    //
+   now = mulle_absolutetime_now();
    mat4x4_rotate_Z(m, m, -(float) fmod( now, M_PI * 2.0));
    mat4x4_ortho(p, -ratio , ratio, -1.f, 1.f, 1.f, -1.f);
    mat4x4_mul(mvp, p, m);
 
    glUseProgram(program);
    glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) &mvp);
+   glBindVertexArray(vertex_array);
    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+// not needed
+   glFlush();
 }
 
 
-static void   usage( void)
+static void   usage( char *argv0)
 {
-   fprintf( stderr, "glfw-triangle-opengles [api] [options]\n"
+   char   *s;
+
+   s = strrchr( argv0, '/');
+   s = s ? s + 1 : argv0;
+
+   fprintf( stderr, "%s [api] [options]\n"
 "\n"
 "Api:\n"
+#ifdef USE_GL
 "   --gl3        :\n"
 "   --gl3_2      :\n"
+#else
 "   --gles2      :\n"
 "   --gles3      :\n"
+#endif
 "\n"
 "Options:\n"
 "   --any        :\n"
@@ -208,15 +228,16 @@ static void   usage( void)
 "\n"
 "   --native     :\n"
 "   --egl        :\n"
-"   --mesa       :\n");
+"   --mesa       :\n", s);
       exit( 1);
 }
 
 int   main( int argc, char *argv[])
 {
-   UIApplication   *app;
-   GLFWWindow      *gWindow;
-   GLFWwindow      *window;
+   UIApplication    *app;
+   GLFWOSWindow     *gWindow;
+   GLFWwindow       *window;
+   NSUInteger       styleMask;
    int              i;
    int              api;
    int              vendor;
@@ -224,7 +245,7 @@ int   main( int argc, char *argv[])
    int              hints;
 
 #ifdef USE_GL
-   hints   = GLFW_GL3_CONTEXT;
+   hints   = GLFW_GL3_2_CONTEXT;
 #else
    hints   = GLFW_GLES2_CONTEXT;
 #endif
@@ -301,21 +322,34 @@ int   main( int argc, char *argv[])
          continue;
       }
 
-      usage();
+      usage( argv[ 0]);
    }
 
    if( i != argc)
-      usage();
+      usage( argv[ 0]);
 
    fprintf( stderr, "hints : 0x%x\n", hints);
 
    app = [UIApplication sharedInstance];
    @autoreleasepool
    {
-      gWindow = [GLFWWindow windowWithFrame:CGRectMake( 0, 0, 640, 480)
-                            titleUTF8String:"Demo"
-                                  styleMask:UIWindowStyleResizable
-                              graphicsHints:hints];
+      /*
+       * It's tricky to get the flags right, so that macOS doesn't complain.
+       * UIWindowOpenGLCoreProfile|UIWindowOpenGLForwardCompatible is needed.
+       * Which has GL 4.1.0 core forward (native) or GL2 for deprecated.
+       */
+      styleMask = UIWindowStyleResizable
+                  ;
+
+      if( argc == 1)
+        styleMask |= UIWindowOpenGLCoreProfile
+                  |  UIWindowOpenGLForwardCompatible
+                  ;
+
+      gWindow = [GLFWOSWindow windowWithFrame:CGRectMake( 0, 0, 640, 480)
+                              titleUTF8String:"Demo"
+                                    styleMask:styleMask
+                                graphicsHints:hints];
 
       fprintf( stdout, "%s\n", [gWindow os_contextInfoUTF8String]);
       fflush( stdout);
@@ -326,15 +360,21 @@ int   main( int argc, char *argv[])
 
       glfwSetKeyCallback(window, key_callback);
 
-      [gWindow os_activateContext];
-      [gWindow os_setSwapInterval:1];
+      [gWindow os_activateGraphicsContext];
+      {
+        [gWindow os_setSwapInterval:1];
 
-      init_scene();
+        init_scene();
+      }
+      [gWindow os_deactivateGraphicsContext];
 
-      [gWindow setRenderCallback:display];
-      [gWindow renderLoopHz:100.0];
+      [gWindow setRenderFrameCallback:display];
+
+      // as we have set os_setSwapInterval to 1, we are tied to the sync
+      // so the Hz here don't really matter.
+      [gWindow setFrameRate: 1 / 1000.0];
    }
-   return( [app terminate]);
+   return( [app run]);
 }
 
 

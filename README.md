@@ -4,10 +4,15 @@
 
 This is an Objective-C wrapper around GLFW3 to provide windows and events.
 It provides the meat and potatoes code for **UIEvent** and **UIApplication**
-through categories. **UIWindow** owns one more more **GLFWWindows**.
+through categories. **UIWindow** owns one more more **GLFWOSWindows**.
 
-The GLFW3 window object is **GLFWWindow**. Each GLFWWindow has an implicit
+The GLFW3 window object is **GLFWOSWindow**. Each GLFWOSWindow has an implicit
 graphics context, that will be later used by a CGContext.
+
+
+### You are here
+
+![Overview](overview.dot.svg)
 
 
 ### Platform notes

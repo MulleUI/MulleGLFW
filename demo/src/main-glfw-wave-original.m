@@ -21,7 +21,7 @@
 #include <math.h>
 
 // MEMO: don't need glad, use GL headers instead
-// 
+//
 //#define GLAD_GL_IMPLEMENTATION
 // #include <glad/gl.h>
 #define GL_GLEXT_PROTOTYPES
@@ -428,7 +428,7 @@ int main(int argc, char* argv[])
     glfwSetScrollCallback(window, scroll_callback);
 
     glfwMakeContextCurrent(window);
-// don't need glad    
+// don't need glad
 //    gladLoadGL(glfwGetProcAddress);
     glfwSwapInterval(1);
 
@@ -448,23 +448,26 @@ int main(int argc, char* argv[])
 
     while (!glfwWindowShouldClose(window))
     {
-        t = glfwGetTime();
-        dt_total = t - t_old;
-        t_old = t;
-
-        // Safety - iterate if dt_total is too large
-        while (dt_total > 0.f)
-        {
-            // Select iteration time step
-            dt = dt_total > MAX_DELTA_T ? MAX_DELTA_T : dt_total;
-            dt_total -= dt;
-
-            // Calculate wave propagation
-            calc_grid();
-        }
-
-        // Compute height of each vertex
-        adjust_grid();
+//        t = glfwGetTime();
+//        dt_total = t - t_old;
+//        t_old = t;
+//
+//        // Safety - iterate if dt_total is too large
+//        while (dt_total > 0.f)
+//        {
+//            printf( "%s %g\n", __FUNCTION__, dt_total);
+//            fflush( stdout);
+//
+//            // Select iteration time step
+//            dt = dt_total > MAX_DELTA_T ? MAX_DELTA_T : dt_total;
+//            dt_total -= dt;
+//
+//            // Calculate wave propagation
+//            calc_grid();
+//        }
+//
+//        // Compute height of each vertex
+//        adjust_grid();
 
         // Draw wave grid to OpenGL display
         draw_scene(window);

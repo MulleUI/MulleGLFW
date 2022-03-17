@@ -9,9 +9,9 @@
  * is a first step.
  *
  * The major changes are mostly event related. And of course the whole
- * window setup is done with GLFWWindow.
+ * window setup is done with GLFWOSWindow.
  *
- * This demo does not use UIWindow but GLFWWindow, because we do not want
+ * This demo does not use UIWindow but GLFWOSWindow, because we do not want
  * to have nanovg involved. This means that everything like CAAnimation,
  * CALayer, UIView is not available. Even CGContext is not available, since
  * it's tied to nanovg. Also you can not have retained/buffered output.
@@ -58,8 +58,6 @@ static char   texture[ 8 * 8][ 4] =
 // this hasn't changed
 static void   init_texture()
 {
-   glClearColor( 0.0, 0.0, 0.0, 0.0);
-
    glGenTextures( 1, &textureName);
    glBindTexture( GL_TEXTURE_2D, textureName);
 
@@ -87,7 +85,7 @@ static void   init_texture()
 // pretty much unchanged. The call signature with "window" and "now"
 // is different, but they aren't used
 //
-static void   display( GLFWWindow *window, CAAbsoluteTime now)
+static void   display( GLFWOSWindow *window)
 {
    static GLint faces[][4] = {{4,5,6,7},
                               {1,2,6,5},
@@ -107,6 +105,7 @@ static void   display( GLFWWindow *window, CAAbsoluteTime now)
                                    { 1.0, 1.0, 1.0},
                                    {-1.0, 1.0, 1.0}};
 
+   glClearColor( 0.3f, 0.3f, 0.3f, 0.0f);
    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
    glBindTexture( GL_TEXTURE_2D, textureName);
 
@@ -183,9 +182,16 @@ void   update()
 
 
 // this loses some functions, also the signature is different
-static void   timer( GLFWWindow *window, CAAbsoluteTime now, id userInfo)
+static void   timerCallback( NSTimer *timer, id userInfo)
 {
+   GLFWOSWindow   *window;
+
+   window = userInfo;
+
+   [window os_activateGraphicsContext];
    update();
+   [window os_deactivateGraphicsContext];
+//   [window setNeedsRefresh];
 //
 //  glutPostRedisplay();
 //  glutTimerFunc(delay, timer, 0);
@@ -193,7 +199,7 @@ static void   timer( GLFWWindow *window, CAAbsoluteTime now, id userInfo)
 
 
 // This is new.
-static void   receiveWindowEvents( GLFWWindow *window, UIWindowEvent *event)
+static void   receiveWindowEvents( GLFWOSWindow *window, UIWindowEvent *event)
 {
    struct CGBitmapSize   size;
 
@@ -212,14 +218,16 @@ static void   receiveWindowEvents( GLFWWindow *window, UIWindowEvent *event)
       reshape( size.width, size.height);
    }
 
-   [window renderFrame];
+   [window displayFrameIfNeeded:mulle_absolutetime_now()
+               nextCallSchedule:INFINITY];
 }
 
 
 int   main( int argc, char *argv[])
 {
-   GLFWWindow      *window;
+   GLFWOSWindow    *window;
    UIApplication   *app;
+   NSTimer         *timer;
 
    app = [UIApplication sharedInstance];
 //   glutInit( &argc, argv);
@@ -227,12 +235,12 @@ int   main( int argc, char *argv[])
    @autoreleasepool
    {
       //
-      // we are using an GLFWWindow here because we just want to do OpenGL
+      // we are using an GLFWOSWindow here because we just want to do OpenGL
       //
-      window = [[[GLFWWindow alloc] initWithFrame:CGRectMake( 0.0, 0.0, 500.0, 500.0)
-                                  titleUTF8String:"Demo"
-                                        styleMask:UIWindowStyleResizable
-                                    graphicsHints:GLFW_GL3_CONTEXT] autorelease];
+      window = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0.0, 0.0, 500.0, 500.0)
+                                    titleUTF8String:"Demo"
+                                          styleMask:UIWindowOpenGLDeprecated|UIWindowStyleResizable
+                                      graphicsHints:0] autorelease];
 //    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 //    glutInitWindowSize(500, 500);
 //    glutCreateWindow("Demo");
@@ -241,22 +249,26 @@ int   main( int argc, char *argv[])
 
       [window setWindowEventsCallback:receiveWindowEvents];
 //    glutReshapeFunc(reshape);
-      [window setTimerCallback:timer
-                         delay:delay/1000.0
-                      userInfo:nil];
+      timer = [[[NSTimer alloc] mulleInitWithTimeInterval:0.0 
+                                           repeatInterval:delay/1000.0
+                                                 callback:timerCallback 
+                                                 userInfo:window] autorelease];
+      [app addTimer:timer];                                                 
 //    glutTimerFunc(delay, timer, 0);
 
-      [window os_activateContext];
+      [window os_activateGraphicsContext];
 
       init_texture();
 
-      [window setRenderCallback:display];
+      [window os_deactivateGraphicsContext];
+
+      [window setRenderFrameCallback:display];
 //    glutDisplayFunc(display);
 
-      [window renderLoopHz:100.0];
+      [window setFrameRate:1 / 100.0];
 //    glutMainLoop();
    }
-   return( [app terminate]);
+   return( [app run]);
 }
 
 

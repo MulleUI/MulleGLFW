@@ -20,7 +20,7 @@
  *   - Added a few comments
  *   - Enabled vsync
  */
-#define _GNU_SOURCE 
+#define _GNU_SOURCE
 
 #import "import.h"
 
@@ -322,47 +322,46 @@ int main(int argc, char *argv[])
 {
     GLFWwindow* window;
     int width, height;
-   GLFWWindow      *gWindow;
+   GLFWOSWindow      *gWindow;
    UIApplication   *app;
 
    app = [UIApplication sharedInstance];
 
    @autoreleasepool
    {
+      glfwWindowHint(GLFW_DEPTH_BITS, 16);
 
-    glfwWindowHint(GLFW_DEPTH_BITS, 16);
-
-    gWindow = [[[GLFWWindow alloc] initWithFrame:CGRectMake( 0.0, 0.0, 300.0, 300.0)
+      gWindow = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0.0, 0.0, 300.0, 300.0)
                                   titleUTF8String:"Demo"
-                                        styleMask:UIWindowStyleResizable|UIWindowStyleTransparent|UIWindowStyleUndecorated
+                                        styleMask:UIWindowStyleBare|UIWindowOpenGLDeprecated|UIWindowStyleResizable|UIWindowStyleTransparent
                                     graphicsHints:0] autorelease];
 
-    if (!gWindow)
-    {
+      if (!gWindow)
+      {
         fprintf( stderr, "Failed to open GLFW window\n" );
-        [app terminate];
-    }
-    [app addWindow:gWindow];
+        exit( 1); // [app terminate];
+      }
+//    [app addWindow:gWindow];
 
-    window = [gWindow os_window];
+      window = [gWindow os_window];
 
-    // Set callback functions
-    glfwSetFramebufferSizeCallback(window, reshape);
-    glfwSetKeyCallback(window, key);
+      // Set callback functions
+      glfwSetFramebufferSizeCallback(window, reshape);
+      glfwSetKeyCallback(window, key);
 
-    glfwMakeContextCurrent(window);
-    // gladLoadGL(glfwGetProcAddress);
-    glfwSwapInterval( 1 );
+      glfwMakeContextCurrent(window);
+      // gladLoadGL(glfwGetProcAddress);
+      glfwSwapInterval( 1 );
 
-    glfwGetFramebufferSize(window, &width, &height);
-    reshape(window, width, height);
+      glfwGetFramebufferSize(window, &width, &height);
+      reshape(window, width, height);
 
-    // Parse command-line options
-    init();
+      // Parse command-line options
+      init();
 
-    // Main loop
-    while( !glfwWindowShouldClose(window) )
-    {
+      // Main loop
+      while( !glfwWindowShouldClose(window) )
+      {
         // Draw gears
         draw();
 
@@ -372,8 +371,7 @@ int main(int argc, char *argv[])
         // Swap buffers
         glfwSwapBuffers(window);
         glfwPollEvents();
-    }
-
+      }
    }
    return( [app terminate]);
 }

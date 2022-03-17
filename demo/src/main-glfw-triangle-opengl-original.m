@@ -24,14 +24,10 @@
 //========================================================================
 //! [code]
 
-//#define GLAD_GL_IMPLEMENTATION
-//#include <glad/gl.h>
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
-
-#include "linmath.h"
-
-
+#ifdef HAVE_GLAD
+#define GLAD_GL_IMPLEMENTATION
+#include <glad/gl.h>
+#else
 // GLFW_INCLUDE_... keep undefined for OpenGL3
 // see: https://www.glfw.org/docs/latest/build_guide.html
 #define GL_GLEXT_PROTOTYPES
@@ -42,6 +38,14 @@
 # include <GL/gl.h>
 # include <GL/glext.h>
 #endif
+#endif
+
+
+
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
+
+#include "linmath.h"
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -102,6 +106,8 @@ int main(void)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    // (nat) need to add this for macOS
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
     GLFWwindow* window = glfwCreateWindow(640, 480, "OpenGL Triangle", NULL, NULL);
     if (!window)
@@ -113,7 +119,9 @@ int main(void)
     glfwSetKeyCallback(window, key_callback);
 
     glfwMakeContextCurrent(window);
+#ifdef HAVE_GLAD
     gladLoadGL(glfwGetProcAddress);
+#endif    
     glfwSwapInterval(1);
 
     // NOTE: OpenGL error checks have been omitted for brevity
