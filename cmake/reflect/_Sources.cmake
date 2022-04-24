@@ -11,6 +11,7 @@ endif()
 # contents selected with patternfile ??-source--sources
 #
 set( SOURCES
+src/GLFWOSScreen.m
 src/GLFWOSWindow+UIEvent.m
 src/GLFWOSWindow.m
 src/UIApplication+GLFW.m

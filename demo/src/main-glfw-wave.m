@@ -575,7 +575,7 @@ int main(int argc, char* argv[])
 //        }
 // moved to timer()
     // Initialize timer
-    timer = [[[NSTimer alloc] mulleInitWithTimeInterval:0.0
+    timer = [[[NSTimer alloc] mulleInitWithRelativeTimeInterval:0.0
                                          repeatInterval:MAX_DELTA_T / 10.0
                                                callback:timer_callback
                                                userInfo:nil] autorelease];
@@ -595,7 +595,7 @@ int main(int argc, char* argv[])
 //    glfwSwapInterval(1);
       [gWindow os_setSwapInterval:1];
 
-      [gWindow setRenderFrameCallback:display];
+      [gWindow setFrameCallback:display];
 
       framebufferSize = [gWindow os_framebufferSize];
       framebuffer_size_callback( [gWindow os_window], framebufferSize.width, framebufferSize.height);

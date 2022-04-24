@@ -53,6 +53,7 @@ src/include.h
 # contents selected with patternfile ??-header--public-headers
 #
 set( PUBLIC_HEADERS
+src/GLFWOSScreen.h
 src/GLFWOSWindow+UIEvent.h
 src/GLFWOSWindow.h
 src/MulleGLFW.h

@@ -63,7 +63,7 @@ int   main( int argc, char *argv[])
 
       [window setWindowEventsCallback:receiveWindowEvents];
       [window setOtherRetainedEventsCallback:otherRetainedEventsCallback];
-      [window setRenderFrameCallback:renderFrame];
+      [window setFrameCallback:renderFrame];
    }
    return( [app run]);
 }

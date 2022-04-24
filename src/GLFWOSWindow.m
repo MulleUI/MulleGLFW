@@ -200,7 +200,7 @@ static void   break_on_me( void)
       glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, minor);
    }
 
-  // remember what was opened first for retries
+   // remember what was opened first for retries
    switch( GLFWGraphicsHintsGetAPILibrary( hints))
    {
    case 0 : lib = GLFW_NATIVE_CONTEXT_API; break;
@@ -310,18 +310,18 @@ retry:
    if( ! CGPointEqualToPoint( frame.origin, CGPointZero))
       glfwSetWindowPos( _window, (int) frame.origin.x, (int) frame.origin.y);
 
-   _contextLock            = [NSLock new];
+   _contextLock                 = [NSLock new];
    glfwMakeContextCurrent( NULL); // turn off to be consistent with lock
 
    _mulle_atomic_pointer_nonatomic_write( &_needsRefresh, (void *) 1);
 
-   _styleMask                   = styleMask;
-   _mouseLocation               = CGPointMake( -1.0, -1.0);
-   _scrollWheelSensitivity      = 20.0;
    _frameCallback               = defaultFrameCallback;
-   _windowEventsCallback        = GLFWOSWindowEventDefaultCallback;
-   _otherRetainedEventsCallback = GLFWOSWindowRetainedEventDefaultCallback;
    _haveGraphicsContext         = glfwGetWindowAttrib( _window, GLFW_CLIENT_API) != GLFW_NO_API;
+   _mouseLocation               = CGPointMake( -1.0, -1.0);
+   _otherRetainedEventsCallback = GLFWOSWindowRetainedEventDefaultCallback;
+   _scrollWheelSensitivity      = 20.0;
+   _styleMask                   = styleMask;
+   _windowEventsCallback        = GLFWOSWindowEventDefaultCallback;
 
    assert( (api == GLFW_NO_API && ! _haveGraphicsContext) || _haveGraphicsContext);
 
@@ -334,7 +334,13 @@ retry:
 #endif
 
    // read values once, afterwards these values are just updated by events
+   // framerate by default
+   _windowInfo.frameRate = UIWindowFrameRateAsync;
+
    [self updateWindowInfo];
+
+   // init afterwards
+   _windowInfoLock = [NSLock new];
 
    return( self);
 }
@@ -384,6 +390,7 @@ retry:
 - (void) dealloc
 {
    [_contextLock release];
+   [_windowInfoLock release];
 
    [super dealloc];
 }
@@ -395,17 +402,94 @@ retry:
 }
 
 
-- (void) getWindowInfo:(struct CGWindowInfo *) info
+- (void) getOSWindowInfo:(struct UIOSWindowInfo *) info
 {
-   *info = _windowInfo;
+   [_windowInfoLock lock];
+   {
+      *info = _windowInfo;
+   }
+   [_windowInfoLock unlock];
 }
 
 
-- (void) updateWindowInfo
+
+
+- (BOOL) frameRateLimiter
 {
-   _windowInfo = CGWindowInfoSFMakeVector( [self os_windowFrame],
-                                           [self os_framebufferSize],
-                                           [self os_UIScale]);
+   BOOL   flag;
+
+   [_windowInfoLock lock];
+   {
+      flag = _windowInfo.frameRateLimiter;
+   }
+   [_windowInfoLock unlock];
+
+   return( flag);
+}
+
+
+- (void) setFrameRateLimiter:(BOOL) flag
+{
+   [_windowInfoLock lock];
+   {
+      _windowInfo.frameRateLimiter = flag;
+   }
+   [_windowInfoLock unlock];
+}
+
+
+- (mulle_relativetime_t) frameRate
+{
+   mulle_relativetime_t   frameRate;
+
+   [_windowInfoLock lock];
+   {
+      frameRate = _windowInfo.frameRate;
+   }
+   [_windowInfoLock unlock];
+
+   return( frameRate);
+}
+
+
+- (void) setFrameRate:(mulle_relativetime_t) frameRate
+{
+   [_windowInfoLock lock];
+   {
+      _windowInfo.frameRate = frameRate;
+   }
+   [_windowInfoLock unlock];
+}
+
+
+- (void) setFrameRateHz:(CGFloat) hz
+{
+   [self setFrameRate:hz <= 0.0 ? 0.0 : 1.0 / hz];
+}
+
+
+- (CGFloat) frameRateHz
+{
+   double   frameRate;
+
+   frameRate = [self frameRate];
+   if( frameRate <= 0.0f)
+      return( 0.0f);
+   if( isinf( frameRate)) // make positive infinity
+      return( INFINITY);
+   return( (CGFloat) (1.0 / frameRate));
+}
+
+
+- (id <UIScreen>) screen
+{
+   struct UIOSWindowInfo   info;
+
+   [self getOSWindowInfo:&info];
+
+   // should work for fullscreen as well I believe
+   return( [[UIApplication sharedInstance] screenForFrame:info.base.frame
+                                     primaryIfNoneMatches:NO]);
 }
 
 
@@ -416,36 +500,6 @@ retry:
       glfwDestroyWindow( _window);
       _window = NULL;
    }
-}
-
-
-- (double) os_primaryMonitorPPI
-{
-   GLFWmonitor   *monitor;
-   GLFWvidmode   *mode;
-   int           h;
-   double        ppi;
-
-   assert( [NSThread mulleIsMainThread]);
-
-   //
-   monitor = glfwGetPrimaryMonitor();
-   if( ! monitor)
-      return( 0.0);
-
-   h = 0; // for valgrind
-   glfwGetMonitorPhysicalSize( monitor, NULL, &h);
-   if( ! h)
-       return( 0.0);
-
-   mode = (GLFWvidmode *) glfwGetVideoMode( monitor);
-   if( ! mode)
-       return( 0.0);
-
-   // need to convert h in mm to inches
-   // https://en.wikipedia.org/wiki/Inch
-   ppi = mode->height / (h * (1.0 / 25.4));
-   return( ppi);
 }
 
 
@@ -627,24 +681,6 @@ static struct
 }
 
 
-- (double) os_primaryMonitorRefreshRate
-{
-   GLFWmonitor   *monitor;
-   GLFWvidmode   *mode;
-
-   assert( [NSThread mulleIsMainThread]);
-
-   // glfw code doesn't look slow
-   monitor = glfwGetPrimaryMonitor();
-   if( ! monitor)
-      return( 0.0);
-   mode = (GLFWvidmode *) glfwGetVideoMode( monitor);
-   if( ! mode || mode->refreshRate == 0.0)
-      return( 0.0);
-   return( 1.0 / mode->refreshRate);
-}
-
-
 - (void) os_requestClose
 {
    // can be called from any thread
@@ -773,6 +809,7 @@ static struct
    return( CGBitmapSizeMake( w, h));
 }
 
+
 - (CGVector) os_UIScale
 {
    float xscale, yscale;
@@ -804,40 +841,6 @@ static struct
 }
 
 
-- (double) os_monitorRefreshRate
-{
-   GLFWmonitor   *monitor;
-   GLFWvidmode   *mode;
-   double        refreshFrequency;
-
-   refreshFrequency = 60.0;
-   monitor          = glfwGetWindowMonitor( _window);
-   if( ! monitor)
-      monitor = glfwGetPrimaryMonitor();
-
-   if( monitor)
-   {
-      mode = (GLFWvidmode *) glfwGetVideoMode( monitor);
-      if( mode && mode->refreshRate > 0.0)
-         refreshFrequency = mode->refreshRate;
-   }
-   return( 1 / refreshFrequency);
-}
-
-- (double) fastestFrameRate
-{
-   if( _frameRate == UIWindowFrameRateSynced)
-      return( [self os_monitorRefreshRate]);
-   return( _frameRate);
-}
-
-
-- (void) setFrameRateHz:(CGFloat) hz
-{
-   [self setFrameRate:hz == 0.0 ? 0.0 : 1.0 / hz];
-}
-
-
 //
 // This flag is set by the OS (or the window thread) to indicate that
 // either the most current offscreen buffer should be now copied to the
@@ -861,7 +864,7 @@ static struct
 {
    mulle_relativetime_t   diff;
    mulle_relativetime_t   left;
-   double                 frameRate;
+   mulle_relativetime_t   frameRate;
 
    assert( [NSThread mulleIsMainThread]);
 
@@ -905,12 +908,6 @@ static struct
 }
 
 
-- (mulle_relativetime_t) os_getAbsoluteTime
-{
-   return( mulle_absolutetime_now());
-}
-
-
 - (void) setWindowEventsCallback:(GLFWOSWindowEventCallback_t) callback
 {
    _windowEventsCallback = callback;
@@ -932,6 +929,7 @@ static struct
    // GLFWOS windows handles events immediately
    // with the above callbacks
 }
+
 
 - (void) writeOSWindowPropertyChangesIfNeeded
 {

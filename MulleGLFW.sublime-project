@@ -26,10 +26,10 @@
 				"stash",
 				"var"
 			],
-			"path": "."
+			"path": ".",
 		},
 		{
-			"path": "/Volumes/Source/srcO/MulleUI/MulleUIBase"
-		}
-	]
+			"path": "/home/src/srcO/MulleUI/MulleUIApplication"
+		},
+	],
 }

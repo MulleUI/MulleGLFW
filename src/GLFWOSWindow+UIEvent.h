@@ -20,4 +20,7 @@
 - (void) os_initWindowEvents;
 - (void) os_initInputEvents;
 
+- (void) updateWindowInfo;
+
 @end
+

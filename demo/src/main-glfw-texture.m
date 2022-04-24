@@ -218,8 +218,7 @@ static void   receiveWindowEvents( GLFWOSWindow *window, UIWindowEvent *event)
       reshape( size.width, size.height);
    }
 
-   [window displayFrameIfNeeded:mulle_absolutetime_now()
-               nextCallSchedule:INFINITY];
+   [window displayFrameIfNeeded:mulle_absolutetime_now()];
 }
 
 
@@ -249,10 +248,10 @@ int   main( int argc, char *argv[])
 
       [window setWindowEventsCallback:receiveWindowEvents];
 //    glutReshapeFunc(reshape);
-      timer = [[[NSTimer alloc] mulleInitWithTimeInterval:0.0 
-                                           repeatInterval:delay/1000.0
-                                                 callback:timerCallback 
-                                                 userInfo:window] autorelease];
+      timer = [[[NSTimer alloc] mulleInitWithRelativeTimeInterval:0.0 
+                                                   repeatInterval:delay/1000.0
+                                                         callback:timerCallback 
+                                                         userInfo:window] autorelease];
       [app addTimer:timer];                                                 
 //    glutTimerFunc(delay, timer, 0);
 
@@ -262,7 +261,7 @@ int   main( int argc, char *argv[])
 
       [window os_deactivateGraphicsContext];
 
-      [window setRenderFrameCallback:display];
+      [window setFrameCallback:display];
 //    glutDisplayFunc(display);
 
       [window setFrameRate:1 / 100.0];

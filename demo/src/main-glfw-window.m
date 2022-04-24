@@ -26,6 +26,26 @@ static void   frameCallback( GLFWOSWindow *window)
 }
 
 
+static void   windowMoveCallback( GLFWwindow* window, int xpos, int ypos)
+{
+   GLFWOSWindow   *self;
+
+   self = glfwGetWindowUserPointer( window);
+   mulle_fprintf( stderr, " %s : %@ %d %d\n",
+         __PRETTY_FUNCTION__, self, xpos, ypos);
+}
+
+
+static void   windowResizeCallback( GLFWwindow* window, int width, int height)
+{
+   GLFWOSWindow   *self;
+
+   self = glfwGetWindowUserPointer( window);
+   mulle_fprintf( stderr, " %s : %@ %d %d\n",
+         __PRETTY_FUNCTION__, self, width, height);
+}
+
+
 static void   usage( char *argv0)
 {
    char   *s;
@@ -46,12 +66,38 @@ static void   usage( char *argv0)
 
 int   main( int argc, char *argv[])
 {
-   GLFWOSWindow    *window;
-   UIApplication   *app;
-   double          frameRate;
-   int             i;
+   mulle_relativetime_t  frameRate;
+   UIApplication         *app;
+   id <UIScreen>         screen;
+   NSUInteger            i;
+   struct UIScreenInfo   info;
+   GLFWOSWindow          *window;
 
    app = [UIApplication sharedInstance];
+
+   for( i = 0; screen = [app screenAtIndex:i]; i++)
+   {
+      [screen getScreenInfo:&info];
+
+      printf( "#%td\n", i);
+      printf( "\tname         : \"%s\"\n",   [screen nameUTF8String]);
+      printf( "\trefreshRate  : %.6fs\n",    info.refreshRate);
+      printf( "\tframe        : %td %td %td %td\n", info.frame.origin.x,
+                                                    info.frame.origin.y,
+                                                    info.frame.size.width,
+                                                    info.frame.size.height);
+      printf( "\tcanvas       : %td %td %td %td\n", info.canvas.origin.x,
+                                                    info.canvas.origin.y,
+                                                    info.canvas.size.width,
+                                                    info.canvas.size.height);
+      printf( "\tcontentScale : %.3f %.3f\n",       info.contentScale.dx, info.contentScale.dy);
+      printf( "\tphysicalSize : %.3f m %.3f m\n",   info.physicalSize.width, info.physicalSize.height);
+      printf( "\tred          : %d bit\n",          info.colorBits[ 0]);
+      printf( "\tgreen        : %d bit\n",          info.colorBits[ 1]);
+      printf( "\tblue         : %d bit\n",          info.colorBits[ 2]);
+      printf( "\talpha        : %d bit\n",          info.colorBits[ 3]);
+   }
+
 
    frameRate = UIWindowFrameRateAsync;
 
@@ -59,17 +105,17 @@ int   main( int argc, char *argv[])
    {
       if( ! strcmp( argv[ i], "--async"))
       {
-         frameRate  = UIWindowFrameRateAsync;
+         frameRate = UIWindowFrameRateAsync;
          continue;
       }
       if( ! strcmp( argv[ i], "--synced"))
       {
-         frameRate  = UIWindowFrameRateSynced;
+         frameRate = UIWindowFrameRateSynced;
          continue;
       }
       if( ! strcmp( argv[ i], "--unsynced"))
       {
-         frameRate  = UIWindowFrameRateUnsynced;
+         frameRate = UIWindowFrameRateUnsynced;
          continue;
       }
 
@@ -88,6 +134,9 @@ int   main( int argc, char *argv[])
       assert( window);
       [window setFrameRate:frameRate];
       [window setFrameCallback:frameCallback];
+      glfwSetWindowSizeCallback( [window os_window], windowResizeCallback);
+      glfwSetWindowPosCallback( [window os_window], windowMoveCallback);
+
       [app addWindow:window];
    }
    return( [app run]);

@@ -368,7 +368,7 @@ int   main( int argc, char *argv[])
       }
       [gWindow os_deactivateGraphicsContext];
 
-      [gWindow setRenderFrameCallback:display];
+      [gWindow setFrameCallback:display];
 
       // as we have set os_setSwapInterval to 1, we are tied to the sync
       // so the Hz here don't really matter.

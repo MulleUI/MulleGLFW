@@ -147,7 +147,10 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 // -[UIApplication terminate], otherwise the context is gone and finalization
 // may not be able to finish.
 //
-@interface GLFWOSWindow : NSObject < UIWindow>
+// In most cases the methods of this class can only be called from the
+// main thread
+//
+@interface GLFWOSWindow : NSObject < UIWindow, UIOSWindow>
 {
    void                     *_window;   // GLFWwindow handle
 
@@ -162,9 +165,12 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 
    mulle_absolutetime_t     _lastSwapBuffersTimestamp;
    mulle_atomic_pointer_t   _needsRefresh;
-   struct CGWindowInfo      _windowInfo;
+
+   NSLock                   *_windowInfoLock;
+   struct UIOSWindowInfo      _windowInfo;
 }
 
+// NONE OF THESE PROPERTIES are thread safe, except those which are readonly
 
 // window events are called via -handleEvent:
 // event is autoreleased
@@ -192,7 +198,7 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 @property( assign, getter=isScrollWheelNatural) BOOL   scrollWheelNatural;
 
 @property( assign, readonly) NSUInteger                styleMask;
-@property( assign) double                              frameRate;
+@property( assign) mulle_relativetime_t                frameRate;
 @property( assign, readonly) BOOL                      haveGraphicsContext;
 @property( assign) id <UIWindow>                       parentWindow;
 
@@ -239,18 +245,30 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 // these values get updated by the OS events, they are
 // more up to date than os_windowFrame, during resize
 //
-- (void) getWindowInfo:(struct CGWindowInfo *) info;
+// This method can be called from any thread
+//
+- (void) getOSWindowInfo:(struct UIOSWindowInfo *) info;
 
+//
+// screen the windows is on (either fully or for the most part)
+// if the window has been moved outside of any screens, this may return nil
+// This method can be called from any thread
+//
+- (id <UIScreen>) screen;
 
+// The shareID never changes for a Window
+// This method can be called from any thread
+//
 - (NSInteger) shareId;
 
-// all defined in the protocol already
-
-- (double) os_primaryMonitorPPI;
-- (double) os_primaryMonitorRefreshRate;
-- (double) os_monitorRefreshRate;
+// This method can be called from any thread
+- (BOOL) shouldClose;
 
 
+//
+// All defined in the protocol already
+// All must be called from the mainThread unless specifically noted
+//
 - (void) os_destroyWindow;
 
 - (void *) os_window;         // GLFW window, use this for glfw functions
@@ -266,16 +284,19 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 
 - (struct CGBitmapSize) os_framebufferSize;
 
+- (CGVector) os_UIScale;
+
 // bind GL context of the window to the current thread
 // synonymous with activate
 - (void) os_activateGraphicsContext;
 - (void) os_deactivateGraphicsContext;
 - (void) os_swapBuffers;
 
+// This method can be called from any thread
 - (void) os_requestClose;
-- (BOOL) os_windowShouldClose;
 
-- (BOOL) shouldClose;
+// This method can be called from any thread
+- (BOOL) os_windowShouldClose;
 
 - (void) os_show;
 - (void) os_hide;
@@ -288,7 +309,7 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 
 
 //
-// OS Pasteboard
+// OS Pasteboard (Might need to be moved to UIApplication)
 // prefix with os ?
 - (char *) pasteboardCString;
 - (void) setPasteboardCString:(char *) s;
@@ -299,9 +320,6 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 // been reached
 //
 - (mulle_relativetime_t) displayFrameIfNeeded:(mulle_absolutetime_t) now;
-
-// CLOCK_MONOTONIC
-- (mulle_absolutetime_t) os_getAbsoluteTime;
 
 @end
 
