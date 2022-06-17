@@ -245,8 +245,8 @@ static void   timer_callback( NSTimer *timer, id userInfo)
    // Safety - iterate if dt_total is too large
    while( dt_total > 0.f)
    {
-      printf( "%s %g\n", __FUNCTION__, dt_total);
-      fflush( stdout);
+      // printf( "%s %g\n", __FUNCTION__, dt_total);
+      // fflush( stdout);
 
          // Select iteration time step
       dt = dt_total > MAX_DELTA_T ? MAX_DELTA_T : dt_total;
@@ -579,8 +579,9 @@ int main(int argc, char* argv[])
                                          repeatInterval:MAX_DELTA_T / 10.0
                                                callback:timer_callback
                                                userInfo:nil] autorelease];
-    [app addTimer:timer];
-//
+      [app addTimer:timer
+   forTimerReceiver:app];
+ //
 //        // Compute height of each vertex
 //        adjust_grid();
 //
@@ -604,7 +605,7 @@ int main(int argc, char* argv[])
       init_opengl();
     }
     [gWindow os_deactivateGraphicsContext];
-
+    [gWindow setFrameRateHz:60.0];
 
 //    }
 //    glfwTerminate();

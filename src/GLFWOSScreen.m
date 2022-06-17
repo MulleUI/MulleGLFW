@@ -100,6 +100,7 @@
       _info.canvas        = CGBitmapRectGetRect( [self os_canvas]);
       _info.contentScale  = [self os_contentScale];
       _info.physicalSize  = [self os_physicalSize];
+      _info.dpi           = [self os_dpi];
       _info.colorBits[ 0] = mode->redBits;
       _info.colorBits[ 1] = mode->greenBits;
       _info.colorBits[ 2] = mode->blueBits;
@@ -218,6 +219,27 @@
 
    glfwGetMonitorContentScale( _monitor, &xscale, &yscale);
    return( CGVectorMake( xscale, yscale));
+}
+
+
+- (CGFloat) os_dpi
+{
+   int          w, h;
+   CGFloat      hdpi, vdpi;
+   GLFWvidmode  *mode;
+
+   assert( [NSThread mulleIsMainThread]);
+   assert( _monitor);
+
+   mode = (GLFWvidmode *) glfwGetVideoMode( _monitor);
+   if( ! mode)
+      return( 72.0);
+
+   glfwGetMonitorPhysicalSize( _monitor, &w, &h);
+
+   hdpi = mode->width / w / 2.54;
+   vdpi = mode->height / h / 2.54;
+   return( hdpi < vdpi ? hdpi : vdpi);
 }
 
 

@@ -335,7 +335,7 @@ int   main( int argc, char *argv[])
    {
       /*
        * It's tricky to get the flags right, so that macOS doesn't complain.
-       * UIWindowOpenGLCoreProfile|UIWindowOpenGLForwardCompatible is needed.
+       * UIWindowOpenGLCoreProfile|UIWindowOpenGLForward is needed.
        * Which has GL 4.1.0 core forward (native) or GL2 for deprecated.
        */
       styleMask = UIWindowStyleResizable
@@ -343,7 +343,7 @@ int   main( int argc, char *argv[])
 
       if( argc == 1)
         styleMask |= UIWindowOpenGLCoreProfile
-                  |  UIWindowOpenGLForwardCompatible
+                  |  UIWindowOpenGLForward
                   ;
 
       gWindow = [GLFWOSWindow windowWithFrame:CGRectMake( 0, 0, 640, 480)

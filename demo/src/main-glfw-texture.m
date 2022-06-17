@@ -252,8 +252,9 @@ int   main( int argc, char *argv[])
                                                    repeatInterval:delay/1000.0
                                                          callback:timerCallback 
                                                          userInfo:window] autorelease];
-      [app addTimer:timer];                                                 
-//    glutTimerFunc(delay, timer, 0);
+      [app addTimer:timer
+   forTimerReceiver:app];   
+      //    glutTimerFunc(delay, timer, 0);
 
       [window os_activateGraphicsContext];
 

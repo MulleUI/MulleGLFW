@@ -5,9 +5,10 @@
 
 #import "import-private.h"
 
+#define CALLBACK_DEBUG
+#define MODIFIER_DEBUG
 
-// #define CALLBACK_DEBUG
-
+//#define MOUSE_MOTION_CALLBACK_DEBUG  // enable and turn CALLBACK_DEBUG on
 
 @interface GLFWOSWindow( UIEventFuture)
 
@@ -123,8 +124,6 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
 }
 
 
-// this is not called rarely, probably only during -init
-// The window information is updated during
 - (void) updateWindowInfo
 {
    struct CGWindowInfo     info;
@@ -355,21 +354,52 @@ static void   mouseScrollCallback( GLFWwindow *window,
                action:(int) action
             modifiers:(int) mods
 {
-   UIEvent   *event;
-
+   UIEvent      *event;
 #ifdef CALLBACK_DEBUG
    MulleUILogThisMethod();
 #endif
 
-   self->_modifiers = mods;
+//   //
+//   // modifier bits are not set yet properly, but we want them
+//   // for scrollEvents for example
+//   //
+//   if( action == GLFW_PRESS)
+//   {
+//      switch( key)
+//      {
+//      case GLFW_KEY_LEFT_SHIFT    :
+//      case GLFW_KEY_RIGHT_SHIFT   :
+//         self->_modifiers |= GLFW_MOD_SHIFT;
+//         break;
+//      case GLFW_KEY_LEFT_CONTROL  :
+//      case GLFW_KEY_RIGHT_CONTROL :
+//         self->_modifiers |= GLFW_MOD_CONTROL;
+//         break;
+//      case GLFW_KEY_LEFT_ALT      :
+//      case GLFW_KEY_RIGHT_ALT     :
+//         self->_modifiers |= GLFW_MOD_ALT;
+//         break;
+//      case GLFW_KEY_LEFT_SUPER    :
+//      case GLFW_KEY_RIGHT_SUPER   :
+//         self->_modifiers |= GLFW_MOD_SUPER;
+//         break;
+//      }
+//   }
+//   else
+     self->_modifiers = mods;
+
+#ifdef MODIFIER_DEBUG
+   MulleUILog( "modifiers=0x%tx", self->_modifiers);
+#endif
+
    if( self->_discardEventsMask & UIEventTypePresses)
       return;
 
-   event = [[UIKeyboardEvent alloc] initWithMouseLocation:self->_mouseLocation
-                                                modifiers:mods
-                                                      key:key
-                                                 scanCode:scancode
-                                                   action:action];
+   event = [[UIKeyboardEvent alloc] initWithLocationInWindow:self->_mouseLocation
+                                                   modifiers:mods
+                                                         key:key
+                                                    scanCode:scancode
+                                                      action:action];
   _otherRetainedEventsCallback( self, event);
 }
 
@@ -385,9 +415,9 @@ static void   mouseScrollCallback( GLFWwindow *window,
    if( self->_discardEventsMask & UIEventTypeUnicode)
       return;
 
-   event = [[UIUnicodeEvent alloc] initWithMouseLocation:self->_mouseLocation
-                                               modifiers:self->_modifiers
-                                               character:codepoint];
+   event = [[UIUnicodeEvent alloc] initWithLocationInWindow:self->_mouseLocation
+                                                  modifiers:self->_modifiers
+                                                  character:codepoint];
   _otherRetainedEventsCallback( self, event);
 }
 
@@ -399,23 +429,27 @@ static void   mouseScrollCallback( GLFWwindow *window,
    UIEvent    *event;
    uint64_t   bit;
 
-#if defined( CALLBACK_DEBUG) || defined( MOUSE_BUTTON_CALLBACK_DEBUG)
+#if defined( CALLBACK_DEBUG)
    MulleUILogThisMethod();
 #endif
+
+#ifdef MODIFIER_DEBUG
+   MulleUILog( "modifiers=0x%tx", mods);
+#endif
+   self->_modifiers = mods;
 
    bit = 1LL << button;
    self->_mouseButtonStates &= ~bit;
    if( action == GLFW_PRESS)
       self->_mouseButtonStates |= bit;
-   self->_modifiers = mods;
 
    if( self->_discardEventsMask & UIEventTypeTouches)
       return;
 
-   event = [[UIMouseButtonEvent alloc] initWithMouseLocation:self->_mouseLocation
-                                                   modifiers:mods
-                                                      button:button
-                                                      action:action];
+   event = [[UIMouseButtonEvent alloc] initWithLocationInWindow:self->_mouseLocation
+                                                      modifiers:mods
+                                                         button:button
+                                                         action:action];
   _otherRetainedEventsCallback( self, event);
 
    // [self dump];
@@ -427,8 +461,8 @@ static void   mouseScrollCallback( GLFWwindow *window,
    UIEvent    *event;
    CGRect     frame;
 
-#if defined( CALLBACK_DEBUG) || defined( MOUSE_MOTION_CALLBACK_DEBUG)
-   fprintf( stderr, "%s %@ (%.1f, %.1f)\n", __PRETTY_FUNCTION__, self, pos.x, pos.y);
+#if defined( CALLBACK_DEBUG) && defined( MOUSE_MOTION_CALLBACK_DEBUG)
+   mulle_fprintf( stderr, "%s %@ (%.1f, %.1f)\n", __PRETTY_FUNCTION__, self, pos.x, pos.y);
 #endif
 
    //
@@ -447,16 +481,19 @@ static void   mouseScrollCallback( GLFWwindow *window,
    //
    // we get not events for the window title bar
    // TODO: we might need to scale the values for DPI or ?
-	self->_mouseLocation.x = pos.x;
-	self->_mouseLocation.y = pos.y;
+   self->_mouseLocation.x = pos.x;
+   self->_mouseLocation.y = pos.y;
 
    // TODO: wrap in autorelease pool ?
    //       + event don't leak if someone throws
    //       - latency
-   event = [[UIMouseMotionEvent alloc] initWithMouseLocation:self->_mouseLocation
-                                                   modifiers:self->_modifiers
-                                                buttonStates:self->_mouseButtonStates];
-  _otherRetainedEventsCallback( self, event);
+
+   // TODO: mouseButtonStates need to be reset when the mouse leaves the
+   //       window, but isn't
+   event = [[UIMouseMotionEvent alloc] initWithLocationInWindow:self->_mouseLocation
+                                                      modifiers:self->_modifiers
+                                                   buttonStates:self->_mouseButtonStates];
+   _otherRetainedEventsCallback( self, event);
 }
 
 
@@ -471,7 +508,7 @@ static void   mouseScrollCallback( GLFWwindow *window,
    MulleUILogThisMethod();
 #endif
 
-   if( self->_discardEventsMask)
+   if( self->_discardEventsMask & UIEventTypeScroll)
       return;
 
    sensitivity = [self scrollWheelSensitivity];
@@ -486,10 +523,10 @@ static void   mouseScrollCallback( GLFWwindow *window,
    else
       scrollOffset = CGPointMake( -offset.x, -offset.y);
 
-   event = [[UIMouseScrollEvent alloc] initWithMouseLocation:self->_mouseLocation
-                                                   modifiers:self->_modifiers
-                                                scrollOffset:scrollOffset];
-  _otherRetainedEventsCallback( self, event);
+   event = [[UIMouseScrollEvent alloc] initWithLocationInWindow:self->_mouseLocation
+                                                      modifiers:self->_modifiers
+                                                   scrollOffset:scrollOffset];
+   _otherRetainedEventsCallback( self, event);
 }
 
 @end

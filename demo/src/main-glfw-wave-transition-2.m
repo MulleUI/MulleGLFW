@@ -461,38 +461,38 @@ static void   receiveOtherEvents( GLFWOSWindow *window, UIEvent *event)
 
 static void   frameCallback( GLFWOSWindow *gWindow)
 {
-//    mulle_relativetime_t t, dt_total;
-//    static mulle_relativetime_t t_old;
+    mulle_relativetime_t t, dt_total;
+    static mulle_relativetime_t t_old;
     GLFWwindow* window;
-//    mulle_relativetime_t  now;
-//
+    mulle_relativetime_t  now;
+
     window = [gWindow os_window];
-//
-//    now = mulle_absolutetime_now();
-//    if( ! t_old)
-//        t_old = now - 0.1;
-//
-//    t        = now;
-//    dt_total = t - t_old;
-//    t_old    = t;
-//
-//
-//    printf( "%s %.3g %.3g\n", __FUNCTION__, t, dt_total);
-//    fflush( stdout);
-//
-//    // Safety - iterate if dt_total is too large
-//    while (dt_total > 0.f)
-//    {
-//        // Select iteration time step
-//        dt = dt_total > MAX_DELTA_T ? MAX_DELTA_T : dt_total;
-//        dt_total -= dt;
-//
-//        // Calculate wave propagation
-//        calc_grid();
-//    }
-//
-//    // Compute height of each vertex
-//    adjust_grid();
+
+    now = mulle_absolutetime_now();
+    if( ! t_old)
+        t_old = now - 0.1;
+
+    t        = now;
+    dt_total = t - t_old;
+    t_old    = t;
+
+
+    printf( "%s %.3g %.3g\n", __FUNCTION__, t, dt_total);
+    fflush( stdout);
+
+    // Safety - iterate if dt_total is too large
+    while (dt_total > 0.f)
+    {
+        // Select iteration time step
+        dt = dt_total > MAX_DELTA_T ? MAX_DELTA_T : dt_total;
+        dt_total -= dt;
+
+        // Calculate wave propagation
+        calc_grid();
+    }
+
+    // Compute height of each vertex
+    adjust_grid();
 
     // Draw wave grid to OpenGL display
     draw_scene(window);

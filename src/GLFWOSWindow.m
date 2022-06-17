@@ -89,7 +89,36 @@ static void   break_on_me( void)
 #endif
 
 
+static enum UIGraphicsBackend  getWindowBackend( GLFWwindow *window)
+{
+   int   api;
+   int   forward;
+   int   major;
+   int   minor;
+
+   api = glfwGetWindowAttrib( window, GLFW_CLIENT_API);
+   if( api != GLFW_NO_API)
+   {
+      major    = glfwGetWindowAttrib( window, GLFW_CONTEXT_VERSION_MAJOR);
+      minor    = glfwGetWindowAttrib( window, GLFW_CONTEXT_VERSION_MINOR);
+      forward  = glfwGetWindowAttrib( window, GLFW_OPENGL_FORWARD_COMPAT);
+
+      if( api == GLFW_OPENGL_ES_API)
+         return( major >= 3 ? UIGraphicsBackendGLES3 : UIGraphicsBackendGLES2);
+
+      if( (major == 3 && minor >= 2) || major > 3)
+         return( forward ? UIGraphicsBackendGL3_2Forward : UIGraphicsBackendGL3_2);
+      return( forward ? UIGraphicsBackendGL3Forward : UIGraphicsBackendGL3);
+   }
+   return( UIGraphicsBackendNone);
+}
+
+
 // hope for fractional positioning in future ?
+//
+// gdb:
+// b initWithFrame:titleUTF8String:styleMask:graphicsHints:sharingWindow:
+//
 - (instancetype) initWithFrame:(CGRect) frame
                titleUTF8String:(char *) title
                      styleMask:(NSUInteger) styleMask
@@ -120,6 +149,28 @@ static void   break_on_me( void)
    if( ! styleMask)
       styleMask = GLFWOSWindowStyleMaskDefault;
 
+   /*
+    * Window Styling Hints
+    */
+   glfwWindowHint( GLFW_DOUBLEBUFFER, (styleMask & UIWindowStyleSingleBuffer) ? GLFW_FALSE : GLFW_TRUE);
+   glfwWindowHint( GLFW_TRANSPARENT_FRAMEBUFFER, (styleMask & UIWindowStyleTransparent) ? GLFW_TRUE : GLFW_FALSE);
+
+   // https://www.glfw.org/docs/3.4/window_guide.html#GLFW_RESIZABLE_hint
+   glfwWindowHint( GLFW_RESIZABLE, (styleMask & UIWindowStyleResizable) ? GLFW_TRUE : GLFW_FALSE);
+// always create invisible and then turn it on later
+   glfwWindowHint( GLFW_VISIBLE, GLFW_FALSE);
+   glfwWindowHint( GLFW_FLOATING,  (styleMask & UIWindowStyleFloating)  ? GLFW_TRUE : GLFW_FALSE);
+   glfwWindowHint( GLFW_DECORATED, (styleMask & UIWindowStyleBare) ? GLFW_FALSE : GLFW_TRUE);
+
+   // https://www.glfw.org/docs/3.4/window_guide.html#GLFW_CLIENT_API_hint
+#ifdef DEBUG
+   glfwWindowHint( GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+#endif
+
+   /*
+    * OpenGL Context Hints
+    */
+
    api     = -1;
    profile = -1;
    forward = -1;
@@ -131,37 +182,31 @@ static void   break_on_me( void)
 //
 // These function can only be called from main thread (see above)
 //
+// GLFW_OPENGL_FORWARD_COMPAT specifies whether the OpenGL context has
+// deprecated functionality removed.
+// GLFW_OPENGL_CORE_PROFILE is a subset of OpenGL similiar to OpenGLES
+//
    if( styleMask & UIWindowOpenGLDeprecated)
    {
       hints = GLFWGraphicsHintsBySettingAPI( hints, 3);     // setOpenGL
       hints = GLFWGraphicsHintsBySettingProfile( hints, 0); // no core profile (guess)
       hints = GLFWGraphicsHintsBySettingForward( hints, 0); // no forward
 
-      assert( ! (styleMask & UIWindowOpenGLForwardCompatible));
-      assert( ! (styleMask & (UIWindowOpenGLCoreProfile|UIWindowOpenGLCompatProfile)));
+      assert( ! (styleMask & UIWindowOpenGLForward));
+      assert( ! (styleMask & UIWindowOpenGLCoreProfile)) ;
    }
 
-   profile = styleMask & (UIWindowOpenGLCoreProfile|UIWindowOpenGLCompatProfile);
-   if( profile)
-      hints = GLFWGraphicsHintsBySettingProfile( hints, (profile >> UIWindowOpenGLProfileShift) & 0x3);
-   forward = styleMask & UIWindowOpenGLForwardCompatible;
+   major = GLFWGraphicsHintsGetMajor( hints);
+   if( major)
+   {
+      glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, major);
+      minor = GLFWGraphicsHintsGetMinor( hints);
+      glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, minor);
+   }
+
+   forward = styleMask & UIWindowOpenGLForward;
    if( forward)
       hints = GLFWGraphicsHintsBySettingForward( hints, 1);
-
- 	glfwWindowHint( GLFW_DOUBLEBUFFER, (styleMask & UIWindowStyleSingleBuffer) ? GLFW_FALSE : GLFW_TRUE);
-	glfwWindowHint( GLFW_TRANSPARENT_FRAMEBUFFER, (styleMask & UIWindowStyleTransparent) ? GLFW_TRUE : GLFW_FALSE);
-
-   // https://www.glfw.org/docs/3.4/window_guide.html#GLFW_RESIZABLE_hint
-   glfwWindowHint( GLFW_RESIZABLE, (styleMask & UIWindowStyleResizable) ? GLFW_TRUE : GLFW_FALSE);
-// always create invisible and then turn it on later
-	glfwWindowHint( GLFW_VISIBLE, GLFW_FALSE);
-	glfwWindowHint( GLFW_FLOATING,  (styleMask & UIWindowStyleFloating)  ? GLFW_TRUE : GLFW_FALSE);
-	glfwWindowHint( GLFW_DECORATED, (styleMask & UIWindowStyleBare) ? GLFW_FALSE : GLFW_TRUE);
-
-   // https://www.glfw.org/docs/3.4/window_guide.html#GLFW_CLIENT_API_hint
-#ifdef DEBUG
-   glfwWindowHint( GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-#endif
 
    // not super sure about this, but lets try to avoid "old" OpenGL
    // calls. alas, we are doing OpenGLES 2.0 minimum, so I don't know
@@ -175,6 +220,15 @@ static void   break_on_me( void)
    }
    if( api != -1)
       glfwWindowHint( GLFW_CLIENT_API, api);
+
+   // For OpenGL 3+ there is no "gimme" what you got, we demand :)
+   if( (major > 3 || (major == 3 && minor >= 2)) && api == GLFW_OPENGL_API)
+   {
+      if( styleMask & UIWindowOpenGLCoreProfile)
+         hints = GLFWGraphicsHintsBySettingProfile( hints, 1);
+      else
+         hints = GLFWGraphicsHintsBySettingProfile( hints, 2);
+   }
 
    switch( GLFWGraphicsHintsGetProfile( hints))
    {
@@ -191,14 +245,6 @@ static void   break_on_me( void)
    // https://www.glfw.org/docs/3.3/window_guide.html#GLFW_OPENGL_FORWARD_COMPAT_hint
    if( GLFWGraphicsHintsGetForward( hints))
       glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);  // why not ?
-
-   major = GLFWGraphicsHintsGetMajor( hints);
-   if( major)
-   {
-      glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, major);
-      minor = GLFWGraphicsHintsGetMinor( hints);
-      glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, minor);
-   }
 
    // remember what was opened first for retries
    switch( GLFWGraphicsHintsGetAPILibrary( hints))
@@ -315,6 +361,7 @@ retry:
 
    _mulle_atomic_pointer_nonatomic_write( &_needsRefresh, (void *) 1);
 
+   _backend                     = getWindowBackend( (GLFWwindow *) _window);
    _frameCallback               = defaultFrameCallback;
    _haveGraphicsContext         = glfwGetWindowAttrib( _window, GLFW_CLIENT_API) != GLFW_NO_API;
    _mouseLocation               = CGPointMake( -1.0, -1.0);
@@ -396,6 +443,12 @@ retry:
 }
 
 
+- (id <UIOSWindow>) OSWindow
+{
+   return( self);
+}
+
+
 - (NSInteger) shareId
 {
    return( _sharingWindow ? [_sharingWindow shareId] : _shareId);
@@ -410,8 +463,6 @@ retry:
    }
    [_windowInfoLock unlock];
 }
-
-
 
 
 - (BOOL) frameRateLimiter
@@ -481,7 +532,7 @@ retry:
 }
 
 
-- (id <UIScreen>) screen
+- (id <UIScreen>) screenOrPrimaryScreen:(BOOL) flag
 {
    struct UIOSWindowInfo   info;
 
@@ -489,7 +540,13 @@ retry:
 
    // should work for fullscreen as well I believe
    return( [[UIApplication sharedInstance] screenForFrame:info.base.frame
-                                     primaryIfNoneMatches:NO]);
+                                     primaryIfNoneMatches:flag]);
+}
+
+
+- (id <UIScreen>) screen
+{
+   return( [self screenOrPrimaryScreen:NO]);
 }
 
 
@@ -518,6 +575,21 @@ retry:
    [_contextLock lock];
    if( _haveGraphicsContext)
       glfwMakeContextCurrent( _window);
+}
+
+
+// maybe a recursive lock would be better.
+- (BOOL) os_tryActivateGraphicsContext;
+{
+   // can be called from any thread
+   assert( _window);
+
+   if( ! [_contextLock tryLock])
+      return( NO);
+
+   if( _haveGraphicsContext)
+      glfwMakeContextCurrent( _window);
+   return( YES);
 }
 
 
@@ -572,8 +644,8 @@ static char  *context_profile_utf8string( int value)
    switch( value)
    {
    case GLFW_OPENGL_ANY_PROFILE    : return( "");
-   case GLFW_OPENGL_CORE_PROFILE   : return( "core");
-   case GLFW_OPENGL_COMPAT_PROFILE : return( "compat");
+   case GLFW_OPENGL_CORE_PROFILE   : return( "Core API");
+   case GLFW_OPENGL_COMPAT_PROFILE : return( "Complete API");
    default                         : return( "?");
    }
 }
@@ -669,7 +741,11 @@ static struct
    assert( _window);
 
    if( _haveGraphicsContext)
-      glfwSwapBuffers( _window);
+   {
+      // https://github.com/glfw/glfw/issues/2109
+      if( glfwGetWindowAttrib( _window, GLFW_VISIBLE))
+         glfwSwapBuffers( _window);
+   }
 }
 
 
@@ -697,6 +773,19 @@ static struct
 
    return( glfwWindowShouldClose( _window) ? YES : NO);
 }
+
+
+- (void) applicationDidAddWindow
+{
+   // ignore
+}
+
+
+- (void) applicationDidRemoveWindow
+{
+   [self mullePerformFinalize];
+}
+
 
 
 - (BOOL) shouldClose
@@ -731,7 +820,7 @@ static struct
    assert( [NSThread mulleIsMainThread]);
    assert( _window);
 
-   glfwGetWindowSize( _window, &x, &y);
+   glfwGetWindowPos( _window, &x, &y);
    return( CGPointMake( x, y));
 }
 

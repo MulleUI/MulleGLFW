@@ -82,16 +82,19 @@ int   main( int argc, char *argv[])
       printf( "#%td\n", i);
       printf( "\tname         : \"%s\"\n",   [screen nameUTF8String]);
       printf( "\trefreshRate  : %.6fs\n",    info.refreshRate);
-      printf( "\tframe        : %td %td %td %td\n", info.frame.origin.x,
+      printf( "\tframe        : %.3f %.3f %.3f %.3f\n",
+                                                    info.frame.origin.x,
                                                     info.frame.origin.y,
                                                     info.frame.size.width,
                                                     info.frame.size.height);
-      printf( "\tcanvas       : %td %td %td %td\n", info.canvas.origin.x,
+      printf( "\tcanvas       : %.3f %.3f %.3f %.3f\n",
+                                                    info.canvas.origin.x,
                                                     info.canvas.origin.y,
                                                     info.canvas.size.width,
                                                     info.canvas.size.height);
       printf( "\tcontentScale : %.3f %.3f\n",       info.contentScale.dx, info.contentScale.dy);
       printf( "\tphysicalSize : %.3f m %.3f m\n",   info.physicalSize.width, info.physicalSize.height);
+      printf( "\tdpi          : %.3f\n",            info.dpi);
       printf( "\tred          : %d bit\n",          info.colorBits[ 0]);
       printf( "\tgreen        : %d bit\n",          info.colorBits[ 1]);
       printf( "\tblue         : %d bit\n",          info.colorBits[ 2]);

@@ -21,12 +21,12 @@
 //   3         2         1         0
 //  10987654321098765432109876543210
 //
-//  ppfaallMMMMMMMMmmmmmmmmmmmmmmmmm
+//  ppfaaallMMMMMMMMmmmmmmmmmmmmmmmm
 //  77776666555544443333222211110000
 //
 // profile : GLFW_OPENGL_PROFILE          (0=any, 1=core, 2=compat)
 // forward : GLFW_OPENGL_FORWARD_COMPAT   (0=NO, 1=YES)
-// api     : GLFW_CLIENT_API              (0=default, 1=NONE, 2=OpenGLES, 3=OpenGL)
+// api     : GLFW_CLIENT_API              (0=default, 1=NONE, 2=OpenGLES, 3=OpenGL) // vulkan, metal...
 // lib     : GLFW_CONTEXT_CREATION_API    (0=native,1=egl,2=mesa)
 // major   : GLFW_CONTEXT_VERSION_MAJOR
 // minor   : GLFW_CONTEXT_VERSION_MINOR
@@ -34,10 +34,10 @@
 #define GLFWGraphicsHintsMake( profile, forward, api, lib, major, minor) \
   ((((profile) & 0x3) << 30)  | \
    (((forward) & 0x1) << 29)  | \
-   (((api)     & 0x3) << 27)  | \
-   (((lib)     & 0x3) << 25)  | \
-   (((major)   & 0xFF) << 17) | \
-    ((minor)   & 0x01FFFF))
+   (((api)     & 0x7) << 26)  | \
+   (((lib)     & 0x3) << 24)  | \
+   (((major)   & 0xFF) << 16) | \
+    ((minor)   & 0xFFFF))
 
 //
 // GLFW_DEFAULT_CONTEXT is often the best choice
@@ -65,22 +65,22 @@ static int GLFWGraphicsHintsGetForward( enum GLFWGraphicsHints t)
 
 static int GLFWGraphicsHintsGetAPI( enum GLFWGraphicsHints t)
 {
-   return( (t >> 27) & 0x3);
+   return( (t >> 26) & 0x7);
 }
 
 static int GLFWGraphicsHintsGetAPILibrary( enum GLFWGraphicsHints t)
 {
-   return( (t >> 25) & 0x3);
+   return( (t >> 24) & 0x3);
 }
 
 static int GLFWGraphicsHintsGetMajor( enum GLFWGraphicsHints t)
 {
-   return( (t >> 17) & 0xFF);
+   return( (t >> 16) & 0xFF);
 }
 
 static int GLFWGraphicsHintsGetMinor( enum GLFWGraphicsHints t)
 {
-   return( t & 0x01FFFF);
+   return( t & 0xFFFF);
 }
 
 
@@ -157,8 +157,8 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
    NSLock                   *_contextLock;
 
    CGPoint                  _mouseLocation;
-   uint64_t                 _mouseButtonStates;
-   uint64_t                 _modifiers;
+   uint64_t                 _mouseButtonStates; // TODO: needs fix, won't reset if window loses focus
+   uint64_t                 _modifiers;         // TODO: needs fix, won't reset if window loses focus
 
    GLFWOSWindow             *_sharingWindow;
    NSInteger                _shareId;
@@ -188,6 +188,9 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 @property( assign) GLFWOSWindowEventCallback_t           windowEventsCallback;
 // default: GLFWOSWindowRetainedEventDefaultCallback
 @property( assign) GLFWOSWindowRetainedEventCallback_t   otherRetainedEventsCallback;
+
+@property( assign, readonly) enum UIGraphicsBackend   backend;
+
 //
 // very basic rendering and event support. Does not use CGContext!
 // view port is not setup and framebuffer is not cleared!
@@ -255,6 +258,7 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 // This method can be called from any thread
 //
 - (id <UIScreen>) screen;
+- (id <UIScreen>) screenOrPrimaryScreen:(BOOL) flag;
 
 // The shareID never changes for a Window
 // This method can be called from any thread
