@@ -161,7 +161,7 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
    uint64_t                 _modifiers;         // TODO: needs fix, won't reset if window loses focus
 
    GLFWOSWindow             *_sharingWindow;
-   NSInteger                _shareId;
+   NSInteger                _shareID;
 
    mulle_absolutetime_t     _lastSwapBuffersTimestamp;
    mulle_atomic_pointer_t   _needsRefresh;
@@ -189,7 +189,7 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 // default: GLFWOSWindowRetainedEventDefaultCallback
 @property( assign) GLFWOSWindowRetainedEventCallback_t   otherRetainedEventsCallback;
 
-@property( assign, readonly) enum UIGraphicsBackend   backend;
+@property( assign, readonly) UIGraphicsBackend           backend;
 
 //
 // very basic rendering and event support. Does not use CGContext!
@@ -262,8 +262,8 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 
 // The shareID never changes for a Window
 // This method can be called from any thread
-//
-- (NSInteger) shareId;
+// 0 means, no sharing
+- (NSInteger) shareID;
 
 // This method can be called from any thread
 - (BOOL) shouldClose;

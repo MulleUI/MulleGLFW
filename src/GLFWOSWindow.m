@@ -8,6 +8,10 @@
 #import "GLFWOSWindow+UIEvent.h"
 
 
+#define CONTEXT_DEBUG
+#ifdef DEBUG
+# define SWAP_DEBUG
+#endif
 
 @interface GLFWOSWindow( UIEventFuture)
 
@@ -21,7 +25,7 @@
 
 static struct
 {
-   mulle_atomic_pointer_t   shareIds;
+   mulle_atomic_pointer_t   shareIDs;
 } Self;
 
 
@@ -337,9 +341,12 @@ retry:
       return( nil);
    }
 
+   // just a sanity assert
+   assert( _window);
+
    _sharingWindow = (GLFWOSWindow *) [sharingWindow retain];
    if( ! _sharingWindow)
-      _shareId = (NSInteger) _mulle_atomic_pointer_increment( &Self.shareIds) + 1;
+      _shareID = (NSInteger) _mulle_atomic_pointer_increment( &Self.shareIDs) + 1;
 
    if( _sharingWindow)
       fprintf( stderr, "window %p (sharing with %p) created\n", _window, _sharingWindow);
@@ -449,9 +456,9 @@ retry:
 }
 
 
-- (NSInteger) shareId
+- (NSInteger) shareID
 {
-   return( _sharingWindow ? [_sharingWindow shareId] : _shareId);
+   return( _sharingWindow ? [_sharingWindow shareID] : _shareID);
 }
 
 
@@ -574,7 +581,12 @@ retry:
 
    [_contextLock lock];
    if( _haveGraphicsContext)
+   {
+#ifdef CONTEXT_DEBUG
+      MulleUILog( "window: %p", _window);
+#endif            
       glfwMakeContextCurrent( _window);
+   }      
 }
 
 
@@ -588,7 +600,12 @@ retry:
       return( NO);
 
    if( _haveGraphicsContext)
+   {
+#ifdef CONTEXT_DEBUG
+      MulleUILog( "window: %p", _window);
+#endif          
       glfwMakeContextCurrent( _window);
+   }
    return( YES);
 }
 
@@ -599,7 +616,12 @@ retry:
    assert( _window);
 
    if( _haveGraphicsContext)
+   {
+#ifdef CONTEXT_DEBUG
+      MulleUILog( "window: NULL");
+#endif          
       glfwMakeContextCurrent( NULL);
+   }
    [_contextLock unlock];
 }
 
@@ -744,7 +766,12 @@ static struct
    {
       // https://github.com/glfw/glfw/issues/2109
       if( glfwGetWindowAttrib( _window, GLFW_VISIBLE))
+      {
+#ifdef SWAP_DEBUG
+         MulleUILog( "\033[1mswapped buffers\033[0m");
+#endif          
          glfwSwapBuffers( _window);
+      }
    }
 }
 
@@ -760,16 +787,18 @@ static struct
 - (void) os_requestClose
 {
    // can be called from any thread
-   assert( _window);
-
-   glfwSetWindowShouldClose( _window, GL_TRUE);
+   // we are finalized if _window nil 
+   if( _window)
+      glfwSetWindowShouldClose( _window, GL_TRUE);
 }
 
 
 - (BOOL) os_windowShouldClose
 {
    // can be called from any thread
-   assert( _window);
+   // we are finalized if _window nil 
+   if( ! _window)
+      return( YES);
 
    return( glfwWindowShouldClose( _window) ? YES : NO);
 }

@@ -17,22 +17,27 @@ graphics context, that will be later used by a CGContext.
 
 ### Platform notes
 
-#### Linux
+#### Linux X11
 
-On Linux (X11/Wayland) the following libraries are linked, but most of the
+On Linux (X11) the following libraries are linked, but most of the
 headers are included by glfw so they are maked `no-header` as to not create
 duplicate include directives by `reflect`:
 
-Library  | Header
----------|---------------------------
-GL       | `GL/glext.h`
-GLU      |
-X11      |
-Xrandr   |
-Xxf86vm  |
-Xinerama |
-Xcursor  |
-m        |
+Library  | Header          |
+---------|-----------------|---------
+GL       | `GL/glext.h`    |
+GLU      |                 | `apt-get install freeglut3-dev`
+X11      |                 | `apt install libx11-dev libxi-dev`
+Xrandr   |                 | `apt install libxrandr-dev`
+Xxf86vm  |                 | `apt install libxxf86vm-dev`
+Xinerama |                 | `apt install libxinerama-dev`
+Xcursor  |                 | `apt install libxcursor-dev`
+m        |                 |
+
+
+#### Linux Wayland
+
+
 
 #### macOS
 
@@ -77,7 +82,7 @@ Requirements                                      | Description
 
 Install into `/usr/local`:
 
-```
+``` sh
 mkdir build 2> /dev/null
 (
    cd build ;
