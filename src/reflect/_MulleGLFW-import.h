@@ -12,26 +12,26 @@
  */
 
 // You can tweak the following #import with these commands.
-// (Use 2E724EDC-C31A-49F3-9066-B38C51AF5EA2 instead of MulleObjCLockFoundation if there are duplicate entries)
-//    remove:             `mulle-sde dependency mark MulleObjCLockFoundation no-header`
-//    rename:             `mulle-sde dependency|library set MulleObjCLockFoundation include whatever.h`
-//    reorder:            `mulle-sde dependency move MulleObjCLockFoundation <up|down>`
+// (Use FE8AFE0A-9A3B-48AF-B990-250B647F4AD7 instead of MulleObjCLockFoundation if there are duplicate entries)
+//    remove #import: : `mulle-sde dependency mark MulleObjCLockFoundation no-header`
+//    rename:              `mulle-sde dependency|library set MulleObjCLockFoundation include whatever.h`
+//    reorder:             `mulle-sde dependency move MulleObjCLockFoundation <up|down>`
 //    toggle #import:     `mulle-sde dependency mark MulleObjCLockFoundation [no-]import`
-//    toggle public:      `mulle-sde dependency mark MulleObjCLockFoundation [no-]public`
-//    toggle optional:    `mulle-sde dependency mark MulleObjCLockFoundation [no-]require`
-//    remove for platform:`mulle-sde dependency mark MulleObjCLockFoundation no-platform-<uname>`
+//    toggle public:       `mulle-sde dependency mark MulleObjCLockFoundation [no-]public`
+//    toggle optional:     `mulle-sde dependency mark MulleObjCLockFoundation [no-]require`
+//    remove for platform: `mulle-sde dependency mark MulleObjCLockFoundation no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #import <MulleObjCLockFoundation/MulleObjCLockFoundation.h>   // MulleObjCLockFoundation
 
 // You can tweak the following #import with these commands.
-// (Use FF0E6A2E-B5FB-4971-A1F2-8CFF12BE35D7 instead of MulleUIApplication if there are duplicate entries)
-//    remove:             `mulle-sde dependency mark MulleUIApplication no-header`
-//    rename:             `mulle-sde dependency|library set MulleUIApplication include whatever.h`
-//    reorder:            `mulle-sde dependency move MulleUIApplication <up|down>`
+// (Use EAA47067-DCF8-4B50-B6E6-F3401C69C54B instead of MulleUIApplication if there are duplicate entries)
+//    remove #import: : `mulle-sde dependency mark MulleUIApplication no-header`
+//    rename:              `mulle-sde dependency|library set MulleUIApplication include whatever.h`
+//    reorder:             `mulle-sde dependency move MulleUIApplication <up|down>`
 //    toggle #import:     `mulle-sde dependency mark MulleUIApplication [no-]import`
-//    toggle public:      `mulle-sde dependency mark MulleUIApplication [no-]public`
-//    toggle optional:    `mulle-sde dependency mark MulleUIApplication [no-]require`
-//    remove for platform:`mulle-sde dependency mark MulleUIApplication no-platform-<uname>`
+//    toggle public:       `mulle-sde dependency mark MulleUIApplication [no-]public`
+//    toggle optional:     `mulle-sde dependency mark MulleUIApplication [no-]require`
+//    remove for platform: `mulle-sde dependency mark MulleUIApplication no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #import <MulleUIApplication/MulleUIApplication.h>   // MulleUIApplication
 

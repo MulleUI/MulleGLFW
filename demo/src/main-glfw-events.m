@@ -15,15 +15,13 @@
 
 static void   receiveWindowEvents( GLFWOSWindow *window, UIWindowEvent *event)
 {
-   mulle_printf( "%@\n", [event class]);
-   fflush( stdout);
+   MulleUICLog( "%#@", event);
 }
 
 
 static void   otherRetainedEventsCallback( GLFWOSWindow *window, UIEvent *event)
 {
-   mulle_printf( "%@\n", [event class]);
-   fflush( stdout);
+   MulleUICLog( "%#@", event);
 
    [event release];
 }
@@ -31,7 +29,7 @@ static void   otherRetainedEventsCallback( GLFWOSWindow *window, UIEvent *event)
 
 static void   renderFrame( GLFWOSWindow *window)
 {
-   struct CGBitmapSize   framebufferSize;
+   struct MulleIntegerSize   framebufferSize;
 
    framebufferSize = [window os_framebufferSize];
    glViewport( 0, 0, framebufferSize.width, framebufferSize.height);

@@ -1,7 +1,7 @@
 #
 # Reset to empty
 #
-export MULLE_SDE_REFLECT_CALLBACKS="sourcetree:source"
+export MULLE_SDE_REFLECT_CALLBACKS="sourcetree:filesystem"
 
 
 #
@@ -20,12 +20,6 @@ export MULLE_MATCH_PATH=".mulle/etc/sourcetree:${PROJECT_SOURCE_DIR}:CMakeLists.
 # Used by `mulle-match find` to ignore boring subdirectories like .git
 #
 export MULLE_MATCH_IGNORE_PATH=""
-
-
-#
-# mulle-c and mulle-objc projects have an actual latest tag, so don't resolve
-#
-export MULLE_SOURCETREE_RESOLVE_TAG="NO"
 
 
 #

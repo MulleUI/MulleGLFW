@@ -24,10 +24,10 @@
 //  ppfaaallMMMMMMMMmmmmmmmmmmmmmmmm
 //  77776666555544443333222211110000
 //
-// profile : GLFW_OPENGL_PROFILE          (0=any, 1=core, 2=compat)
+// profile : GLFW_OPENGL_PROFILE          (0=default, 1=any, 2=core, 3=compat)
 // forward : GLFW_OPENGL_FORWARD_COMPAT   (0=NO, 1=YES)
 // api     : GLFW_CLIENT_API              (0=default, 1=NONE, 2=OpenGLES, 3=OpenGL) // vulkan, metal...
-// lib     : GLFW_CONTEXT_CREATION_API    (0=native,1=egl,2=mesa)
+// lib     : GLFW_CONTEXT_CREATION_API    (0=default, 1=native, 2=egl, 3=mesa)
 // major   : GLFW_CONTEXT_VERSION_MAJOR
 // minor   : GLFW_CONTEXT_VERSION_MINOR
 
@@ -42,49 +42,49 @@
 //
 // GLFW_DEFAULT_CONTEXT is often the best choice
 //
-enum GLFWGraphicsHints
+typedef NS_OPTIONS( NSUInteger, GLFWGraphicsHints)
 {
    GLFW_DEFAULT_CONTEXT = 0,
    GLFW_NO_CONTEXT      = GLFWGraphicsHintsMake( 0, 0, 1, 0, 0, 0),
-   GLFW_GL3_CONTEXT     = GLFWGraphicsHintsMake( 0, 0, 3, 0, 3, 0),
-   GLFW_GL3_2_CONTEXT   = GLFWGraphicsHintsMake( 0, 0, 3, 0, 3, 2),
-   GLFW_GLES2_CONTEXT   = GLFWGraphicsHintsMake( 0, 0, 2, 0, 2, 0),
-   GLFW_GLES3_CONTEXT   = GLFWGraphicsHintsMake( 0, 0, 2, 0, 3, 0)
+   GLFW_GL3_CONTEXT     = GLFWGraphicsHintsMake( 1, 0, 3, 0, 3, 0),
+   GLFW_GL3_2_CONTEXT   = GLFWGraphicsHintsMake( 1, 0, 3, 0, 3, 2),
+   GLFW_GLES2_CONTEXT   = GLFWGraphicsHintsMake( 1, 0, 2, 0, 2, 0),
+   GLFW_GLES3_CONTEXT   = GLFWGraphicsHintsMake( 1, 0, 2, 0, 3, 0)
 };
 
 
-static int GLFWGraphicsHintsGetProfile( enum GLFWGraphicsHints t)
+static int GLFWGraphicsHintsGetProfile( GLFWGraphicsHints t)
 {
    return( (t >> 30) & 0x3);
 }
 
-static int GLFWGraphicsHintsGetForward( enum GLFWGraphicsHints t)
+static int GLFWGraphicsHintsGetForward( GLFWGraphicsHints t)
 {
    return( (t >> 29) & 0x1);
 }
 
-static int GLFWGraphicsHintsGetAPI( enum GLFWGraphicsHints t)
+static int GLFWGraphicsHintsGetAPI( GLFWGraphicsHints t)
 {
    return( (t >> 26) & 0x7);
 }
 
-static int GLFWGraphicsHintsGetAPILibrary( enum GLFWGraphicsHints t)
+static int GLFWGraphicsHintsGetAPILibrary( GLFWGraphicsHints t)
 {
    return( (t >> 24) & 0x3);
 }
 
-static int GLFWGraphicsHintsGetMajor( enum GLFWGraphicsHints t)
+static int GLFWGraphicsHintsGetMajor( GLFWGraphicsHints t)
 {
    return( (t >> 16) & 0xFF);
 }
 
-static int GLFWGraphicsHintsGetMinor( enum GLFWGraphicsHints t)
+static int GLFWGraphicsHintsGetMinor( GLFWGraphicsHints t)
 {
    return( t & 0xFFFF);
 }
 
 
-static int GLFWGraphicsHintsBySettingProfile( enum GLFWGraphicsHints t, int profile)
+static int GLFWGraphicsHintsBySettingProfile( GLFWGraphicsHints t, int profile)
 {
    return( GLFWGraphicsHintsMake( profile,
                                   GLFWGraphicsHintsGetForward( t),
@@ -95,7 +95,7 @@ static int GLFWGraphicsHintsBySettingProfile( enum GLFWGraphicsHints t, int prof
 }
 
 
-static int   GLFWGraphicsHintsBySettingForward( enum GLFWGraphicsHints t, int forward)
+static int   GLFWGraphicsHintsBySettingForward( GLFWGraphicsHints t, int forward)
 {
    return( GLFWGraphicsHintsMake( GLFWGraphicsHintsGetProfile( t),
                                   forward,
@@ -105,7 +105,7 @@ static int   GLFWGraphicsHintsBySettingForward( enum GLFWGraphicsHints t, int fo
                                   GLFWGraphicsHintsGetMinor( t)));
 }
 
-static int   GLFWGraphicsHintsBySettingAPI( enum GLFWGraphicsHints t, int api)
+static int   GLFWGraphicsHintsBySettingAPI( GLFWGraphicsHints t, int api)
 {
    return( GLFWGraphicsHintsMake( GLFWGraphicsHintsGetProfile( t),
                                   GLFWGraphicsHintsGetForward( t),
@@ -115,7 +115,8 @@ static int   GLFWGraphicsHintsBySettingAPI( enum GLFWGraphicsHints t, int api)
                                   GLFWGraphicsHintsGetMinor( t)));
 }
 
-static int   GLFWGraphicsHintsBySettingAPILibrary( enum GLFWGraphicsHints t, int library)
+
+static int   GLFWGraphicsHintsBySettingAPILibrary( GLFWGraphicsHints t, int library)
 {
    return( GLFWGraphicsHintsMake( GLFWGraphicsHintsGetProfile( t),
                                   GLFWGraphicsHintsGetForward( t),
@@ -135,7 +136,7 @@ static int   GLFWGraphicsHintsBySettingAPILibrary( enum GLFWGraphicsHints t, int
 //
 typedef void   (*GLFWOSWindowEventCallback_t)( GLFWOSWindow *window, UIWindowEvent *event);
 typedef void   (*GLFWOSWindowRetainedEventCallback_t)( GLFWOSWindow *window, UIEvent *retainedEvent);
-typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
+typedef int    (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 
 //
 // The GLFWOSWindow has the GLFW window handle and implicitly the
@@ -156,10 +157,6 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 
    NSLock                   *_contextLock;
 
-   CGPoint                  _mouseLocation;
-   uint64_t                 _mouseButtonStates; // TODO: needs fix, won't reset if window loses focus
-   uint64_t                 _modifiers;         // TODO: needs fix, won't reset if window loses focus
-
    GLFWOSWindow             *_sharingWindow;
    NSInteger                _shareID;
 
@@ -167,7 +164,7 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
    mulle_atomic_pointer_t   _needsRefresh;
 
    NSLock                   *_windowInfoLock;
-   struct UIOSWindowInfo      _windowInfo;
+   struct UIOSWindowInfo     _windowInfo;
 }
 
 // NONE OF THESE PROPERTIES are thread safe, except those which are readonly
@@ -176,7 +173,7 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 // event is autoreleased
 @property( assign) id <UIEventReceiver>        windowEventsReceiver;
 
-// window events are called via -handleRetainedEvent:
+// window events are called via -receiveRetainedEvent:
 // event must be released by receiver!
 @property( assign) id <UIEventReceiver>        eventsReceiver;
 
@@ -185,11 +182,11 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 // also enable OS events for windowEvents or other
 
 // default: GLFWOSWindowEventDefaultCallback
-@property( assign) GLFWOSWindowEventCallback_t           windowEventsCallback;
+@property( assign) GLFWOSWindowEventCallback_t         windowEventsCallback;
 // default: GLFWOSWindowRetainedEventDefaultCallback
-@property( assign) GLFWOSWindowRetainedEventCallback_t   otherRetainedEventsCallback;
+@property( assign) GLFWOSWindowRetainedEventCallback_t otherRetainedEventsCallback;
 
-@property( assign, readonly) UIGraphicsBackend           backend;
+@property( assign, readonly) UIGraphicsBackend         backend;
 
 //
 // very basic rendering and event support. Does not use CGContext!
@@ -205,11 +202,15 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 @property( assign, readonly) BOOL                      haveGraphicsContext;
 @property( assign) id <UIWindow>                       parentWindow;
 
+@property( readonly) struct UIInputState               inputState;
+
+@property( assign) BOOL                                uninitializedFramebuffer;
+
 
 + (instancetype) windowWithFrame:(CGRect) frame
                  titleUTF8String:(char *) title
                        styleMask:(NSUInteger) styleMask
-                   graphicsHints:(enum GLFWGraphicsHints) graphicsHints;
+                   graphicsHints:(GLFWGraphicsHints) graphicsHints;
 
 + (instancetype) windowWithFrame:(CGRect) frame
                  titleUTF8String:(char *) title
@@ -219,13 +220,13 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 + (instancetype) windowWithFrame:(CGRect) frame
                  titleUTF8String:(char *) title
                        styleMask:(NSUInteger) styleMask
-                   graphicsHints:(enum GLFWGraphicsHints) graphicsHints
+                   graphicsHints:(GLFWGraphicsHints) graphicsHints
                    sharingWindow:(id <UIOSWindow>) sharingWindow;
 
 - (instancetype) initWithFrame:(CGRect) frame
                titleUTF8String:(char *) title
                      styleMask:(NSUInteger) styleMask
-                 graphicsHints:(enum GLFWGraphicsHints) graphicsHints;
+                 graphicsHints:(GLFWGraphicsHints) graphicsHints;
 
 - (instancetype) initWithFrame:(CGRect) frame
                titleUTF8String:(char *) title
@@ -235,7 +236,7 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 - (instancetype) initWithFrame:(CGRect) frame
                titleUTF8String:(char *) title
                      styleMask:(NSUInteger) styleMask
-                 graphicsHints:(enum GLFWGraphicsHints) graphicsHints
+                 graphicsHints:(GLFWGraphicsHints) graphicsHints
                  sharingWindow:(id <UIOSWindow>) sharingWindow;
 
 //
@@ -286,7 +287,7 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 - (void) os_setWindowSize:(CGSize) size;
 - (void) os_setSwapInterval:(NSUInteger) value;
 
-- (struct CGBitmapSize) os_framebufferSize;
+- (struct MulleIntegerSize) os_framebufferSize;
 
 - (CGVector) os_UIScale;
 
@@ -311,6 +312,8 @@ typedef void   (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 
 - (void) os_setTitleUTF8String:(char *) s;
 
+
+- (void) os_setCursor:(void *) cursor;
 
 //
 // OS Pasteboard (Might need to be moved to UIApplication)

@@ -25,18 +25,29 @@ if( NOT __EXECUTABLE_OBJC_CMAKE__)
    #
    # only for mulle-clang
    #
-   if( APPLE AND MULLE_OBJC)
-      target_link_options( "${EXECUTABLE_NAME}"
-         PUBLIC
-            "SHELL:LINKER:-exported_symbol,___register_mulle_objc_universe"
-      )
-
-      if( MULLE_TEST)
-         target_link_options( "${EXECUTABLE_NAME}"
+   if( UNIX AND NOT APPLE)
+      if( LINK_PHASE)
+         target_link_options( "${EXECUTABLE_LINK_TARGET}"
             PUBLIC
-               "SHELL:LINKER:-exported_symbol,__mulle_atinit"
-               "SHELL:LINKER:-exported_symbol,_mulle_atexit"
+               "SHELL:LINKER:--export-dynamic"
          )
+      endif()
+   endif()
+
+   if( APPLE AND MULLE_OBJC)
+      if( LINK_PHASE)
+         target_link_options( "${EXECUTABLE_LINK_TARGET}"
+            PUBLIC
+               "SHELL:LINKER:-exported_symbol,___register_mulle_objc_universe"
+         )
+
+         if( MULLE_TEST)
+            target_link_options( "${EXECUTABLE_LINK_TARGET}"
+               PUBLIC
+                  "SHELL:LINKER:-exported_symbol,__mulle_atinit"
+                  "SHELL:LINKER:-exported_symbol,_mulle_atexit"
+            )
+         endif()
       endif()
    endif()
 

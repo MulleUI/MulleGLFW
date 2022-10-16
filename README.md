@@ -17,6 +17,11 @@ graphics context, that will be later used by a CGContext.
 
 ### Platform notes
 
+MulleGLFW is a dual-sourcetree project. You can choose between X11 (default)
+and Wayland (wayland). See [Compiling GLFW](https://www.glfw.org/docs/latest/compile_guide.html) for an up-to-date list of platform requirements and
+dependencies.
+
+
 #### Linux X11
 
 On Linux (X11) the following libraries are linked, but most of the
@@ -37,6 +42,24 @@ m        |                 |
 
 #### Linux Wayland
 
+On Linux (Wayland) the following libraries are linked, but most of the
+headers are included by glfw so they are maked `no-header` as to not create
+duplicate include directives by `reflect`:
+
+Library           | Header          |
+------------------|-----------------|---------
+GL                | `GL/glext.h`    |
+GLU               |                 | `apt-get install freeglut3-dev`
+wayland_client    |                 | `apt install libwayland-dev`
+wayland-protocols |                 | `apt install wayland-protocols`
+libxkbcommon-dev  |                 | `apt install libxkbcommon-dev`
+m                 |                 |
+
+
+====
+At the moment (glfw 3.3), there is a bug in `glfwSwapBuffers` that makes the
+system always vsync (block). This leads to severe problems during resize.
+====
 
 
 #### macOS
@@ -67,8 +90,9 @@ recursive package management with cross-platform builds via **cmake**:
 Action  | Command                               | Description
 --------|---------------------------------------|---------------
 Build   | `mulle-sde craft [--release|--debug]` | Builds into local `kitchen` folder
-Add     | `mulle-sde dependency add --c --github <|GITHUB_USER|> MulleGLFW` | Add MulleGLFW to another mulle-sde project as a dependency
-Install | `mulle-sde install --prefix /usr/local https://github.com/<|GITHUB_USER|>/MulleGLFW.git` | Like `make install`
+Add     | `mulle-sde dependency add --c --github MulleUI MulleGLFW` | Add MulleGLFW to another mulle-sde project as a dependency
+Choose  | `mulle-sde config switch MulleGLFW wayland | Use wayland as the backend
+Install | `mulle-sde install --prefix /usr/local https://github.com/MulleUI/MulleGLFW.git` | Like `make install`
 
 
 ### Manual Installation
@@ -83,14 +107,12 @@ Requirements                                      | Description
 Install into `/usr/local`:
 
 ``` sh
-mkdir build 2> /dev/null
-(
-   cd build ;
-   cmake -DCMAKE_INSTALL_PREFIX=/usr/local \
-         -DCMAKE_PREFIX_PATH=/usr/local \
-         -DCMAKE_BUILD_TYPE=Release .. ;
-   make install
-)
+cmake -B build \
+      -DCMAKE_INSTALL_PREFIX=/usr/local \
+      -DCMAKE_PREFIX_PATH=/usr/local \
+      -DCMAKE_BUILD_TYPE=Release &&
+cmake --build build --config Release &&
+cmake --install build --config Release
 ```
 
 

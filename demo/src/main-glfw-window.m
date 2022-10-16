@@ -2,7 +2,9 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <ctype.h>
 
+static int   log_enabled;
 
 /*
  * This demo just creates a window and nothing else.
@@ -12,17 +14,19 @@
  *
  * The only interesting thing happening is the output of the fprintf.
  */
-static void   frameCallback( GLFWOSWindow *window)
+static int   frameCallback( GLFWOSWindow *window)
 {
-   struct CGBitmapSize   framebufferSize;
+   struct MulleIntegerSize   framebufferSize;
 
    framebufferSize = [window os_framebufferSize];
+
+   if( log_enabled)
+      MulleUICLog( "%#@ %d %d", window, framebufferSize.width, framebufferSize.height);
+
    glViewport( 0, 0, framebufferSize.width, framebufferSize.height);
    glClearColor( 0.33f, 0.66f, 0.33f, 0.0f);
-   glClear(  GL_COLOR_BUFFER_BIT);
-
-   mulle_fprintf( stderr, " %s : %@ @%.3f\n",
-         __PRETTY_FUNCTION__, window, mulle_absolutetime_now());
+   glClear( GL_COLOR_BUFFER_BIT);
+   return( 0);
 }
 
 
@@ -31,18 +35,22 @@ static void   windowMoveCallback( GLFWwindow* window, int xpos, int ypos)
    GLFWOSWindow   *self;
 
    self = glfwGetWindowUserPointer( window);
-   mulle_fprintf( stderr, " %s : %@ %d %d\n",
-         __PRETTY_FUNCTION__, self, xpos, ypos);
+   if( log_enabled)
+      MulleUICLog( "%#@ %d %d", self, xpos, ypos);
 }
 
 
 static void   windowResizeCallback( GLFWwindow* window, int width, int height)
 {
    GLFWOSWindow   *self;
+   CGRect         frame;
 
    self = glfwGetWindowUserPointer( window);
-   mulle_fprintf( stderr, " %s : %@ %d %d\n",
-         __PRETTY_FUNCTION__, self, width, height);
+   if( log_enabled)
+      MulleUICLog( "%#@ %d %d", self, width, height);
+
+   // if we don't do this in wayland, then the resize doesn't happen
+   [self setNeedsRefresh];
 }
 
 
@@ -56,9 +64,10 @@ static void   usage( char *argv0)
    fprintf( stderr, "%s [framerate]\n"
 "\n"
 "Framerate:\n"
-"   --sync     : redraw synced to monitor\n"
-"   --async    : redraw on events (default)\n"
-"   --unsynced : redraw in busy loop\n"
+"   --synced            : redraw synced to monitor\n"
+"   --async             : redraw on events (default)\n"
+"   --unsynced          : redraw in busy loop\n"
+"   --styleMask <mask>  : styleMask to use for window\n"
    , s);
       exit( 1);
 }
@@ -72,16 +81,65 @@ int   main( int argc, char *argv[])
    NSUInteger            i;
    struct UIScreenInfo   info;
    GLFWOSWindow          *window;
+   NSUInteger            styleMask;
 
-   app = [UIApplication sharedInstance];
+   app       = [UIApplication sharedInstance];
+
+   frameRate = UIWindowFrameRateAsync;
+   styleMask = 0;
+
+   for( i = 1; i < argc; i++)
+   {
+      if( ! strcmp( argv[ i], "--log"))
+      {
+         log_enabled = 1;
+         continue;
+      }
+      if( ! strcmp( argv[ i], "--async"))
+      {
+         frameRate = UIWindowFrameRateAsync;
+         continue;
+      }
+      if( ! strcmp( argv[ i], "--synced"))
+      {
+         frameRate = UIWindowFrameRateSynced;
+         continue;
+      }
+      if( ! strcmp( argv[ i], "--unsynced"))
+      {
+         frameRate = UIWindowFrameRateUnsynced;
+         continue;
+      }
+      if( ! strcmp( argv[ i], "--styleMask"))
+      {
+         if( ++i >= argc)
+            usage( argv[ 0]);
+
+         styleMask = UIWindowStyleParseUTF8String( argv[ i]);
+         fprintf( stderr, "parsed: %s\n", UIWindowStyleUTF8String( styleMask));
+         continue;
+      }
+
+      if( isdigit( argv[ i][ 0]))
+      {
+         frameRate = atof( argv[ i]);
+         ++i;
+         break;
+      }
+
+      usage( argv[ 0]);
+   }
+
+   if( i != argc)
+      usage( argv[ 0]);
 
    for( i = 0; screen = [app screenAtIndex:i]; i++)
    {
       [screen getScreenInfo:&info];
 
       printf( "#%td\n", i);
-      printf( "\tname         : \"%s\"\n",   [screen nameUTF8String]);
-      printf( "\trefreshRate  : %.6fs\n",    info.refreshRate);
+      printf( "\tname         : \"%s\"\n",          [screen nameUTF8String]);
+      printf( "\trefreshRate  : %.6fs\n",           info.refreshRate);
       printf( "\tframe        : %.3f %.3f %.3f %.3f\n",
                                                     info.frame.origin.x,
                                                     info.frame.origin.y,
@@ -101,48 +159,17 @@ int   main( int argc, char *argv[])
       printf( "\talpha        : %d bit\n",          info.colorBits[ 3]);
    }
 
+   window = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0.0, 0.0, 500.0, 500.0)
+                                 titleUTF8String:"Demo"
+                                       styleMask:styleMask // UIWindowOpenGLDeprecated
+                                   graphicsHints:0] autorelease];
+   assert( window);
+   [window setFrameRate:frameRate];
+   [window setFrameCallback:frameCallback];
+   glfwSetWindowSizeCallback( [window os_window], windowResizeCallback);
+   glfwSetWindowPosCallback( [window os_window], windowMoveCallback);
 
-   frameRate = UIWindowFrameRateAsync;
-
-   for( i = 1; i < argc; i++)
-   {
-      if( ! strcmp( argv[ i], "--async"))
-      {
-         frameRate = UIWindowFrameRateAsync;
-         continue;
-      }
-      if( ! strcmp( argv[ i], "--synced"))
-      {
-         frameRate = UIWindowFrameRateSynced;
-         continue;
-      }
-      if( ! strcmp( argv[ i], "--unsynced"))
-      {
-         frameRate = UIWindowFrameRateUnsynced;
-         continue;
-      }
-
-      usage( argv[ 0]);
-   }
-
-   if( i != argc)
-      usage( argv[ 0]);
-
-   @autoreleasepool
-   {
-      window = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0.0, 0.0, 500.0, 500.0)
-                                    titleUTF8String:"Demo"
-                                          styleMask:0 // UIWindowOpenGLDeprecated
-                                      graphicsHints:0] autorelease];
-      assert( window);
-      [window setFrameRate:frameRate];
-      [window setFrameCallback:frameCallback];
-      glfwSetWindowSizeCallback( [window os_window], windowResizeCallback);
-      glfwSetWindowPosCallback( [window os_window], windowMoveCallback);
-
-      [app addWindow:window];
-   }
-   return( [app run]);
+   return( [app runWindow:window]);
 }
 
 

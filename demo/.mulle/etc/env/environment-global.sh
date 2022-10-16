@@ -28,3 +28,9 @@ export MULLE_SDE_CLEAN_TARGET="MulleGLFW"
 export MULLE_SDE_CLEAN_DEFAULT="MulleGLFW"
 
 
+#
+#
+#
+export MULLE_SOURCETREE_CONFIG_NAMES_MULLE_GLFW="wayland"
+
+

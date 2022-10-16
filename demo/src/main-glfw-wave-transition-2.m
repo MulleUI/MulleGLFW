@@ -406,7 +406,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 static void   receiveWindowEvents( GLFWOSWindow *window, UIWindowEvent *event)
 {
-   struct CGBitmapSize   size;
+   struct MulleIntegerSize   size;
 
    switch( [event eventType])
    {
@@ -432,7 +432,7 @@ static void   receiveOtherEvents( GLFWOSWindow *window, UIEvent *event)
                     [(UIKeyboardEvent *) event key],
                     [(UIKeyboardEvent *) event scanCode],
                     [(UIKeyboardEvent *) event action],
-                    [(UIKeyboardEvent *) event modifiers]);
+                    [(UIKeyboardEvent *) event keyModifiers]);
       break;
 
    case UIEventTypeMotion  :
@@ -446,7 +446,7 @@ static void   receiveOtherEvents( GLFWOSWindow *window, UIEvent *event)
       mouse_button_callback( [window os_window],
                              [(UIMouseButtonEvent *) event button],
                              [(UIMouseButtonEvent *) event action],
-                             [(UIMouseButtonEvent *) event modifiers]);
+                             [(UIMouseButtonEvent *) event keyModifiers]);
       break;
 
    case UIEventTypeScroll  :
@@ -459,7 +459,7 @@ static void   receiveOtherEvents( GLFWOSWindow *window, UIEvent *event)
 }
 
 
-static void   frameCallback( GLFWOSWindow *gWindow)
+static int   frameCallback( GLFWOSWindow *gWindow)
 {
     mulle_relativetime_t t, dt_total;
     static mulle_relativetime_t t_old;
@@ -475,7 +475,6 @@ static void   frameCallback( GLFWOSWindow *gWindow)
     t        = now;
     dt_total = t - t_old;
     t_old    = t;
-
 
     printf( "%s %.3g %.3g\n", __FUNCTION__, t, dt_total);
     fflush( stdout);
@@ -496,6 +495,7 @@ static void   frameCallback( GLFWOSWindow *gWindow)
 
     // Draw wave grid to OpenGL display
     draw_scene(window);
+    return( 0);
 }
 
 
@@ -509,7 +509,7 @@ int main(int argc, char* argv[])
     int width, height;
    UIApplication  *app;
    GLFWOSWindow     *gWindow;
-   struct CGBitmapSize   framebufferSize;
+   struct MulleIntegerSize   framebufferSize;
 
 //    glfwSetErrorCallback(error_callback);
 //

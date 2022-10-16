@@ -386,7 +386,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 static void   receiveWindowEvents( GLFWOSWindow *window, UIWindowEvent *event)
 {
-   struct CGBitmapSize   size;
+   struct MulleIntegerSize   size;
 
    switch( [event eventType])
    {
@@ -414,7 +414,7 @@ static void   receiveOtherEvents( GLFWOSWindow *gWindow, UIEvent *event)
                     [(UIKeyboardEvent *) event key],
                     [(UIKeyboardEvent *) event scanCode],
                     [(UIKeyboardEvent *) event action],
-                    [(UIKeyboardEvent *) event modifiers]);
+                    [(UIKeyboardEvent *) event keyModifiers]);
       break;
 
    case UIEventTypeMotion  :
@@ -428,7 +428,7 @@ static void   receiveOtherEvents( GLFWOSWindow *gWindow, UIEvent *event)
       mouse_button_callback( [gWindow os_window],
                              [(UIMouseButtonEvent *) event button],
                              [(UIMouseButtonEvent *) event action],
-                             [(UIMouseButtonEvent *) event modifiers]);
+                             [(UIMouseButtonEvent *) event keyModifiers]);
       break;
 
    case UIEventTypeScroll  :
@@ -515,7 +515,7 @@ int main(int argc, char* argv[])
    UIApplication         *app;
    GLFWOSWindow          *gWindow;
    NSTimer               *timer;
-   struct CGBitmapSize   framebufferSize;
+   struct MulleIntegerSize   framebufferSize;
 
 //    glfwSetErrorCallback(error_callback);
 //
@@ -533,8 +533,8 @@ int main(int argc, char* argv[])
 //    }
 
    gWindow = [GLFWOSWindow windowWithFrame:CGRectMake( 0, 0, 640, 480)
-                          titleUTF8String:"Demo"
-                                styleMask:UIWindowStyleBare|UIWindowStyleResizable
+                          titleUTF8String:"Wave Simulation"
+                                styleMask:UIWindowStyleResizable
                             graphicsHints:0];
    [app addWindow:gWindow];
 

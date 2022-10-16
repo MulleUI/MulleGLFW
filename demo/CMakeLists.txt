@@ -36,6 +36,15 @@ foreach( MAIN_SOURCE ${SOURCES})
 #   set( OTHER_EXECUTABLE_OBJECT_FILES $<TARGET_OBJECTS:MulleUI>)
 
    include( Executable)
+
+   # use EXECUTABLE_COMPILE_TARGET for compiler options
+   target_compile_definitions( "${EXECUTABLE_COMPILE_TARGET}" PUBLIC)
+   target_compile_options( "${EXECUTABLE_COMPILE_TARGET}" PUBLIC)
+   # use EXECUTABLE_LINK_TARGET for linker options
+   if( LINK_PHASE)
+      target_link_options( "${EXECUTABLE_LINK_TARGET}" PUBLIC -lEGL)
+   endif()
+
    include( InstallExecutable)
    include( FinalOutput OPTIONAL)
 # only for Executable

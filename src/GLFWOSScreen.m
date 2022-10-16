@@ -95,9 +95,9 @@
    {
       mode                = (GLFWvidmode *) glfwGetVideoMode( _monitor);
 
-      _info.frame.origin  = CGBitmapPointGetPoint( [self os_position]);
+      _info.frame.origin  = CGPointMakeWithIntegerPoint( [self os_position]);
       _info.frame.size    = CGSizeMake( mode->width, mode->height);
-      _info.canvas        = CGBitmapRectGetRect( [self os_canvas]);
+      _info.canvas        = CGRectMakeWithIntegerRect( [self os_canvas]);
       _info.contentScale  = [self os_contentScale];
       _info.physicalSize  = [self os_physicalSize];
       _info.dpi           = [self os_dpi];
@@ -169,6 +169,7 @@
 
    assert( [NSThread mulleIsMainThread]);
 
+   n = 0;
    glfwGetMonitors( &n);
    return( n);
 }
@@ -217,6 +218,7 @@
    assert( [NSThread mulleIsMainThread]);
    assert( _monitor);
 
+   xscale = yscale = 1.0;
    glfwGetMonitorContentScale( _monitor, &xscale, &yscale);
    return( CGVectorMake( xscale, yscale));
 }
@@ -235,47 +237,58 @@
    if( ! mode)
       return( 72.0);
 
+   w = h = 0;
    glfwGetMonitorPhysicalSize( _monitor, &w, &h);
+   if( ! w || ! h)
+      return( 72.0);
 
-   hdpi = mode->width / w / 2.54;
-   vdpi = mode->height / h / 2.54;
+   // width height in mm
+   hdpi = (mode->width / w) * 10.0 * 2.54;      // mm -> cm -> inch
+   vdpi = (mode->height / h) * 10.0 * 2.54;
    return( hdpi < vdpi ? hdpi : vdpi);
 }
 
 
-- (CGSize) os_physicalSize;
+- (CGSize) os_physicalSize
 {
    int   w, h;
 
    assert( [NSThread mulleIsMainThread]);
    assert( _monitor);
 
+   w = h = 0;
    glfwGetMonitorPhysicalSize( _monitor, &w, &h);
+   if( ! w)
+      w = 42000.0f; // 19" 
+   if( ! h)
+      h = 23600.0f; // 19"
    return( CGSizeMake( w / 1000.0, h / 1000.0));
 }
 
 
-- (struct CGBitmapRect) os_canvas
+- (struct MulleIntegerRect) os_canvas
 {
    int   x, y, w, h;
 
    assert( [NSThread mulleIsMainThread]);
    assert( _monitor);
 
+   x = y = w = h = 0;
    glfwGetMonitorWorkarea( _monitor, &x, &y, &w, &h);
-   return( CGBitmapRectMake( x, y, w, h));
+   return( MulleIntegerRectMake( x, y, w, h));
 }
 
 
-- (struct CGBitmapPoint) os_position
+- (struct MulleIntegerPoint) os_position
 {
    int   x, y;
 
    assert( [NSThread mulleIsMainThread]);
    assert( _monitor);
 
+   x = y = 0;
    glfwGetMonitorPos( _monitor, &x, &y);
-   return( CGBitmapPointMake( x, y));
+   return( MulleIntegerPointMake( x, y));
 }
 
 

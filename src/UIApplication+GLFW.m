@@ -13,6 +13,10 @@
 #import "GLFWOSScreen.h"
 
 
+#ifdef DEBUG
+//# define GLFW_LOG_ERROR
+#endif 
+
 @interface UIApplication( UIScreenPrivate)
 
 - (void) _addScreen:(id <UIScreen>) screen;
@@ -24,7 +28,7 @@
 
 @implementation UIApplication ( GLFW)
 
-static void   error_callback(int code, const char* description)
+static void   callback_glfw_error(int code, const char* description)
 {
    fprintf( stderr, "GLFW Error #%d: \"%s\"\n", code, description);
 }
@@ -32,10 +36,10 @@ static void   error_callback(int code, const char* description)
 
 static void   monitorCallback( GLFWmonitor *monitor, int event)
 {
-   UIApplication            *app;
-   UIScreenEvent            *screenEvent;
-   GLFWOSScreen             *screen;
-   enum UIScreenEventType   type;
+   UIApplication       *app;
+   UIScreenEvent       *screenEvent;
+   GLFWOSScreen        *screen;
+   UIScreenEventType   type;
 
    switch( event)
    {
@@ -53,8 +57,12 @@ static void   monitorCallback( GLFWmonitor *monitor, int event)
 
    screenEvent = [[[UIScreenEvent alloc] initWithScreen:screen
                                         screenEventType:type] autorelease];
-   app = [UIApplication sharedInstance];
-   [app handleScreenEvent:screenEvent];
+
+#ifdef DEBUG
+   if( ! UIApp)
+      MulleUICLog( "UIApp is not available, as +sharedInstance hasn't been called.");
+#endif
+   [UIApp handleScreenEvent:screenEvent];
 }
 
 
@@ -62,7 +70,9 @@ static void   monitorCallback( GLFWmonitor *monitor, int event)
 {
    assert( [NSThread mulleIsMainThread]);
 
-   glfwSetErrorCallback( error_callback);
+#ifdef GLFW_LOG_ERROR
+   glfwSetErrorCallback( callback_glfw_error);
+#endif
 
    // This function initializes the GLFW library. Before most GLFW functions
    // can be used, GLFW must be initialized, and before an application
@@ -78,11 +88,10 @@ static void   monitorCallback( GLFWmonitor *monitor, int event)
       abort();
    }
    // calling glSwapInterval here is too early, as the window isn't there yet
-
 }
 
 
-+ (void) os_terminate
++ (void) os_deinitialize
 {
    // this doesn't exit the app,
 
@@ -116,5 +125,30 @@ static void   monitorCallback( GLFWmonitor *monitor, int event)
    glfwSetMonitorCallback( 0);
 }
 
+
+- (void *) os_createStandardCursor:(UICursorStandardShape) shape
+{
+   assert( [NSThread mulleIsMainThread]);
+   int   glfwShape;
+        
+   switch( shape)
+   {
+   default                       : glfwShape = GLFW_ARROW_CURSOR; break;
+   case UICursorTextInput        : glfwShape = GLFW_IBEAM_CURSOR; break;
+   case UICursorDrag             : glfwShape = GLFW_HAND_CURSOR; break;
+   case UICursorHorizontalResize : glfwShape = GLFW_HRESIZE_CURSOR; break;
+   case UICursorVerticalResize   : glfwShape = GLFW_VRESIZE_CURSOR; break;
+   }
+
+   return( glfwCreateStandardCursor( glfwShape));
+}
+
+
+- (void) os_destroyCursor:(void *) cursor
+{
+   assert( [NSThread mulleIsMainThread]);
+
+   glfwDestroyCursor( cursor);
+}
 
 @end

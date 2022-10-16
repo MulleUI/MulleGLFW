@@ -15,14 +15,14 @@
 #define _mulle_glfw_include_h__
 
 // You can tweak the following #include with these commands.
-// (Use 4DD52FA1-440A-4347-9D8B-8CA8C43C2D88 instead of glfw if there are duplicate entries)
-//    remove:             `mulle-sde dependency mark glfw no-header`
-//    rename:             `mulle-sde dependency|library set glfw include whatever.h`
-//    reorder:            `mulle-sde dependency move glfw <up|down>`
+// (Use 1B8FD78D-81ED-4042-B179-4A346B0C69D1 instead of glfw if there are duplicate entries)
+//    remove #include:: `mulle-sde dependency mark glfw no-header`
+//    rename:              `mulle-sde dependency|library set glfw include whatever.h`
+//    reorder:             `mulle-sde dependency move glfw <up|down>`
 //    toggle #include:    `mulle-sde dependency mark glfw [no-]import`
-//    toggle public:      `mulle-sde dependency mark glfw [no-]public`
-//    toggle optional:    `mulle-sde dependency mark glfw [no-]require`
-//    remove for platform:`mulle-sde dependency mark glfw no-platform-<uname>`
+//    toggle public:       `mulle-sde dependency mark glfw [no-]public`
+//    toggle optional:     `mulle-sde dependency mark glfw [no-]require`
+//    remove for platform: `mulle-sde dependency mark glfw no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #include <GLFW/glfw3.h>   // glfw
 

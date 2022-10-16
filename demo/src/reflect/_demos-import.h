@@ -13,13 +13,13 @@
 
 // You can tweak the following #import with these commands.
 // (Use 418314DC-B168-4745-9384-FEBB8EB0D4AA instead of MulleGLFW if there are duplicate entries)
-//    remove:             `mulle-sde dependency mark MulleGLFW no-header`
-//    rename:             `mulle-sde dependency|library set MulleGLFW include whatever.h`
-//    reorder:            `mulle-sde dependency move MulleGLFW <up|down>`
+//    remove #import: : `mulle-sde dependency mark MulleGLFW no-header`
+//    rename:              `mulle-sde dependency|library set MulleGLFW include whatever.h`
+//    reorder:             `mulle-sde dependency move MulleGLFW <up|down>`
 //    toggle #import:     `mulle-sde dependency mark MulleGLFW [no-]import`
-//    toggle public:      `mulle-sde dependency mark MulleGLFW [no-]public`
-//    toggle optional:    `mulle-sde dependency mark MulleGLFW [no-]require`
-//    remove for platform:`mulle-sde dependency mark MulleGLFW no-platform-<uname>`
+//    toggle public:       `mulle-sde dependency mark MulleGLFW [no-]public`
+//    toggle optional:     `mulle-sde dependency mark MulleGLFW [no-]require`
+//    remove for platform: `mulle-sde dependency mark MulleGLFW no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #import <MulleGLFW/MulleGLFW.h>   // MulleGLFW
 

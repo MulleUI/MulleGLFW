@@ -5,18 +5,19 @@
 
 #import "import-private.h"
 
-#define CALLBACK_DEBUG
-#define MODIFIER_DEBUG
+//#define CALLBACK_DEBUG
+//#define MODIFIER_DEBUG
 
 //#define MOUSE_MOTION_CALLBACK_DEBUG  // enable and turn CALLBACK_DEBUG on
 
+
 @interface GLFWOSWindow( UIEventFuture)
 
-- (void) _windowFramebufferResizeCallback:(struct CGBitmapSize) size;
-- (void) _windowResizeCallback:(struct CGBitmapSize) size;
+- (void) _windowFramebufferResizeCallback:(struct MulleIntegerSize) size;
+- (void) _windowResizeCallback:(struct MulleIntegerSize) size;
 - (void) _windowCloseCallback;
 - (void) _windowRefreshCallback;
-- (void) _windowMoveCallback:(struct CGBitmapPoint) position;
+- (void) _windowMoveCallback:(struct MulleIntegerPoint) position;
 
 - (void) _updateWindowRefreshRate;
 
@@ -35,7 +36,7 @@ void   GLFWOSWindowEventDefaultCallback( GLFWOSWindow *window, UIWindowEvent *ev
 void   GLFWOSWindowRetainedEventDefaultCallback( GLFWOSWindow *window,
                                                  NS_CONSUMED UIEvent *retainedEvent)
 {
-   [window->_eventsReceiver handleRetainedEvent:retainedEvent];
+   [window->_eventsReceiver receiveRetainedEvent:retainedEvent];
 }
 
 
@@ -46,7 +47,7 @@ static void   windowMoveCallback( GLFWwindow* window, int xpos, int ypos)
    assert( [NSThread mulleIsMainThread]);
 
    self = glfwGetWindowUserPointer( window);
-   [self _windowMoveCallback:CGBitmapPointMake( xpos, ypos)];
+   [self _windowMoveCallback:MulleIntegerPointMake( xpos, ypos)];
 }
 
 
@@ -80,7 +81,7 @@ static void   windowResizeCallback( GLFWwindow* window, int width, int height)
    assert( [NSThread mulleIsMainThread]);
 
    self = glfwGetWindowUserPointer( window);
-   [self _windowResizeCallback:CGBitmapSizeMake( width, height)];
+   [self _windowResizeCallback:MulleIntegerSizeMake( width, height)];
 }
 
 
@@ -92,9 +93,8 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
    assert( [NSThread mulleIsMainThread]);
 
    self = glfwGetWindowUserPointer( window);
-   [self _windowFramebufferResizeCallback:CGBitmapSizeMake( width, height)];
+   [self _windowFramebufferResizeCallback:MulleIntegerSizeMake( width, height)];
 }
-
 
 
 - (void) os_initWindowEvents
@@ -112,21 +112,27 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
 }
 
 
+// the refresh rate is that what the monitor gives us
+// the frame rate is that, what we can vary
 - (void) _updateWindowRefreshRate
 {
-   id <UIScreen>           screen;
-   UIApplication           *app;
+   id <UIScreen>   screen;
 
-   app                     = [UIApplication sharedInstance];
-   screen                  = [app screenForFrame:_windowInfo.base.frame
-                            primaryIfNoneMatches:YES];
+#ifdef DEBUG
+   if( ! UIApp)
+      MulleUILog( "UIApp is not available, as +sharedInstance hasn't been called.");
+#endif
+
+   screen = [UIApp screenForFrame:_windowInfo.base.frame
+             primaryIfNoneMatches:YES];
+ 
    _windowInfo.refreshRate = screen ? [screen refreshRate] : (1.0 / 60.0);
 }
 
 
 - (void) updateWindowInfo
 {
-   struct CGWindowInfo     info;
+   struct CGWindowInfo   info;
 
    info = CGWindowInfoSFMakeVector( [self os_windowFrame],
                                     [self os_framebufferSize],
@@ -157,7 +163,7 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
 //
 // Move callback like refresh callback induces flicker
 //
-- (void) _windowMoveCallback:(struct CGBitmapPoint) position
+- (void) _windowMoveCallback:(struct MulleIntegerPoint) position
 {
    UIWindowEvent   *event;
 
@@ -168,7 +174,7 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
 //   fprintf( stderr, "%p moved: x=%d y=%d\n", self, xpos, ypos);
    [_windowInfoLock lock];
    {
-      _windowInfo.base.frame.origin = CGBitmapPointGetPoint( position);
+      _windowInfo.base.frame.origin = CGPointMakeWithIntegerPoint( position);
       [self _updateWindowRefreshRate];
    }
    [_windowInfoLock unlock];
@@ -178,10 +184,10 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
 }
 
 
-- (void) _windowResizeCallback:(struct CGBitmapSize) size
+- (void) _windowResizeCallback:(struct MulleIntegerSize) size
 {
-   UIWindowEvent    *event;
-   GLFWOSWindow     *window;
+   UIWindowEvent   *event;
+   GLFWOSWindow    *window;
 
 #if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
     MulleUILog( "w=%td h=%td", size.width, size.height);
@@ -191,10 +197,10 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
    // reason being, because the window manager is resizing in another
    // process
 
-   // assert( CGSizeEqualToSize( [self os_windowSize], CGBitmapSizeGetSize( size)));
+   // assert( CGSizeEqualToSize( [self os_windowSize], CGSizeMakeWithIntegerSize( size)));
    [_windowInfoLock lock];
    {
-      _windowInfo.base.frame.size = CGBitmapSizeGetSize( size);
+      _windowInfo.base.frame.size = CGSizeMakeWithIntegerSize( size);
       [self _updateWindowRefreshRate];
    }
    [_windowInfoLock unlock];
@@ -204,7 +210,7 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
 }
 
 
-- (void) _windowFramebufferResizeCallback:(struct CGBitmapSize) size
+- (void) _windowFramebufferResizeCallback:(struct MulleIntegerSize) size
 {
    UIWindowEvent   *event;
 
@@ -214,6 +220,7 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
    [_windowInfoLock lock];
    {
       _windowInfo.base.framebufferSize = size;
+      _uninitializedFramebuffer        = YES;      
    }
    [_windowInfoLock unlock];
 
@@ -234,7 +241,8 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
 #endif
 
    event = [[[UIWindowRefreshEvent alloc] init] autorelease];
-//   [self handleRetainedEvent:event];
+//   [self receiveRetainedEvent:event];
+   _uninitializedFramebuffer = YES;
 
    _windowEventsCallback( self, event);
 }
@@ -274,7 +282,7 @@ static void   keyCallback( GLFWwindow* window,
 }
 
 
-void   charCallback(GLFWwindow* window, unsigned int codepoint)
+void   charCallback( GLFWwindow* window, unsigned int codepoint)
 {
    GLFWOSWindow   *self;
 
@@ -355,6 +363,7 @@ static void   mouseScrollCallback( GLFWwindow *window,
             modifiers:(int) mods
 {
    UIEvent      *event;
+
 #ifdef CALLBACK_DEBUG
    MulleUILogThisMethod();
 #endif
@@ -369,37 +378,37 @@ static void   mouseScrollCallback( GLFWwindow *window,
 //      {
 //      case GLFW_KEY_LEFT_SHIFT    :
 //      case GLFW_KEY_RIGHT_SHIFT   :
-//         self->_modifiers |= GLFW_MOD_SHIFT;
+//         self->_inputState.keyModifiers |= GLFW_MOD_SHIFT;
 //         break;
 //      case GLFW_KEY_LEFT_CONTROL  :
 //      case GLFW_KEY_RIGHT_CONTROL :
-//         self->_modifiers |= GLFW_MOD_CONTROL;
+//         self->_inputState.keyModifiers |= GLFW_MOD_CONTROL;
 //         break;
 //      case GLFW_KEY_LEFT_ALT      :
 //      case GLFW_KEY_RIGHT_ALT     :
-//         self->_modifiers |= GLFW_MOD_ALT;
+//         self->_inputState.keyModifiers |= GLFW_MOD_ALT;
 //         break;
 //      case GLFW_KEY_LEFT_SUPER    :
 //      case GLFW_KEY_RIGHT_SUPER   :
-//         self->_modifiers |= GLFW_MOD_SUPER;
+//         self->_inputState.keyModifiers |= GLFW_MOD_SUPER;
 //         break;
 //      }
 //   }
 //   else
-     self->_modifiers = mods;
+
+   self->_inputState.keyModifiers = mods;
 
 #ifdef MODIFIER_DEBUG
-   MulleUILog( "modifiers=0x%tx", self->_modifiers);
+   MulleUILog( "modifiers=0x%tx", self->_inputState.keyModifiers);
 #endif
 
    if( self->_discardEventsMask & UIEventTypePresses)
       return;
 
-   event = [[UIKeyboardEvent alloc] initWithLocationInWindow:self->_mouseLocation
-                                                   modifiers:mods
-                                                         key:key
-                                                    scanCode:scancode
-                                                      action:action];
+   event = [[UIKeyboardEvent alloc] initWithInputState:&self->_inputState
+                                                   key:key
+                                              scanCode:scancode
+                                                action:action];
   _otherRetainedEventsCallback( self, event);
 }
 
@@ -415,9 +424,8 @@ static void   mouseScrollCallback( GLFWwindow *window,
    if( self->_discardEventsMask & UIEventTypeUnicode)
       return;
 
-   event = [[UIUnicodeEvent alloc] initWithLocationInWindow:self->_mouseLocation
-                                                  modifiers:self->_modifiers
-                                                  character:codepoint];
+   event = [[UIUnicodeEvent alloc] initWithInputState:&self->_inputState
+                                            character:codepoint];
   _otherRetainedEventsCallback( self, event);
 }
 
@@ -436,20 +444,19 @@ static void   mouseScrollCallback( GLFWwindow *window,
 #ifdef MODIFIER_DEBUG
    MulleUILog( "modifiers=0x%tx", mods);
 #endif
-   self->_modifiers = mods;
+   self->_inputState.keyModifiers = mods;
 
    bit = 1LL << button;
-   self->_mouseButtonStates &= ~bit;
+   self->_inputState.buttonStates &= ~bit;
    if( action == GLFW_PRESS)
-      self->_mouseButtonStates |= bit;
+      self->_inputState.buttonStates |= bit;
 
    if( self->_discardEventsMask & UIEventTypeTouches)
       return;
 
-   event = [[UIMouseButtonEvent alloc] initWithLocationInWindow:self->_mouseLocation
-                                                      modifiers:mods
-                                                         button:button
-                                                         action:action];
+   event = [[UIMouseButtonEvent alloc] initWithInputState:&_inputState
+                                                   button:button
+                                                   action:action];
   _otherRetainedEventsCallback( self, event);
 
    // [self dump];
@@ -481,8 +488,8 @@ static void   mouseScrollCallback( GLFWwindow *window,
    //
    // we get not events for the window title bar
    // TODO: we might need to scale the values for DPI or ?
-   self->_mouseLocation.x = pos.x;
-   self->_mouseLocation.y = pos.y;
+   self->_inputState.locationInWindow.x = pos.x;
+   self->_inputState.locationInWindow.y = pos.y;
 
    // TODO: wrap in autorelease pool ?
    //       + event don't leak if someone throws
@@ -490,9 +497,7 @@ static void   mouseScrollCallback( GLFWwindow *window,
 
    // TODO: mouseButtonStates need to be reset when the mouse leaves the
    //       window, but isn't
-   event = [[UIMouseMotionEvent alloc] initWithLocationInWindow:self->_mouseLocation
-                                                      modifiers:self->_modifiers
-                                                   buttonStates:self->_mouseButtonStates];
+   event = [[UIMouseMotionEvent alloc] initWithInputState:&self->_inputState];
    _otherRetainedEventsCallback( self, event);
 }
 
@@ -523,9 +528,8 @@ static void   mouseScrollCallback( GLFWwindow *window,
    else
       scrollOffset = CGPointMake( -offset.x, -offset.y);
 
-   event = [[UIMouseScrollEvent alloc] initWithLocationInWindow:self->_mouseLocation
-                                                      modifiers:self->_modifiers
-                                                   scrollOffset:scrollOffset];
+   event = [[UIMouseScrollEvent alloc] initWithInputState:&self->_inputState
+                                             scrollOffset:scrollOffset];
    _otherRetainedEventsCallback( self, event);
 }
 

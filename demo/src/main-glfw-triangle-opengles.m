@@ -166,7 +166,7 @@ static void   init_scene( void)
 
 static void   display( GLFWOSWindow *gWindow)
 {
-   struct CGBitmapSize    framebufferSize;
+   struct MulleIntegerSize    framebufferSize;
    float                  ratio;
    mulle_absolutetime_t   now;
 
@@ -305,20 +305,20 @@ int   main( int argc, char *argv[])
          continue;
       }
 
-      // lib     : GLFW_CONTEXT_CREATION_API    (0=native,1=egl,2=mesa)
+      // lib     : GLFW_CONTEXT_CREATION_API    (0=default 1=native,2=egl,3=mesa)
       if( ! strcmp( argv[ i], "--native"))
-      {
-         hints = GLFWGraphicsHintsBySettingAPILibrary( hints, 0);
-         continue;
-      }
-      if( ! strcmp( argv[ i], "--egl"))
       {
          hints = GLFWGraphicsHintsBySettingAPILibrary( hints, 1);
          continue;
       }
-      if( ! strcmp( argv[ i], "--mesa"))
+      if( ! strcmp( argv[ i], "--egl"))
       {
          hints = GLFWGraphicsHintsBySettingAPILibrary( hints, 2);
+         continue;
+      }
+      if( ! strcmp( argv[ i], "--mesa"))
+      {
+         hints = GLFWGraphicsHintsBySettingAPILibrary( hints, 3);
          continue;
       }
 

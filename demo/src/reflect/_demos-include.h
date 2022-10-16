@@ -14,6 +14,16 @@
 #ifndef _demos_include_h__
 #define _demos_include_h__
 
-/* no headers */
+// You can tweak the following #include with these commands.
+// (Use E39DCDDC-1F8B-4C3B-A106-5C92EE25BAA7 instead of GL if there are duplicate entries)
+//    remove #include:: `mulle-sde dependency mark GL no-header`
+//    rename:              `mulle-sde dependency|library set GL include whatever.h`
+//    reorder:             `mulle-sde dependency move GL <up|down>`
+//    toggle #include:    `mulle-sde dependency mark GL [no-]import`
+//    toggle public:       `mulle-sde dependency mark GL [no-]public`
+//    toggle optional:     `mulle-sde dependency mark GL [no-]require`
+//    remove for platform: `mulle-sde dependency mark GL no-platform-<uname>`
+//        (use `mulle-sourcetree-to-c --unames` to list known values)
+#include <GL/glext.h>   // GL
 
 #endif

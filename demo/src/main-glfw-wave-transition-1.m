@@ -404,7 +404,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 static void   receiveWindowEvents( GLFWOSWindow *window, UIWindowEvent *event)
 {
-   struct CGBitmapSize   size;
+   struct MulleIntegerSize   size;
 
    switch( [event eventType])
    {
@@ -430,7 +430,7 @@ static void   receiveOtherEvents( GLFWOSWindow *window, UIEvent *event)
                     [(UIKeyboardEvent *) event key],
                     [(UIKeyboardEvent *) event scanCode],
                     [(UIKeyboardEvent *) event action],
-                    [(UIKeyboardEvent *) event modifiers]);
+                    [(UIKeyboardEvent *) event keyModifiers]);
       break;
 
    case UIEventTypeMotion  :
@@ -444,7 +444,7 @@ static void   receiveOtherEvents( GLFWOSWindow *window, UIEvent *event)
       mouse_button_callback( [window os_window],
                              [(UIMouseButtonEvent *) event button],
                              [(UIMouseButtonEvent *) event action],
-                             [(UIMouseButtonEvent *) event modifiers]);
+                             [(UIMouseButtonEvent *) event keyModifiers]);
       break;
 
    case UIEventTypeScroll  :
@@ -467,7 +467,7 @@ int main(int argc, char* argv[])
     int width, height;
    UIApplication  *app;
    GLFWOSWindow     *gWindow;
-   struct CGBitmapSize   framebufferSize;
+   struct MulleIntegerSize   framebufferSize;
 
 //    glfwSetErrorCallback(error_callback);
 //

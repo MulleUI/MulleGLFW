@@ -71,8 +71,8 @@
 - (CGVector) os_contentScale;
 - (CGSize) os_physicalSize;
 - (CGFloat) os_dpi;
-- (struct CGBitmapRect) os_canvas;
-- (struct CGBitmapPoint) os_position;
+- (struct MulleIntegerRect) os_canvas;
+- (struct MulleIntegerPoint) os_position;
 
 - (BOOL) os_isPrimaryScreen;
 

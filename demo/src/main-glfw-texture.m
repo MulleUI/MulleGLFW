@@ -87,59 +87,36 @@ static void   init_texture()
 //
 static void   display( GLFWOSWindow *window)
 {
-   static GLint faces[][4] = {{4,5,6,7},
-                              {1,2,6,5},
-                              {0,1,5,4},
-                              {0,3,2,1},
-                              {0,4,7,3},
-                              {2,3,7,6}
-                             };
-
-// Vertices
-   static GLfloat vertices[][3] = {{-1.0,-1.0,-1.0},
-                                   { 1.0,-1.0,-1.0},
-                                   { 1.0, 1.0,-1.0},
-                                   {-1.0, 1.0,-1.0},
+   static GLfloat vertices[][3] = {
                                    {-1.0,-1.0, 1.0},
                                    { 1.0,-1.0, 1.0},
                                    { 1.0, 1.0, 1.0},
-                                   {-1.0, 1.0, 1.0}};
+                                   {-1.0, 1.0, 1.0}
+                                   };
 
    glClearColor( 0.3f, 0.3f, 0.3f, 0.0f);
    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
    glBindTexture( GL_TEXTURE_2D, textureName);
 
-   // Draw the cube
+   // Draw the quad
 
-   for(int f = 0; f < 6; f++)
-   {
-      glBegin(GL_POLYGON);
+   glBegin(GL_POLYGON);
 
-      int v;
+   int v;
 
-      v = faces[f][0];
+   glTexCoord2f(0.0, 0.0);  // Map to the bottom left texel
+   glVertex3fv(vertices[0]);
 
-      glTexCoord2f(0.0, 0.0);  // Map to the bottom left texel
-      glVertex3fv(vertices[v]);
+   glTexCoord2f(0.0, 1.0);  // Map to the bottom right texel
+   glVertex3fv(vertices[1]);
 
-      v = faces[f][1];
+   glTexCoord2f(1.0, 1.0);  // Map to the top right texel
+   glVertex3fv(vertices[2]);
 
-      glTexCoord2f(0.0, 1.0);  // Map to the bottom right texel
-      glVertex3fv(vertices[v]);
+   glTexCoord2f(1.0, 0.0);  // Map to the top left texel
+   glVertex3fv(vertices[3]);
 
-      v = faces[f][2];
-
-      glTexCoord2f(1.0, 1.0);  // Map to the top right texel
-      glVertex3fv(vertices[v]);
-
-      v = faces[f][3];
-
-      glTexCoord2f(1.0, 0.0);  // Map to the top left texel
-      glVertex3fv(vertices[v]);
-
-      glEnd();
-   }
-   glFlush();
+   glEnd();
 }
 
 
@@ -201,7 +178,7 @@ static void   timerCallback( NSTimer *timer, id userInfo)
 // This is new.
 static void   receiveWindowEvents( GLFWOSWindow *window, UIWindowEvent *event)
 {
-   struct CGBitmapSize   size;
+   struct MulleIntegerSize   size;
 
    switch( [event windowEventType])
    {

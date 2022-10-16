@@ -12,6 +12,36 @@ if( MULLE_TRACE_INCLUDE)
 endif()
 
 #
+# Generated from sourcetree: E39DCDDC-1F8B-4C3B-A106-5C92EE25BAA7;GL;no-build,no-cmake-inherit,no-delete,no-dependency,no-fs,no-import,no-share,no-update;
+# Disable with : `mulle-sourcetree mark GL `
+# Disable for this platform: `mulle-sourcetree mark GL no-cmake-platform-${MULLE_UNAME}`
+#
+if( NOT GL_LIBRARY)
+   find_library( GL_LIBRARY NAMES GL)
+   message( STATUS "GL_LIBRARY is ${GL_LIBRARY}")
+   #
+   # The order looks ascending, but due to the way this file is read
+   # it ends up being descending, which is what we need.
+   #
+   if( GL_LIBRARY)
+      #
+      # Add GL_LIBRARY to ALL_LOAD_OS_SPECIFIC_LIBRARIES list.
+      # Disable with: `mulle-sourcetree mark GL no-cmake-add`
+      #
+      set( ALL_LOAD_OS_SPECIFIC_LIBRARIES
+         ${ALL_LOAD_OS_SPECIFIC_LIBRARIES}
+         ${GL_LIBRARY}
+         CACHE INTERNAL "need to cache this"
+      )
+      # intentionally left blank
+   else()
+      # Disable with: `mulle-sourcetree mark GL no-require-link`
+      message( FATAL_ERROR "GL_LIBRARY was not found")
+   endif()
+endif()
+
+
+#
 # Generated from sourcetree: 39912D90-862B-4036-A61E-44ADAA1BD386;CoreVideo;no-build,no-cmake-inherit,no-delete,no-dependency,no-fs,no-header,no-share,no-update,only-framework,only-platform-darwin;
 # Disable with : `mulle-sourcetree mark CoreVideo `
 # Disable for this platform: `mulle-sourcetree mark CoreVideo no-cmake-platform-${MULLE_UNAME}`

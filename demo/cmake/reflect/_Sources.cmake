@@ -11,10 +11,14 @@ endif()
 # contents selected with patternfile ??-source--sources
 #
 set( SOURCES
+src/glfw-triangle.m
+src/main-glfw-double-buffer.m
 src/main-glfw-events-c.m
 src/main-glfw-events.m
 src/main-glfw-events-objc.m
+src/main-glfw-framebuffer.m
 src/main-glfw-gears.m
+src/main-glfw-single-buffer.m
 src/main-glfw-texture.m
 src/main-glfw-triangle-opengles.m
 src/main-glfw-triangle-opengl.m
@@ -23,5 +27,9 @@ src/main-glfw-wave.m
 src/main-glfw-wave-original.m
 src/main-glfw-wave-transition-1.m
 src/main-glfw-wave-transition-2.m
+src/main-glfw-window-double-buffer.m
 src/main-glfw-window.m
+src/main-glfw-window-original.m
+src/main-glfw-window-refresh.m
+src/main-glfw-window-single-buffer.m
 )

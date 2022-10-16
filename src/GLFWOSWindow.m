@@ -8,14 +8,14 @@
 #import "GLFWOSWindow+UIEvent.h"
 
 
-#define CONTEXT_DEBUG
+//#define CONTEXT_DEBUG
 #ifdef DEBUG
 # define SWAP_DEBUG
 #endif
 
 @interface GLFWOSWindow( UIEventFuture)
 
-- (void) _windowFramebufferResizeCallback:(struct CGBitmapSize) size;
+- (void) _windowFramebufferResizeCallback:(struct MulleIntegerSize) size;
 
 @end
 
@@ -30,18 +30,19 @@ static struct
 
 
 // as we don't know, if we even use OpenGL here
-static void   defaultFrameCallback( GLFWOSWindow *window)
+static int   defaultFrameCallback( GLFWOSWindow *window)
 {
    fprintf( stderr, "The GLFW window needs a frameCallback.\n"
 "Typically you can use something like this with OpenGL:\n"
-"   static void  frameCallback( GLFWOSWindow *window)\n"
+"   static int  frameCallback( GLFWOSWindow *window)\n"
 "   {\n"
-"      struct CGBitmapSize   framebufferSize;\n"
+"      struct MulleIntegerSize   framebufferSize;\n"
 "\n"
 "      framebufferSize = [window os_framebufferSize];\n"
 "      glViewport( 0, 0, framebufferSize.width, framebufferSize.height);\n"
 "      glClearColor( 0, 0, 0, 0);\n"
 "      glClear( GL_COLOR_BUFFER_BIT);\n"
+"      return( 0);  // or 1, if you are animating\n"
 "   }\n"
 "\n"
 "   [glfwWindow setFrameCallback:frameCallback];\n"
@@ -63,7 +64,7 @@ static void   defaultFrameCallback( GLFWOSWindow *window)
 + (instancetype) windowWithFrame:(CGRect) frame
                  titleUTF8String:(char *) title
                        styleMask:(NSUInteger) styleMask
-                   graphicsHints:(enum GLFWGraphicsHints) graphicsHints
+                   graphicsHints:(GLFWGraphicsHints) graphicsHints
 {
    return( [[[self alloc] initWithFrame:frame
                         titleUTF8String:title
@@ -75,7 +76,7 @@ static void   defaultFrameCallback( GLFWOSWindow *window)
 + (instancetype) windowWithFrame:(CGRect) frame
                  titleUTF8String:(char *) title
                        styleMask:(NSUInteger) styleMask
-                   graphicsHints:(enum GLFWGraphicsHints) graphicsHints
+                   graphicsHints:(GLFWGraphicsHints) graphicsHints
                    sharingWindow:(id <UIOSWindow>) sharingWindow
 {
    return( [[[self alloc] initWithFrame:frame
@@ -93,7 +94,11 @@ static void   break_on_me( void)
 #endif
 
 
-static enum UIGraphicsBackend  getWindowBackend( GLFWwindow *window)
+//
+// TODO: can't really figure out if wayland or X11
+//       but glfw 3.4 will probably bring GLFW_PLATFORM, where this should
+//       be possible to query (hope)
+static UIGraphicsBackend  getWindowBackend( GLFWwindow *window)
 {
    int   api;
    int   forward;
@@ -126,15 +131,15 @@ static enum UIGraphicsBackend  getWindowBackend( GLFWwindow *window)
 - (instancetype) initWithFrame:(CGRect) frame
                titleUTF8String:(char *) title
                      styleMask:(NSUInteger) styleMask
-                 graphicsHints:(enum GLFWGraphicsHints) hints
+                 graphicsHints:(GLFWGraphicsHints) hints
                  sharingWindow:(id <UIOSWindow>) sharingWindow
 {
-   int   profile;
+   int   api;
    int   forward;
+   int   lib;
    int   major;
    int   minor;
-   int   api;
-   int   lib;
+   int   profile;
    int   first_lib;
 
    assert( [NSThread mulleIsMainThread]);
@@ -155,6 +160,18 @@ static enum UIGraphicsBackend  getWindowBackend( GLFWwindow *window)
 
    /*
     * Window Styling Hints
+    *
+    *  The following hints are always hard constraints:
+    *  (https://www.glfw.org/docs/latest/window_guide.html#window_hints)
+    *
+    *  GLFW_STEREO
+    *  GLFW_DOUBLEBUFFER
+    *  GLFW_CLIENT_API
+    *  GLFW_CONTEXT_CREATION_API 
+    * 
+    *  GLFW_OPENGL_FORWARD_COMPAT
+    *  GLFW_OPENGL_PROFILE
+    *
     */
    glfwWindowHint( GLFW_DOUBLEBUFFER, (styleMask & UIWindowStyleSingleBuffer) ? GLFW_FALSE : GLFW_TRUE);
    glfwWindowHint( GLFW_TRANSPARENT_FRAMEBUFFER, (styleMask & UIWindowStyleTransparent) ? GLFW_TRUE : GLFW_FALSE);
@@ -176,12 +193,11 @@ static enum UIGraphicsBackend  getWindowBackend( GLFWwindow *window)
     */
 
    api     = -1;
+   lib     = -1;
    profile = -1;
    forward = -1;
    major   = -1;
    minor   = -1;
-   api     = -1;
-   lib     = -1;
 
 //
 // These function can only be called from main thread (see above)
@@ -236,9 +252,9 @@ static enum UIGraphicsBackend  getWindowBackend( GLFWwindow *window)
 
    switch( GLFWGraphicsHintsGetProfile( hints))
    {
-   case 0  : profile = GLFW_OPENGL_ANY_PROFILE; break;
-   case 1  : profile = GLFW_OPENGL_CORE_PROFILE; break;
-   case 2  : profile = GLFW_OPENGL_COMPAT_PROFILE; break;
+   case 1  : profile = GLFW_OPENGL_ANY_PROFILE; break;
+   case 2  : profile = GLFW_OPENGL_CORE_PROFILE; break;
+   case 3  : profile = GLFW_OPENGL_COMPAT_PROFILE; break;
    }
 
    // you can't set this or GLFW_OPENGL_CORE_PROFILE or GLFW_OPENGL_COMPAT_PROFILE on GL < 3.2
@@ -253,9 +269,9 @@ static enum UIGraphicsBackend  getWindowBackend( GLFWwindow *window)
    // remember what was opened first for retries
    switch( GLFWGraphicsHintsGetAPILibrary( hints))
    {
-   case 0 : lib = GLFW_NATIVE_CONTEXT_API; break;
-   case 1 : lib = GLFW_EGL_CONTEXT_API; break;
-   case 2 : lib = GLFW_OSMESA_CONTEXT_API; break;
+   case 1 : lib = GLFW_NATIVE_CONTEXT_API; break;
+   case 2 : lib = GLFW_EGL_CONTEXT_API; break;
+   case 3 : lib = GLFW_OSMESA_CONTEXT_API; break;
    }
    first_lib = lib;
 
@@ -353,6 +369,9 @@ retry:
    else
       fprintf( stderr, "window %p created\n", _window);
 
+   // needed for wayland, else exit on zero size window during resize
+   glfwSetWindowSizeLimits( _window, 32, 32, GLFW_DONT_CARE, GLFW_DONT_CARE);
+
    // this is basically the "rendezvous" point where nanoVG latches unto
    // its also the receiver for OpenGL calls. That's why we need a window
    // to draw stuff
@@ -371,10 +390,11 @@ retry:
    _backend                     = getWindowBackend( (GLFWwindow *) _window);
    _frameCallback               = defaultFrameCallback;
    _haveGraphicsContext         = glfwGetWindowAttrib( _window, GLFW_CLIENT_API) != GLFW_NO_API;
-   _mouseLocation               = CGPointMake( -1.0, -1.0);
+   _inputState.locationInWindow = CGPointMake( -1.0, -1.0);
    _otherRetainedEventsCallback = GLFWOSWindowRetainedEventDefaultCallback;
    _scrollWheelSensitivity      = 20.0;
    _styleMask                   = styleMask;
+   _uninitializedFramebuffer    = YES;
    _windowEventsCallback        = GLFWOSWindowEventDefaultCallback;
 
    assert( (api == GLFW_NO_API && ! _haveGraphicsContext) || _haveGraphicsContext);
@@ -403,7 +423,7 @@ retry:
 - (instancetype) initWithFrame:(CGRect) frame
                titleUTF8String:(char *) title
                      styleMask:(NSUInteger) styleMask
-                 graphicsHints:(enum GLFWGraphicsHints) hints
+                 graphicsHints:(GLFWGraphicsHints) hints
 {
    return( [self initWithFrame:frame
                titleUTF8String:title
@@ -545,9 +565,13 @@ retry:
 
    [self getOSWindowInfo:&info];
 
+#ifdef DEBUG
+   if( ! UIApp)
+      MulleUICLog( "UIApp is not available, as +sharedInstance hasn't been called.");
+#endif
    // should work for fullscreen as well I believe
-   return( [[UIApplication sharedInstance] screenForFrame:info.base.frame
-                                     primaryIfNoneMatches:flag]);
+   return( [UIApp screenForFrame:info.base.frame
+            primaryIfNoneMatches:flag]);
 }
 
 
@@ -687,6 +711,9 @@ static char  *context_profile_utf8string( int value)
    char   *profile_prefix;
    char   *forward_s;
    char   *forward_prefix;
+   int    glfw_major;
+   int    glfw_minor;
+   int    glfw_revision;
 
    assert( [NSThread mulleIsMainThread]);
 
@@ -703,7 +730,9 @@ static char  *context_profile_utf8string( int value)
    forward_s      = forward ? "forward" : "";
    forward_prefix = *forward_s ? " " : "";
 
-   s = MulleObjC_asprintf( "%s %u.%u.%u%s%s%s%s (%s)",
+   glfwGetVersion( &glfw_major, &glfw_minor, &glfw_revision);
+
+   s = MulleObjC_asprintf( "%s %u.%u.%u%s%s%s%s (%s) - GLFW v%d.%d.%d",
                            context_api_utf8string( api),
                            major,
                            minor,
@@ -712,7 +741,10 @@ static char  *context_profile_utf8string( int value)
                            profile_s,
                            forward_prefix,
                            forward_s,
-                           context_vendor_utf8string( vendor));
+                           context_vendor_utf8string( vendor),
+                           glfw_major,
+                           glfw_minor,
+                           glfw_revision);
    return( s);
 }
 
@@ -795,22 +827,26 @@ static struct
 
 - (BOOL) os_windowShouldClose
 {
+   BOOL   flag;
+
    // can be called from any thread
    // we are finalized if _window nil 
    if( ! _window)
       return( YES);
 
-   return( glfwWindowShouldClose( _window) ? YES : NO);
+
+   flag = glfwWindowShouldClose( _window) ? YES : NO;
+   return( flag);
 }
 
 
-- (void) applicationDidAddWindow
+- (void) applicationDidAddWindow:(UIApplication *) app
 {
    // ignore
 }
 
 
-- (void) applicationDidRemoveWindow
+- (void) applicationDidRemoveWindow:(UIApplication *) app
 {
    [self mullePerformFinalize];
 }
@@ -915,7 +951,7 @@ static struct
 }
 
 
-- (struct CGBitmapSize) os_framebufferSize
+- (struct MulleIntegerSize) os_framebufferSize
 {
    int   w;
    int   h;
@@ -924,7 +960,7 @@ static struct
    assert( _window);
 
    glfwGetFramebufferSize( _window, &w, &h);  // just to be sure...
-   return( CGBitmapSizeMake( w, h));
+   return( MulleIntegerSizeMake( w, h));
 }
 
 
@@ -935,6 +971,15 @@ static struct
 //   glfwGetWindowContentScale( _window, &xscale, &yscale);
 //   return( CGVectorMake( xscale, yscale));
    return( CGVectorMake( 1.0, 1.0));
+}
+
+
+- (void) os_setCursor:(UICursor *) cursor
+{
+   assert( [NSThread mulleIsMainThread]);
+   assert( _window);
+
+   glfwSetCursor( _window, cursor);
 }
 
 
@@ -1052,6 +1097,30 @@ static struct
 - (void) writeOSWindowPropertyChangesIfNeeded
 {
    // GLFWOS windows property changes immediately
+}
+
+
+- (CGPoint) mouseLocation
+{
+   assert( [NSThread mulleIsMainThread]);
+
+   return( _inputState.locationInWindow);
+}
+
+
+- (NSUInteger) mouseButtonStates
+{
+   assert( [NSThread mulleIsMainThread]);
+
+   return( _inputState.buttonStates);
+}
+
+
+- (NSUInteger) keyModifiers
+{
+   assert( [NSThread mulleIsMainThread]);
+
+   return( _inputState.keyModifiers);
 }
 
 @end
