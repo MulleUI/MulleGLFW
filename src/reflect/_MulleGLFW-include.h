@@ -15,7 +15,7 @@
 #define _mulle_glfw_include_h__
 
 // You can tweak the following #include with these commands.
-// (Use 1B8FD78D-81ED-4042-B179-4A346B0C69D1 instead of glfw if there are duplicate entries)
+// (Use C5771105-A729-47DA-86DF-55FD0703B958 instead of glfw if there are duplicate entries)
 //    remove #include:: `mulle-sde dependency mark glfw no-header`
 //    rename:              `mulle-sde dependency|library set glfw include whatever.h`
 //    reorder:             `mulle-sde dependency move glfw <up|down>`

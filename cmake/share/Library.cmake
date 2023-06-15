@@ -231,11 +231,6 @@ endif()
 
 include( PostLibrary OPTIONAL)
 
-message( STATUS "PUBLIC_HEADERS=${PUBLIC_HEADERS}")
-message( STATUS "PRIVATE_HEADERS=${PRIVATE_HEADERS}")
-message( STATUS "PROJECT_INSTALLABLE_HEADERS=${PROJECT_INSTALLABLE_HEADERS}")
-
-
 # clean LIBRARY_SOURCES for the next run, if set by this script
 if( __LIBRARY_SOURCES_UNSET )
    unset( LIBRARY_SOURCES)
@@ -248,9 +243,3 @@ if( __LIBRARY_RESOURCES_UNSET )
    unset( LIBRARY_RESOURCES)
    unset( __LIBRARY_RESOURCES_UNSET)
 endif()
-
-
-# extension : mulle-sde/cmake
-# directory : project/all
-# template  : .../Library.cmake
-# Suppress this comment with `export MULLE_SDE_GENERATE_FILE_COMMENTS=NO`

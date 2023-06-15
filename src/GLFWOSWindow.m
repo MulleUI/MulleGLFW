@@ -8,9 +8,9 @@
 #import "GLFWOSWindow+UIEvent.h"
 
 
-//#define CONTEXT_DEBUG
+// #define CONTEXT_DEBUG
 #ifdef DEBUG
-# define SWAP_DEBUG
+//# define SWAP_DEBUG
 #endif
 
 @interface GLFWOSWindow( UIEventFuture)
@@ -19,7 +19,7 @@
 
 @end
 
-
+#pragma clang diagnostic ignored "-Wprotocol"
 
 @implementation GLFWOSWindow
 
@@ -603,11 +603,14 @@ retry:
    // can be called from any thread
    assert( _window);
 
+#ifdef CONTEXT_DEBUG
+      MulleUILog( "lock: %p", _window);
+#endif
    [_contextLock lock];
    if( _haveGraphicsContext)
    {
 #ifdef CONTEXT_DEBUG
-      MulleUILog( "window: %p", _window);
+      MulleUILog( "activate window: %p", _window);
 #endif            
       glfwMakeContextCurrent( _window);
    }      
@@ -626,7 +629,7 @@ retry:
    if( _haveGraphicsContext)
    {
 #ifdef CONTEXT_DEBUG
-      MulleUILog( "window: %p", _window);
+      MulleUILog( "activate window: %p", _window);
 #endif          
       glfwMakeContextCurrent( _window);
    }
@@ -642,10 +645,13 @@ retry:
    if( _haveGraphicsContext)
    {
 #ifdef CONTEXT_DEBUG
-      MulleUILog( "window: NULL");
+      MulleUILog( "deactivate window: %p", _window);
 #endif          
       glfwMakeContextCurrent( NULL);
    }
+#ifdef CONTEXT_DEBUG
+   MulleUILog( "unlock: %p", _window);
+#endif
    [_contextLock unlock];
 }
 
@@ -966,7 +972,7 @@ static struct
 
 - (CGVector) os_UIScale
 {
-   float xscale, yscale;
+//   float xscale, yscale;
 
 //   glfwGetWindowContentScale( _window, &xscale, &yscale);
 //   return( CGVectorMake( xscale, yscale));
@@ -1108,7 +1114,7 @@ static struct
 }
 
 
-- (NSUInteger) mouseButtonStates
+- (NSUInteger) buttonStates
 {
    assert( [NSThread mulleIsMainThread]);
 

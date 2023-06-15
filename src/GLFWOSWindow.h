@@ -53,38 +53,38 @@ typedef NS_OPTIONS( NSUInteger, GLFWGraphicsHints)
 };
 
 
-static int GLFWGraphicsHintsGetProfile( GLFWGraphicsHints t)
+static inline int GLFWGraphicsHintsGetProfile( GLFWGraphicsHints t)
 {
    return( (t >> 30) & 0x3);
 }
 
-static int GLFWGraphicsHintsGetForward( GLFWGraphicsHints t)
+static inline int GLFWGraphicsHintsGetForward( GLFWGraphicsHints t)
 {
    return( (t >> 29) & 0x1);
 }
 
-static int GLFWGraphicsHintsGetAPI( GLFWGraphicsHints t)
+static inline int GLFWGraphicsHintsGetAPI( GLFWGraphicsHints t)
 {
    return( (t >> 26) & 0x7);
 }
 
-static int GLFWGraphicsHintsGetAPILibrary( GLFWGraphicsHints t)
+static inline int GLFWGraphicsHintsGetAPILibrary( GLFWGraphicsHints t)
 {
    return( (t >> 24) & 0x3);
 }
 
-static int GLFWGraphicsHintsGetMajor( GLFWGraphicsHints t)
+static inline int GLFWGraphicsHintsGetMajor( GLFWGraphicsHints t)
 {
    return( (t >> 16) & 0xFF);
 }
 
-static int GLFWGraphicsHintsGetMinor( GLFWGraphicsHints t)
+static inline int GLFWGraphicsHintsGetMinor( GLFWGraphicsHints t)
 {
    return( t & 0xFFFF);
 }
 
 
-static int GLFWGraphicsHintsBySettingProfile( GLFWGraphicsHints t, int profile)
+static inline int GLFWGraphicsHintsBySettingProfile( GLFWGraphicsHints t, int profile)
 {
    return( GLFWGraphicsHintsMake( profile,
                                   GLFWGraphicsHintsGetForward( t),
@@ -95,7 +95,7 @@ static int GLFWGraphicsHintsBySettingProfile( GLFWGraphicsHints t, int profile)
 }
 
 
-static int   GLFWGraphicsHintsBySettingForward( GLFWGraphicsHints t, int forward)
+static inline int   GLFWGraphicsHintsBySettingForward( GLFWGraphicsHints t, int forward)
 {
    return( GLFWGraphicsHintsMake( GLFWGraphicsHintsGetProfile( t),
                                   forward,
@@ -105,7 +105,7 @@ static int   GLFWGraphicsHintsBySettingForward( GLFWGraphicsHints t, int forward
                                   GLFWGraphicsHintsGetMinor( t)));
 }
 
-static int   GLFWGraphicsHintsBySettingAPI( GLFWGraphicsHints t, int api)
+static inline int   GLFWGraphicsHintsBySettingAPI( GLFWGraphicsHints t, int api)
 {
    return( GLFWGraphicsHintsMake( GLFWGraphicsHintsGetProfile( t),
                                   GLFWGraphicsHintsGetForward( t),
@@ -116,7 +116,7 @@ static int   GLFWGraphicsHintsBySettingAPI( GLFWGraphicsHints t, int api)
 }
 
 
-static int   GLFWGraphicsHintsBySettingAPILibrary( GLFWGraphicsHints t, int library)
+static inline int   GLFWGraphicsHintsBySettingAPILibrary( GLFWGraphicsHints t, int library)
 {
    return( GLFWGraphicsHintsMake( GLFWGraphicsHintsGetProfile( t),
                                   GLFWGraphicsHintsGetForward( t),
@@ -125,8 +125,6 @@ static int   GLFWGraphicsHintsBySettingAPILibrary( GLFWGraphicsHints t, int libr
                                   GLFWGraphicsHintsGetMajor( t),
                                   GLFWGraphicsHintsGetMinor( t)));
 }
-
-
 
 
 //
@@ -198,8 +196,11 @@ typedef int    (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 @property( assign, getter=isScrollWheelNatural) BOOL   scrollWheelNatural;
 
 @property( assign, readonly) NSUInteger                styleMask;
-@property( assign) mulle_relativetime_t                frameRate;
+@property( dynamic, assign) mulle_relativetime_t       frameRate;
 @property( assign, readonly) BOOL                      haveGraphicsContext;
+
+// renderGraphicsContext  is always nil! glfw has no drawing functionality
+@property( assign, readonly) id <UIGraphicsContext>    renderGraphicsContext;
 @property( assign) id <UIWindow>                       parentWindow;
 
 @property( readonly) struct UIInputState               inputState;

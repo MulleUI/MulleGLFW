@@ -81,6 +81,9 @@ int   main( int argc, char *argv[])
    GLFWOSWindow          *window;
    NSUInteger            styleMask;
 
+   // get glfw started
+   [UIApplication os_initialize];
+
    styleMask = GLFWOSWindowStyleMaskDefault | UIWindowStyleResizable;
    frameRate = 0.5;
 

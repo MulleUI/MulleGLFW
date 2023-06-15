@@ -17,9 +17,12 @@ include( ExecutableAuxC OPTIONAL)
 # But we keep the code as is otherwise, because static frameworks are likely
 # to arrive sooner or later.
 #
-if( APPLE)
-   unset( FORCE_LOAD_PREFIX)
-endif()
+# --- this probably fixed something but its disastrous for plain
+#     mulle-objc-developer/objc-developer with static libraries
+#
+# if( APPLE)
+#    unset( FORCE_LOAD_PREFIX)
+# endif()
 
 
 if( NOT DEFINED EXECUTABLE_LIBRARY_LIST)
@@ -57,9 +60,3 @@ if( NOT DEFINED EXECUTABLE_LIBRARY_LIST)
       ${OS_SPECIFIC_FRAMEWORKS}
    )
 endif()
-
-
-# extension : mulle-c/c-cmake
-# directory : project/all
-# template  : .../ExecutableAux.cmake
-# Suppress this comment with `export MULLE_SDE_GENERATE_FILE_COMMENTS=NO`

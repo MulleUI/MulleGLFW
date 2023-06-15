@@ -12,6 +12,7 @@ endif()
 #
 set( SOURCES
 src/glfw-triangle.m
+src/main-glfw-bench-context-switch.m
 src/main-glfw-double-buffer.m
 src/main-glfw-events-c.m
 src/main-glfw-events.m

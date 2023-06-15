@@ -28,15 +28,16 @@
 
 @implementation UIApplication ( GLFW)
 
+#ifdef GLFW_LOG_ERROR
 static void   callback_glfw_error(int code, const char* description)
 {
    fprintf( stderr, "GLFW Error #%d: \"%s\"\n", code, description);
 }
+#endif
 
 
 static void   monitorCallback( GLFWmonitor *monitor, int event)
 {
-   UIApplication       *app;
    UIScreenEvent       *screenEvent;
    GLFWOSScreen        *screen;
    UIScreenEventType   type;

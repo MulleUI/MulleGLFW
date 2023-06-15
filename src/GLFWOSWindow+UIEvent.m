@@ -24,6 +24,8 @@
 @end
 
 
+#pragma clang diagnostic ignored "-Wobjc-protocol-method-implementation"
+
 @implementation GLFWOSWindow ( UIEvent)
 
 
@@ -88,7 +90,6 @@ static void   windowResizeCallback( GLFWwindow* window, int width, int height)
 static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, int height)
 {
    GLFWOSWindow   *self;
-   CGRect      frame;
 
    assert( [NSThread mulleIsMainThread]);
 
@@ -187,7 +188,6 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
 - (void) _windowResizeCallback:(struct MulleIntegerSize) size
 {
    UIWindowEvent   *event;
-   GLFWOSWindow    *window;
 
 #if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
     MulleUILog( "w=%td h=%td", size.width, size.height);
@@ -465,8 +465,7 @@ static void   mouseScrollCallback( GLFWwindow *window,
 
 - (void) _mouseMotionCallback:(CGPoint) pos
 {
-   UIEvent    *event;
-   CGRect     frame;
+   UIEvent   *event;
 
 #if defined( CALLBACK_DEBUG) && defined( MOUSE_MOTION_CALLBACK_DEBUG)
    mulle_fprintf( stderr, "%s %@ (%.1f, %.1f)\n", __PRETTY_FUNCTION__, self, pos.x, pos.y);
@@ -495,7 +494,7 @@ static void   mouseScrollCallback( GLFWwindow *window,
    //       + event don't leak if someone throws
    //       - latency
 
-   // TODO: mouseButtonStates need to be reset when the mouse leaves the
+   // TODO: buttonStates need to be reset when the mouse leaves the
    //       window, but isn't
    event = [[UIMouseMotionEvent alloc] initWithInputState:&self->_inputState];
    _otherRetainedEventsCallback( self, event);
@@ -504,10 +503,9 @@ static void   mouseScrollCallback( GLFWwindow *window,
 
 - (void) _mouseScrollCallback:(CGPoint) offset
 {
-   UIEvent    *event;
-   uint64_t   bit;
-   CGPoint    scrollOffset;
-   CGFloat    sensitivity;
+   UIEvent   *event;
+   CGPoint   scrollOffset;
+   CGFloat   sensitivity;
 
 #ifdef CALLBACK_DEBUG
    MulleUILogThisMethod();
