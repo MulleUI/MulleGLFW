@@ -6,12 +6,9 @@
 #import "import-private.h"
 
 #import "GLFWOSWindow+UIEvent.h"
+#import "GLFWOSWindow+DebugPrivate.h"
 
 
-// #define CONTEXT_DEBUG
-#ifdef DEBUG
-//# define SWAP_DEBUG
-#endif
 
 @interface GLFWOSWindow( UIEventFuture)
 
@@ -21,7 +18,25 @@
 
 #pragma clang diagnostic ignored "-Wprotocol"
 
+
+@implementation NSObject( GLFWOSWindow)
+
+- (BOOL) __isUIOSWindow
+{
+   return( NO);
+}
+
+@end
+
+
 @implementation GLFWOSWindow
+
+- (BOOL) __isUIOSWindow
+{
+   return( YES);
+}
+
+
 
 static struct
 {
@@ -87,13 +102,6 @@ static int   defaultFrameCallback( GLFWOSWindow *window)
 }
 
 
-#ifdef DEBUG
-static void   break_on_me( void)
-{
-}
-#endif
-
-
 //
 // TODO: can't really figure out if wayland or X11
 //       but glfw 3.4 will probably bring GLFW_PLATFORM, where this should
@@ -104,6 +112,7 @@ static UIGraphicsBackend  getWindowBackend( GLFWwindow *window)
    int   forward;
    int   major;
    int   minor;
+   int   profile;
 
    api = glfwGetWindowAttrib( window, GLFW_CLIENT_API);
    if( api != GLFW_NO_API)
@@ -111,9 +120,16 @@ static UIGraphicsBackend  getWindowBackend( GLFWwindow *window)
       major    = glfwGetWindowAttrib( window, GLFW_CONTEXT_VERSION_MAJOR);
       minor    = glfwGetWindowAttrib( window, GLFW_CONTEXT_VERSION_MINOR);
       forward  = glfwGetWindowAttrib( window, GLFW_OPENGL_FORWARD_COMPAT);
+      profile  = glfwGetWindowAttrib( window, GLFW_OPENGL_PROFILE);
+
+      // we "simplify" foward and core to mean the same
+      if( profile == GLFW_OPENGL_CORE_PROFILE)
+         forward = 1;
 
       if( api == GLFW_OPENGL_ES_API)
          return( major >= 3 ? UIGraphicsBackendGLES3 : UIGraphicsBackendGLES2);
+
+      assert( api == GLFW_OPENGL_API);
 
       if( (major == 3 && minor >= 2) || major > 3)
          return( forward ? UIGraphicsBackendGL3_2Forward : UIGraphicsBackendGL3_2);
@@ -121,6 +137,14 @@ static UIGraphicsBackend  getWindowBackend( GLFWwindow *window)
    }
    return( UIGraphicsBackendNone);
 }
+
+
+
+#ifdef DEBUG
+static void   glfw_os_window_break_on_me( void)
+{
+}
+#endif
 
 
 // hope for fractional positioning in future ?
@@ -141,11 +165,12 @@ static UIGraphicsBackend  getWindowBackend( GLFWwindow *window)
    int   minor;
    int   profile;
    int   first_lib;
+   int   samples;
 
    assert( [NSThread mulleIsMainThread]);
 
 #ifdef DEBUG
-   break_on_me();
+   glfw_os_window_break_on_me();
 #endif
 
    // TODO: create windows invisible always, but make visible after first
@@ -192,12 +217,12 @@ static UIGraphicsBackend  getWindowBackend( GLFWwindow *window)
     * OpenGL Context Hints
     */
 
-   api     = -1;
-   lib     = -1;
-   profile = -1;
-   forward = -1;
-   major   = -1;
-   minor   = -1;
+   api       = -1;
+   lib       = -1;
+   profile   = -1;
+   forward   = -1;
+   major     = -1;
+   minor     = -1;
 
 //
 // These function can only be called from main thread (see above)
@@ -208,8 +233,12 @@ static UIGraphicsBackend  getWindowBackend( GLFWwindow *window)
 //
    if( styleMask & UIWindowOpenGLDeprecated)
    {
+#ifdef DEBUG
+     fprintf( stderr, "Deprecated OpenGL requested\n");
+#endif
+
       hints = GLFWGraphicsHintsBySettingAPI( hints, 3);     // setOpenGL
-      hints = GLFWGraphicsHintsBySettingProfile( hints, 0); // no core profile (guess)
+      hints = GLFWGraphicsHintsBySettingProfile( hints, 3); // compat
       hints = GLFWGraphicsHintsBySettingForward( hints, 0); // no forward
 
       assert( ! (styleMask & UIWindowOpenGLForward));
@@ -222,7 +251,13 @@ static UIGraphicsBackend  getWindowBackend( GLFWwindow *window)
       glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, major);
       minor = GLFWGraphicsHintsGetMinor( hints);
       glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, minor);
+
    }
+
+   // If requesting an OpenGL version below 3.2, GLFW_OPENGL_ANY_PROFILE must
+   // be used. if we don't set major, the default in glfw is 1.0
+   if( major < 3 || (major == 3 && minor < 2))
+      hints = GLFWGraphicsHintsBySettingProfile( hints, 1); //any
 
    forward = styleMask & UIWindowOpenGLForward;
    if( forward)
@@ -245,11 +280,10 @@ static UIGraphicsBackend  getWindowBackend( GLFWwindow *window)
    if( (major > 3 || (major == 3 && minor >= 2)) && api == GLFW_OPENGL_API)
    {
       if( styleMask & UIWindowOpenGLCoreProfile)
-         hints = GLFWGraphicsHintsBySettingProfile( hints, 1);
-      else
          hints = GLFWGraphicsHintsBySettingProfile( hints, 2);
    }
 
+   // TODO: could retry for profiles as well as for libs (see below)
    switch( GLFWGraphicsHintsGetProfile( hints))
    {
    case 1  : profile = GLFW_OPENGL_ANY_PROFILE; break;
@@ -275,6 +309,11 @@ static UIGraphicsBackend  getWindowBackend( GLFWwindow *window)
    }
    first_lib = lib;
 
+   if( styleMask & UIWindowStyleAntiAlias)
+      UIOSWindowLog( "MSAA requested");
+
+   glfwWindowHint( GLFW_SAMPLES, (styleMask & UIWindowStyleAntiAlias) ? 4 : 0);
+
 retry:
    if( lib != -1)
       glfwWindowHint( GLFW_CONTEXT_CREATION_API, lib);
@@ -288,7 +327,9 @@ retry:
    {
       const char  *description;
       int         code;
+      char        *aux;
 
+      aux  = "";
       code = glfwGetError( &description);
       switch( code)
       {
@@ -349,10 +390,14 @@ retry:
          }
          break;
 
+      case 65543 :
+         aux = "\nThis error may be due to a graphics driver update. Please try rebooting your system.";
+         break;
+
       case 65537 :
-         fprintf( stderr, "UIApplication is likely not initialized yet\n");
+         aux = "\nUIApplication is likely not initialized yet.";
       }
-      fprintf( stderr, "error #%d: glfwCreateWindow failed \"%s\"\n", code, description);
+      fprintf( stderr, "error #%d: glfwCreateWindow failed \"%s\"%s\n", code, description, aux);
       [self release];
       return( nil);
    }
@@ -365,9 +410,9 @@ retry:
       _shareID = (NSInteger) _mulle_atomic_pointer_increment( &Self.shareIDs) + 1;
 
    if( _sharingWindow)
-      fprintf( stderr, "window %p (sharing with %p) created\n", _window, _sharingWindow);
+      UIOSWindowLog( "window %p (sharing with %p) created", _window, _sharingWindow);
    else
-      fprintf( stderr, "window %p created\n", _window);
+      UIOSWindowLog( "window %p created", _window);
 
    // needed for wayland, else exit on zero size window during resize
    glfwSetWindowSizeLimits( _window, 32, 32, GLFW_DONT_CARE, GLFW_DONT_CARE);
@@ -382,9 +427,6 @@ retry:
    if( ! CGPointEqualToPoint( frame.origin, CGPointZero))
       glfwSetWindowPos( _window, (int) frame.origin.x, (int) frame.origin.y);
 
-   _contextLock                 = [NSLock new];
-   glfwMakeContextCurrent( NULL); // turn off to be consistent with lock
-
    _mulle_atomic_pointer_nonatomic_write( &_needsRefresh, (void *) 1);
 
    _backend                     = getWindowBackend( (GLFWwindow *) _window);
@@ -398,6 +440,21 @@ retry:
    _windowEventsCallback        = GLFWOSWindowEventDefaultCallback;
 
    assert( (api == GLFW_NO_API && ! _haveGraphicsContext) || _haveGraphicsContext);
+
+   if( _haveGraphicsContext)
+   {
+      glfwMakeContextCurrent( _window);  // needed, otherwise glGetIntegerv( GL_SAMPLES_ARB, &samples) fails
+      samples = 0;
+      glGetIntegerv( GL_SAMPLES_ARB, &samples);
+      if( samples == 4)
+         _antiAliasing = YES;
+//      else
+//         if( ! glfwExtensionSupported( "GL_ARB_multisample"))
+//            fprintf( stderr, "MSAA OpenGL support not present\n");
+   }
+
+   _contextLock = [NSLock new];
+   glfwMakeContextCurrent( NULL); // turn off to be consistent with lock
 
    if( ! (styleMask & UIWindowStyleInvisible))
       [self os_show];
@@ -603,15 +660,11 @@ retry:
    // can be called from any thread
    assert( _window);
 
-#ifdef CONTEXT_DEBUG
-      MulleUILog( "lock: %p", _window);
-#endif
+   UIOSWindowLog( "lock: %p", _window);
    [_contextLock lock];
    if( _haveGraphicsContext)
    {
-#ifdef CONTEXT_DEBUG
-      MulleUILog( "activate window: %p", _window);
-#endif            
+      UIOSWindowLog( "activate window: %p", _window);
       glfwMakeContextCurrent( _window);
    }      
 }
@@ -626,11 +679,11 @@ retry:
    if( ! [_contextLock tryLock])
       return( NO);
 
+   UIOSWindowLog( "lock: %p", _window);
+
    if( _haveGraphicsContext)
    {
-#ifdef CONTEXT_DEBUG
-      MulleUILog( "activate window: %p", _window);
-#endif          
+      UIOSWindowLog( "activate window: %p", _window);
       glfwMakeContextCurrent( _window);
    }
    return( YES);
@@ -644,14 +697,10 @@ retry:
 
    if( _haveGraphicsContext)
    {
-#ifdef CONTEXT_DEBUG
-      MulleUILog( "deactivate window: %p", _window);
-#endif          
+      UIOSWindowLog( "deactivate window: %p", _window);
       glfwMakeContextCurrent( NULL);
    }
-#ifdef CONTEXT_DEBUG
-   MulleUILog( "unlock: %p", _window);
-#endif
+   UIOSWindowLog( "unlock: %p", _window);
    [_contextLock unlock];
 }
 
@@ -664,6 +713,17 @@ retry:
    s = s ? s : "";
 
    glfwSetWindowTitle( _window, s);
+}
+
+
+static char  *msaa_utf8string( int value)
+{
+   switch( value)
+   {
+   case 0  : return( "NOAA");
+   case 4  : return( "MSAA4");
+   default : return( "?");
+   }
 }
 
 
@@ -695,10 +755,10 @@ static char  *context_profile_utf8string( int value)
 {
    switch( value)
    {
-   case GLFW_OPENGL_ANY_PROFILE    : return( "");
-   case GLFW_OPENGL_CORE_PROFILE   : return( "Core API");
-   case GLFW_OPENGL_COMPAT_PROFILE : return( "Complete API");
-   default                         : return( "?");
+   case GLFW_OPENGL_ANY_PROFILE    : return( "?");
+   case GLFW_OPENGL_CORE_PROFILE   : return( "Core_API");
+   case GLFW_OPENGL_COMPAT_PROFILE : return( "Full_API");
+   default                         : return( "???");
    }
 }
 
@@ -738,7 +798,7 @@ static char  *context_profile_utf8string( int value)
 
    glfwGetVersion( &glfw_major, &glfw_minor, &glfw_revision);
 
-   s = MulleObjC_asprintf( "%s %u.%u.%u%s%s%s%s (%s) - GLFW v%d.%d.%d",
+   s = MulleObjC_asprintf( "%s %u.%u.%u%s%s%s%s %s (%s) - GLFW v%d.%d.%d",
                            context_api_utf8string( api),
                            major,
                            minor,
@@ -747,6 +807,7 @@ static char  *context_profile_utf8string( int value)
                            profile_s,
                            forward_prefix,
                            forward_s,
+                           msaa_utf8string( _antiAliasing ? 4 : 0),
                            context_vendor_utf8string( vendor),
                            glfw_major,
                            glfw_minor,
@@ -805,9 +866,7 @@ static struct
       // https://github.com/glfw/glfw/issues/2109
       if( glfwGetWindowAttrib( _window, GLFW_VISIBLE))
       {
-#ifdef SWAP_DEBUG
-         MulleUILog( "\033[1mswapped buffers\033[0m");
-#endif          
+         UIOSWindowLogVerbose( "\033[1mswapped buffers\033[0m");
          glfwSwapBuffers( _window);
       }
    }

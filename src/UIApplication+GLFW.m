@@ -139,6 +139,9 @@ static void   monitorCallback( GLFWmonitor *monitor, int event)
    case UICursorDrag             : glfwShape = GLFW_HAND_CURSOR; break;
    case UICursorHorizontalResize : glfwShape = GLFW_HRESIZE_CURSOR; break;
    case UICursorVerticalResize   : glfwShape = GLFW_VRESIZE_CURSOR; break;
+#if (GLFW_VERSION_MAJOR > 3) || (GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MAJOR >= 4)
+   case UICursorDiagonalResize   : glfwShape = GLFW_RESIZE_NWSE_CURSOR; break;
+#endif
    }
 
    return( glfwCreateStandardCursor( glfwShape));

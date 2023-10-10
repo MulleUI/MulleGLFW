@@ -9,7 +9,14 @@
  *
  *      mulle-sde environment set MULLE_MATCH_TO_C_RUN DISABLE
  */
+#ifndef mulle_glf_w_export_h__
+#define mulle_glf_w_export_h__
+
+
 #import "GLFWOSScreen.h"
 #import "GLFWOSWindow+UIEvent.h"
 #import "GLFWOSWindow.h"
 #import "MulleObjCLoader+MulleGLFW.h"
+
+
+#endif

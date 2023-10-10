@@ -5,10 +5,7 @@
 
 #import "import-private.h"
 
-//#define CALLBACK_DEBUG
-//#define MODIFIER_DEBUG
-
-//#define MOUSE_MOTION_CALLBACK_DEBUG  // enable and turn CALLBACK_DEBUG on
+#import "GLFWOSWindow+DebugPrivate.h"
 
 
 @interface GLFWOSWindow( UIEventFuture)
@@ -119,10 +116,8 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
 {
    id <UIScreen>   screen;
 
-#ifdef DEBUG
    if( ! UIApp)
-      MulleUILog( "UIApp is not available, as +sharedInstance hasn't been called.");
-#endif
+      UIOSWindowLog( "UIApp is not available, as +sharedInstance hasn't been called.");
 
    screen = [UIApp screenForFrame:_windowInfo.base.frame
              primaryIfNoneMatches:YES];
@@ -168,9 +163,7 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
 {
    UIWindowEvent   *event;
 
-#ifdef CALLBACK_DEBUG
-   MulleUILogThisMethod();
-#endif
+   UIOSWindowEventLog("");
 
 //   fprintf( stderr, "%p moved: x=%d y=%d\n", self, xpos, ypos);
    [_windowInfoLock lock];
@@ -189,9 +182,7 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
 {
    UIWindowEvent   *event;
 
-#if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
-    MulleUILog( "w=%td h=%td", size.width, size.height);
-#endif
+   UIOSWindowEventLog( "w=%td h=%td", size.width, size.height);
 
    // this assert can fail... it doesn't fail often but it can.
    // reason being, because the window manager is resizing in another
@@ -214,9 +205,8 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
 {
    UIWindowEvent   *event;
 
-#if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
-    MulleUILog( "w=%td h=%td", size.width, size.height);
-#endif
+   UIOSWindowEventLog( "w=%td h=%td", size.width, size.height);
+
    [_windowInfoLock lock];
    {
       _windowInfo.base.framebufferSize = size;
@@ -236,9 +226,7 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
 {
    UIWindowEvent   *event;
 
-#if defined( CALLBACK_DEBUG) || defined( RESIZE_CALLBACK_DEBUG)
-   MulleUILogThisMethod();
-#endif
+   UIOSWindowEventLog( "");
 
    event = [[[UIWindowRefreshEvent alloc] init] autorelease];
 //   [self receiveRetainedEvent:event];
@@ -252,9 +240,7 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
 {
    UIWindowEvent   *event;
 
-#ifdef CALLBACK_DEBUG
-   MulleUILogThisMethod();
-#endif
+   UIOSWindowEventLog( "");
 
    event = [[[UIWindowCloseEvent alloc] init] autorelease];
   _windowEventsCallback( self, event);
@@ -364,9 +350,8 @@ static void   mouseScrollCallback( GLFWwindow *window,
 {
    UIEvent      *event;
 
-#ifdef CALLBACK_DEBUG
-   MulleUILogThisMethod();
-#endif
+
+   UIOSWindowEventLog( "modifiers=0x%tx", mods);
 
 //   //
 //   // modifier bits are not set yet properly, but we want them
@@ -398,12 +383,12 @@ static void   mouseScrollCallback( GLFWwindow *window,
 
    self->_inputState.keyModifiers = mods;
 
-#ifdef MODIFIER_DEBUG
-   MulleUILog( "modifiers=0x%tx", self->_inputState.keyModifiers);
-#endif
 
    if( self->_discardEventsMask & UIEventTypePresses)
+   {
+      UIOSWindowEventLogVerbose( "discarded event");
       return;
+   }
 
    event = [[UIKeyboardEvent alloc] initWithInputState:&self->_inputState
                                                    key:key
@@ -417,12 +402,13 @@ static void   mouseScrollCallback( GLFWwindow *window,
 {
    UIEvent    *event;
 
-#ifdef CALLBACK_DEBUG
-   MulleUILogThisMethod();
-#endif
+   UIOSWindowEventLog( nil, "");
 
    if( self->_discardEventsMask & UIEventTypeUnicode)
+   {
+      UIOSWindowEventLogVerbose( "discarded event");
       return;
+   }
 
    event = [[UIUnicodeEvent alloc] initWithInputState:&self->_inputState
                                             character:codepoint];
@@ -437,13 +423,8 @@ static void   mouseScrollCallback( GLFWwindow *window,
    UIEvent    *event;
    uint64_t   bit;
 
-#if defined( CALLBACK_DEBUG)
-   MulleUILogThisMethod();
-#endif
+   UIOSWindowEventLog( "modifiers=0x%tx", mods);
 
-#ifdef MODIFIER_DEBUG
-   MulleUILog( "modifiers=0x%tx", mods);
-#endif
    self->_inputState.keyModifiers = mods;
 
    bit = 1LL << button;
@@ -452,7 +433,10 @@ static void   mouseScrollCallback( GLFWwindow *window,
       self->_inputState.buttonStates |= bit;
 
    if( self->_discardEventsMask & UIEventTypeTouches)
+   {
+      UIOSWindowEventLogVerbose( "discarded event");
       return;
+   }
 
    event = [[UIMouseButtonEvent alloc] initWithInputState:&_inputState
                                                    button:button
@@ -467,9 +451,7 @@ static void   mouseScrollCallback( GLFWwindow *window,
 {
    UIEvent   *event;
 
-#if defined( CALLBACK_DEBUG) && defined( MOUSE_MOTION_CALLBACK_DEBUG)
-   mulle_fprintf( stderr, "%s %@ (%.1f, %.1f)\n", __PRETTY_FUNCTION__, self, pos.x, pos.y);
-#endif
+   UIOSWindowEventLog( "%.1f, %.1f", pos.x, pos.y);
 
    //
    // Observed behaviour on linux: Depending on mouse sensitivity, it may
@@ -479,7 +461,10 @@ static void   mouseScrollCallback( GLFWwindow *window,
    // possible integer coordinates for every pixel on the screen.
    //
    if( self->_discardEventsMask & UIEventTypeMotion)
+   {
+      UIOSWindowEventLogVerbose( "discarded event");
       return;
+   }
 
    //
    // Coordinates are window relative! So for screen coordinates we'd need
@@ -507,12 +492,13 @@ static void   mouseScrollCallback( GLFWwindow *window,
    CGPoint   scrollOffset;
    CGFloat   sensitivity;
 
-#ifdef CALLBACK_DEBUG
-   MulleUILogThisMethod();
-#endif
+   UIOSWindowEventLog("");
 
    if( self->_discardEventsMask & UIEventTypeScroll)
+   {
+      UIOSWindowEventLogVerbose( "discarded event");
       return;
+   }
 
    sensitivity = [self scrollWheelSensitivity];
    if( sensitivity != 0.0)

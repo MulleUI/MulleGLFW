@@ -44,12 +44,13 @@
 //
 typedef NS_OPTIONS( NSUInteger, GLFWGraphicsHints)
 {
-   GLFW_DEFAULT_CONTEXT = 0,
-   GLFW_NO_CONTEXT      = GLFWGraphicsHintsMake( 0, 0, 1, 0, 0, 0),
-   GLFW_GL3_CONTEXT     = GLFWGraphicsHintsMake( 1, 0, 3, 0, 3, 0),
-   GLFW_GL3_2_CONTEXT   = GLFWGraphicsHintsMake( 1, 0, 3, 0, 3, 2),
-   GLFW_GLES2_CONTEXT   = GLFWGraphicsHintsMake( 1, 0, 2, 0, 2, 0),
-   GLFW_GLES3_CONTEXT   = GLFWGraphicsHintsMake( 1, 0, 2, 0, 3, 0)
+   GLFW_DEFAULT_CONTEXT  = 0,
+   GLFW_NO_CONTEXT       = GLFWGraphicsHintsMake( 0, 0, 1, 0, 0, 0),
+   GLFW_GL3_CONTEXT      = GLFWGraphicsHintsMake( 1, 0, 3, 0, 3, 0),
+   GLFW_GL3_2_CONTEXT    = GLFWGraphicsHintsMake( 1, 0, 3, 0, 3, 2),
+   GLFW_GLES2_CONTEXT    = GLFWGraphicsHintsMake( 1, 0, 2, 0, 2, 0),
+   GLFW_GLES3_CONTEXT    = GLFWGraphicsHintsMake( 1, 0, 2, 0, 3, 0),
+   GLFW_GLES3_2_CONTEXT  = GLFWGraphicsHintsMake( 1, 0, 2, 0, 3, 2)
 };
 
 
@@ -162,7 +163,7 @@ typedef int    (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
    mulle_atomic_pointer_t   _needsRefresh;
 
    NSLock                   *_windowInfoLock;
-   struct UIOSWindowInfo     _windowInfo;
+   struct UIOSWindowInfo    _windowInfo;
 }
 
 // NONE OF THESE PROPERTIES are thread safe, except those which are readonly
@@ -203,7 +204,13 @@ typedef int    (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 @property( assign, readonly) id <UIGraphicsContext>    renderGraphicsContext;
 @property( assign) id <UIWindow>                       parentWindow;
 
+// this just pertains to the window context, not the nvg context
+// which may be antialiasing as a fallback
+@property( readonly, getter=isAntiAliasing) BOOL       antiAliasing;
+
 @property( readonly) struct UIInputState               inputState;
+
+@property( assign) NSUInteger                          debugEnabled;
 
 @property( assign) BOOL                                uninitializedFramebuffer;
 
