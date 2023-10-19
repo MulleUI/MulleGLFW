@@ -454,6 +454,16 @@ static void   mouseScrollCallback( GLFWwindow *window,
    UIOSWindowEventLog( "%.1f, %.1f", pos.x, pos.y);
 
    //
+   // Coordinates are window relative! So for screen coordinates we'd need
+   // to add the window frame.x/y.
+   //
+   // we get not events for the window title bar
+   // TODO: we might need to scale the values for DPI or ?
+   // need this info, even if we don't send the event (for other events)
+   self->_inputState.locationInWindow.x = pos.x;
+   self->_inputState.locationInWindow.y = pos.y;
+
+   //
    // Observed behaviour on linux: Depending on mouse sensitivity, it may
    // become obvious that there is a rounding bug in the Linux mouse handling
    // where certain integer values are never returned. In my case this
@@ -465,15 +475,6 @@ static void   mouseScrollCallback( GLFWwindow *window,
       UIOSWindowEventLogVerbose( "discarded event");
       return;
    }
-
-   //
-   // Coordinates are window relative! So for screen coordinates we'd need
-   // to add the window frame.x/y.
-   //
-   // we get not events for the window title bar
-   // TODO: we might need to scale the values for DPI or ?
-   self->_inputState.locationInWindow.x = pos.x;
-   self->_inputState.locationInWindow.y = pos.y;
 
    // TODO: wrap in autorelease pool ?
    //       + event don't leak if someone throws

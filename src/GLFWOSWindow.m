@@ -251,7 +251,6 @@ static void   glfw_os_window_break_on_me( void)
       glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, major);
       minor = GLFWGraphicsHintsGetMinor( hints);
       glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, minor);
-
    }
 
    // If requesting an OpenGL version below 3.2, GLFW_OPENGL_ANY_PROFILE must

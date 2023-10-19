@@ -216,6 +216,7 @@ static void   usage( char *argv0)
 #else
 "   --gles2      :\n"
 "   --gles3      :\n"
+"   --gles3_2    :\n"
 #endif
 "\n"
 "Options:\n"
@@ -273,6 +274,11 @@ int   main( int argc, char *argv[])
       if( ! strcmp( argv[ i], "--gles3"))
       {
          hints = GLFW_GLES3_CONTEXT;
+         continue;
+      }
+      if( ! strcmp( argv[ i], "--gles3_2"))
+      {
+         hints = GLFW_GLES3_2_CONTEXT;
          continue;
       }
 
