@@ -86,12 +86,12 @@ if( NOT __OPTIMIZED_LINK_OBJC_CMAKE__)
 
 
       add_custom_command( OUTPUT ${CUSTOM_OUTPUT}
-       COMMAND ${UNARCHIVE} -vvv -ld -ls -lx ${MULLE_TECHNICAL_FLAGS}
-                           --unarchive-dir "${UNARCHIVE_DIR}"
-                           --unarchive-info-dir "${OPTIMIZE_INFO_DIR}"
-                           --just-unpack
+       COMMAND ${UNARCHIVE} ${MULLE_TECHNICAL_FLAGS}
+                            --unarchive-dir "${UNARCHIVE_DIR}"
+                            --unarchive-info-dir "${OPTIMIZE_INFO_DIR}"
+                            --just-unpack
                             ${ALL_LOAD_DEPENDENCY_LIBRARIES}
-       COMMAND ${OPTIMIZE} -vvv -ld -lx ${MULLE_TECHNICAL_FLAGS}
+       COMMAND ${OPTIMIZE} ${MULLE_TECHNICAL_FLAGS}
                            --c-name "${OPTIMIZABLE_LOAD_NAME}"
                            --objc-name "${ALL_LOAD_NAME}"
                            --coverage-dir "${COVERAGE_DIR}"
