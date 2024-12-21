@@ -45,6 +45,13 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
+
+#ifdef __APPLE__
+# define glGenVertexArrays   glGenVertexArraysAPPLE
+# define glBindVertexArray   glBindVertexArrayAPPLE
+#endif
+
+
 #include "linmath.h"
 
 #include <stdlib.h>
@@ -56,6 +63,8 @@ typedef struct Vertex
     vec2 pos;
     vec3 col;
 } Vertex;
+
+
 
 static const Vertex vertices[3] =
 {

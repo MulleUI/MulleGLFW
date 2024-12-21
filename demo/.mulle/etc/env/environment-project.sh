@@ -8,7 +8,7 @@ export PROJECT_TYPE="executable"
 #
 #
 #
-export PROJECT_NAME="demos"
+export PROJECT_NAME="demo"
 
 
 #

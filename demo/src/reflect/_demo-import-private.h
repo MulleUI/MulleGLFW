@@ -13,7 +13,7 @@
 /* no headers */
 
 #ifdef __has_include
-# if __has_include( "_demos-include-private.h")
-#  include "_demos-include-private.h"
+# if __has_include( "_demo-include-private.h")
+#  include "_demo-include-private.h"
 # endif
 #endif

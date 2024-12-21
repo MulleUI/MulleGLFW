@@ -44,12 +44,12 @@
 
 @interface GLFWOSScreen : NSObject < UIScreen>
 {
-   void                     *_monitor;   // GLFWmonitor handle
+   void                  *_monitor;   // GLFWmonitor handle
 
 // if we copy all the values into the local area, we can then access this
 // information from non-mainthread threads
-   struct UIScreenInfo      _info;
-   NSLock                   *_infoLock;
+   struct UIScreenInfo   _info;
+   NSLock                *_infoLock;
 }
 
 + (NSUInteger) numberOfScreens;
@@ -58,21 +58,21 @@
 - (instancetype) initWithGLFWMonitor:(void *) monitor;
 
 // this is thread safe
+@property( readonly) char   *nameUTF8String ;
 
-@property( readonly) char   *nameUTF8String;
+- (void) getScreenInfo:(struct UIScreenInfo *) info   MULLE_OBJC_THREADSAFE_METHOD;
 
-// this is thread safe
-- (void) getScreenInfo:(struct UIScreenInfo *) info;
+// MEMO: marking these threadsafe messes up the non-threadsafe method types
+- (CGRect) frame                                MULLE_OBJC_THREADSAFE_METHOD;
+- (CGRect) canvas                               MULLE_OBJC_THREADSAFE_METHOD;
+- (mulle_relativetime_t) refreshRate            MULLE_OBJC_THREADSAFE_METHOD;
 
-// this is thread safe
-- (mulle_relativetime_t) refreshRate;
-
-- (char *) os_name;
+- (char *) os_nameUTF8String;
 - (CGVector) os_contentScale;
 - (CGSize) os_physicalSize;
 - (CGFloat) os_dpi;
-- (struct MulleIntegerRect) os_canvas;
-- (struct MulleIntegerPoint) os_position;
+- (CGPixelRect) os_canvas;
+- (CGPixelPoint) os_position;
 
 - (BOOL) os_isPrimaryScreen;
 

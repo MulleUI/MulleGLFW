@@ -8,7 +8,7 @@ export PROJECT_TYPE="none"
 #
 #
 #
-export PROJECT_NAME="MulleGLFW"
+export PROJECT_NAME="MulleGLFW-test"
 
 
 #

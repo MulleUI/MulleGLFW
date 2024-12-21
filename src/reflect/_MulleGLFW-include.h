@@ -14,15 +14,18 @@
 #ifndef _mulle_glfw_include_h__
 #define _mulle_glfw_include_h__
 
-// You can tweak the following #include with these commands.
-// (Use C5771105-A729-47DA-86DF-55FD0703B958 instead of glfw if there are duplicate entries)
-//    remove #include:: `mulle-sde dependency mark glfw no-header`
-//    rename:              `mulle-sde dependency|library set glfw include whatever.h`
-//    reorder:             `mulle-sde dependency move glfw <up|down>`
-//    toggle #include:    `mulle-sde dependency mark glfw [no-]import`
-//    toggle public:       `mulle-sde dependency mark glfw [no-]public`
-//    toggle optional:     `mulle-sde dependency mark glfw [no-]require`
-//    remove for platform: `mulle-sde dependency mark glfw no-platform-<uname>`
+// To remove the following dependency (headers and library) completely:
+//   `mulle-sde dependency remove glfw`
+// (Use C5771105-A729-47DA-86DF-55FD0703B958 instead of glfw, if there are duplicate entries)
+//
+// You can tweak the following #include with these commands:
+//    remove #include: `mulle-sde dependency mark glfw no-header`
+//    rename              : `mulle-sde dependency|library set glfw include whatever.h`
+//    reorder             : `mulle-sde dependency move glfw <up|down>`
+//    toggle #include: `mulle-sde dependency mark glfw [no-]import`
+//    toggle public       : `mulle-sde dependency mark glfw [no-]public`
+//    toggle optional     : `mulle-sde dependency mark glfw [no-]require`
+//    remove for platform : `mulle-sde dependency mark glfw no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #include <GLFW/glfw3.h>   // glfw
 

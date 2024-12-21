@@ -4,7 +4,13 @@
 
 // random stole code, just drawing a triangle with a shader
 
-#define GLFW_INCLUDE_ES2
+#ifdef __APPLE__
+# define GLFW_INCLUDE_GLCOREARB
+# define GLFW_EXPOSE_NATIVE_COCOA
+#else
+# define GLFW_INCLUDE_ES2
+#endif 
+
 #include <GLFW/glfw3.h>
 
 #define WIDTH  800
@@ -135,3 +141,4 @@ int main( int argc, char *argv[])
 
    return( EXIT_SUCCESS);
 }
+

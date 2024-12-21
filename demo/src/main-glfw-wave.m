@@ -20,6 +20,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#ifndef M_PI
+# define M_PI 3.14159265358979323846264338327950288
+#endif
 
 //#define GLAD_GL_IMPLEMENTATION
 //#include <glad/gl.h>
@@ -386,7 +389,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 static void   receiveWindowEvents( GLFWOSWindow *window, UIWindowEvent *event)
 {
-   struct MulleIntegerSize   size;
+   CGPixelSize   size;
 
    switch( [event eventType])
    {
@@ -495,12 +498,13 @@ void init_opengl(void)
 }
 
 
-static void   display( GLFWOSWindow *gWindow)
+static int   display( GLFWOSWindow *gWindow)
 {
     // Compute height of each vertex
     adjust_grid();
     // Draw wave grid to OpenGL display
     draw_scene();
+    return( 0);
 }
 
 
@@ -515,7 +519,7 @@ int main(int argc, char* argv[])
    UIApplication         *app;
    GLFWOSWindow          *gWindow;
    NSTimer               *timer;
-   struct MulleIntegerSize   framebufferSize;
+   CGPixelSize   framebufferSize;
 
 //    glfwSetErrorCallback(error_callback);
 //
@@ -611,7 +615,7 @@ int main(int argc, char* argv[])
 //    glfwTerminate();
 //    exit(EXIT_SUCCESS);
    }
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

@@ -1,3 +1,7 @@
+#define _GNU_SOURCE
+#define MULLE_GLFW_EXPOSE_OPEN_GL
+#define GLFW_INCLUDE_GLEXT
+
 #import "import.h"
 
 
@@ -27,14 +31,16 @@ static void   otherRetainedEventsCallback( GLFWOSWindow *window, UIEvent *event)
 }
 
 
-static void   renderFrame( GLFWOSWindow *window)
+static int   renderFrame( GLFWOSWindow *window)
 {
-   struct MulleIntegerSize   framebufferSize;
+   CGPixelSize   framebufferSize;
 
    framebufferSize = [window os_framebufferSize];
    glViewport( 0, 0, framebufferSize.width, framebufferSize.height);
    glClearColor( 0, 0, 0, 0);
    glClear( GL_COLOR_BUFFER_BIT);
+
+   return( 0);
 }
 
 //#define HINTS  GLFW_NO_CONTEXT
@@ -63,7 +69,7 @@ int   main( int argc, char *argv[])
       [window setOtherRetainedEventsCallback:otherRetainedEventsCallback];
       [window setFrameCallback:renderFrame];
    }
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

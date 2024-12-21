@@ -12,6 +12,7 @@ endif()
 
 set( INCLUDE_DIRS
 src
+src/generic
 src/reflect
 )
 
@@ -27,15 +28,8 @@ src/reflect/_MulleGLFW-include-private.h
 # contents selected with patternfile ??-header--private-generic-headers
 #
 set( PRIVATE_GENERIC_HEADERS
-src/import-private.h
-src/include-private.h
-)
-
-#
-# contents selected with patternfile ??-header--private-headers
-#
-set( PRIVATE_HEADERS
-src/GLFWOSWindow+DebugPrivate.h
+src/generic/import-private.h
+src/generic/include-private.h
 )
 
 #
@@ -52,14 +46,15 @@ src/reflect/_MulleGLFW-provide.h
 # contents selected with patternfile ??-header--public-generic-headers
 #
 set( PUBLIC_GENERIC_HEADERS
-src/import.h
-src/include.h
+src/generic/import.h
+src/generic/include.h
 )
 
 #
 # contents selected with patternfile ??-header--public-headers
 #
 set( PUBLIC_HEADERS
+src/GLFWOSGamepad.h
 src/GLFWOSScreen.h
 src/GLFWOSWindow+UIEvent.h
 src/GLFWOSWindow.h

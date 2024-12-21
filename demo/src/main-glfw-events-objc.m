@@ -58,7 +58,7 @@ int main( void)
                                     titleUTF8String:"Demo"
                                           styleMask:UIWindowStyleResizable
                                       graphicsHints:GLFW_NO_CONTEXT] autorelease];
-// not needed since we don't do [app run]
+// not needed since we don't do [app runApp]
 //      [app addWindow:gWindow];
 
       window = [gWindow os_window];

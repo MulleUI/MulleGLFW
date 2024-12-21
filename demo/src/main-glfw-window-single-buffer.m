@@ -1,3 +1,7 @@
+#define _GNU_SOURCE
+#define MULLE_GLFW_EXPOSE_OPEN_GL
+#define GLFW_INCLUDE_GLEXT
+
 #include <MulleGLFW/MulleGLFW.h>
 
 #include <time.h>
@@ -7,8 +11,10 @@ int main( int argc, char *argv[])
 {
    struct timespec delay = { 0, 500 * 1000L * 1000L};
 
-   GLFWOSWindow   *gWindow;
+   GLFWOSWindow    *gWindow;
+   UIApplication   *app;
 
+   app = [UIApplication sharedInstance];
    @autoreleasepool
    {
       gWindow = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0, 0, 640, 480)
@@ -25,8 +31,8 @@ int main( int argc, char *argv[])
 
       for(;;)
       {
-         [UIEvent os_pollEvents];
-         if( [gWindow shouldClose])
+         glfwPollEvents();
+         if( glfwWindowShouldClose([gWindow os_window]))
             break;
 
          glClearColor( 0.3, 0.3, 0.3, 0.0);
@@ -34,8 +40,8 @@ int main( int argc, char *argv[])
          glFlush();
          nanosleep( &delay, NULL);
 
-         [UIEvent os_pollEvents];
-         if( [gWindow shouldClose])
+         glfwPollEvents();
+         if( glfwWindowShouldClose([gWindow os_window]))
             break;
 
          glClearColor( 0.3, 0.3, 0.7, 0.0);

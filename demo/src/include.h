@@ -2,8 +2,8 @@
  * template: project-oneshot/executable/PROJECT_SOURCE_DIR/include.h
  * vendor/extension: mulle-sde/c
  */
-#ifndef demos_include_h__
-#define demos_include_h__
+#ifndef demo_include_h__
+#define demo_include_h__
 
 /* This is a central include file to keep dependencies out of the library
    C files. It is usally included by .h files only.
@@ -12,7 +12,7 @@
    be moved to other projects and don't need to be edited. Also less typing...
 
    Therefore it is important that this file is called "include.h" and
-   not "demos-include.h" to keep the #include statements in the
+   not "demo-include.h" to keep the #include statements in the
    library code uniform.
 
    The C-compiler will pick up the nearest one.
@@ -23,10 +23,8 @@
    sourcetree, then you don't need it.
  */
 
-#include "_demos-include.h"
+#include "_demo-include.h"
 
 /* You can add some more include statements here */
-
-#include "demos-version.h"
 
 #endif

@@ -22,7 +22,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-
+#ifndef M_PI
+# define M_PI 3.14159265358979323846264338327950288
+#endif
 // MEMO: don't need glad, use GL headers instead
 //
 //#define GLAD_GL_IMPLEMENTATION
@@ -406,7 +408,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 static void   receiveWindowEvents( GLFWOSWindow *window, UIWindowEvent *event)
 {
-   struct MulleIntegerSize   size;
+   CGPixelSize   size;
 
    switch( [event eventType])
    {
@@ -509,7 +511,7 @@ int main(int argc, char* argv[])
     int width, height;
    UIApplication  *app;
    GLFWOSWindow     *gWindow;
-   struct MulleIntegerSize   framebufferSize;
+   CGPixelSize   framebufferSize;
 
 //    glfwSetErrorCallback(error_callback);
 //
@@ -558,7 +560,7 @@ int main(int argc, char* argv[])
         [gWindow setFrameCallback:frameCallback];
         [gWindow setFrameRate:UIWindowFrameRateUnsynced];
    }
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

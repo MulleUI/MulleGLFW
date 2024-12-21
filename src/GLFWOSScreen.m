@@ -58,7 +58,7 @@
 
    [self updateScreenInfo];
 
-   name = [self os_name];
+   name = [self os_nameUTF8String];
    if( ! name)
       name = MulleObjC_asprintf( "Unnamed monitor %p", monitor);
 
@@ -91,7 +91,7 @@
    assert( [NSThread mulleIsMainThread]);
    assert( _monitor);
 
-   [_infoLock lock];
+   NSLockingDo( _infoLock)
    {
       mode                = (GLFWvidmode *) glfwGetVideoMode( _monitor);
 
@@ -105,19 +105,17 @@
       _info.colorBits[ 1] = mode->greenBits;
       _info.colorBits[ 2] = mode->blueBits;
       _info.colorBits[ 3] = -1;  // unknown
-      _info.refreshRate   = 1.0 / mode->refreshRate;
+      _info.refreshRate   = mode->refreshRate != 0.0 ? 1.0 / mode->refreshRate : 0.0;
    }
-   [_infoLock unlock];
 }
 
 
 - (void) getScreenInfo:(struct UIScreenInfo *) info
 {
-   [_infoLock lock];
+   NSLockingDo( _infoLock)
    {
       *info = _info;
    }
-   [_infoLock unlock];
 }
 
 
@@ -125,11 +123,10 @@
 {
    mulle_relativetime_t   refreshRate;
 
-   [_infoLock lock];
+   NSLockingDo( _infoLock)
    {
       refreshRate = _info.refreshRate;
    }
-   [_infoLock unlock];
 
    return( refreshRate);
 }
@@ -139,11 +136,10 @@
 {
    CGRect   rect;
 
-   [_infoLock lock];
+   NSLockingDo( _infoLock)
    {
       rect = _info.frame;
    }
-   [_infoLock unlock];
 
    return( rect);
 }
@@ -153,11 +149,10 @@
 {
    CGRect   rect;
 
-   [_infoLock lock];
+   NSLockingDo( _infoLock)
    {
       rect = _info.canvas;
    }
-   [_infoLock unlock];
 
    return( rect);
 }
@@ -202,7 +197,7 @@
 //{
 //   return( self);
 //}
-- (char *) os_name
+- (char *) os_nameUTF8String
 {
    assert( [NSThread mulleIsMainThread]);
    assert( _monitor);
@@ -266,7 +261,7 @@
 }
 
 
-- (struct MulleIntegerRect) os_canvas
+- (CGPixelRect) os_canvas
 {
    int   x, y, w, h;
 
@@ -275,11 +270,11 @@
 
    x = y = w = h = 0;
    glfwGetMonitorWorkarea( _monitor, &x, &y, &w, &h);
-   return( MulleIntegerRectMake( x, y, w, h));
+   return( CGPixelRectMake( x, y, w, h));
 }
 
 
-- (struct MulleIntegerPoint) os_position
+- (CGPixelPoint) os_position
 {
    int   x, y;
 
@@ -288,7 +283,7 @@
 
    x = y = 0;
    glfwGetMonitorPos( _monitor, &x, &y);
-   return( MulleIntegerPointMake( x, y));
+   return( CGPixelPointMake( x, y));
 }
 
 
@@ -298,6 +293,18 @@
    assert( _monitor);
 
    return( glfwGetPrimaryMonitor() == _monitor);
+}
+
+
+- (char *) UTF8String
+{
+   char   *s;
+
+   s = MulleObjC_asprintf( "<%s %p \"%s\">",
+                           MulleObjCInstanceGetClassNameUTF8String( self),
+                           self,
+                           _nameUTF8String);
+   return( s);
 }
 
 @end

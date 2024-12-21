@@ -1,3 +1,7 @@
+#define _GNU_SOURCE
+#define MULLE_GLFW_EXPOSE_OPEN_GL
+#define GLFW_INCLUDE_GLEXT
+
 #import "import.h"
 
 #include <math.h>
@@ -85,7 +89,7 @@ static void   init_texture()
 // pretty much unchanged. The call signature with "window" and "now"
 // is different, but they aren't used
 //
-static void   display( GLFWOSWindow *window)
+static int   display( GLFWOSWindow *window)
 {
    static GLfloat vertices[][3] = {
                                    {-1.0,-1.0, 1.0},
@@ -117,6 +121,8 @@ static void   display( GLFWOSWindow *window)
    glVertex3fv(vertices[3]);
 
    glEnd();
+
+   return( 0);
 }
 
 
@@ -178,7 +184,7 @@ static void   timerCallback( NSTimer *timer, id userInfo)
 // This is new.
 static void   receiveWindowEvents( GLFWOSWindow *window, UIWindowEvent *event)
 {
-   struct MulleIntegerSize   size;
+   CGPixelSize   size;
 
    switch( [event windowEventType])
    {
@@ -245,7 +251,7 @@ int   main( int argc, char *argv[])
       [window setFrameRate:1 / 100.0];
 //    glutMainLoop();
    }
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

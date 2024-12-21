@@ -428,7 +428,7 @@ int main(int argc, char* argv[])
 #if 0
 static int   frameCallback( GLFWOSWindow *window)
 {
-   struct MulleIntegerSize   framebufferSize;
+   CGPixelSize   framebufferSize;
 
    framebufferSize = [window os_framebufferSize];
    draw_scene( framebufferSize.width, framebufferSize.height);
@@ -473,7 +473,7 @@ int   main( int argc, char *argv[])
 
       [app addWindow:window];
    }
-   return( [app run]);
+   return( [app runApp]);
 }
 
 #endif

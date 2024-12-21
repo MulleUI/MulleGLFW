@@ -19,6 +19,17 @@
    If you delete it, it will not be regenerated.
 */
 
+// don't export GL headers, that's a MulleCG job 
+
+#ifdef __APPLE__
+# define GLFW_INCLUDE_GLCOREARB
+# define GL_SILENCE_DEPRECATION
+#else
+# define GLFW_INCLUDE_ES2
+# define GLFW_INCLUDE_GLEXT
+#endif
+
+
 #include "include.h"
 
 /*

@@ -40,10 +40,14 @@
 #endif
 #endif
 
-
-
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+
+#ifdef __APPLE__
+# define glGenVertexArrays   glGenVertexArraysAPPLE
+# define glBindVertexArray   glBindVertexArrayAPPLE
+#endif
+
 
 #include "linmath.h"
 

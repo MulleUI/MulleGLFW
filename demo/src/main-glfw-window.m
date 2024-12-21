@@ -1,3 +1,7 @@
+#define _GNU_SOURCE
+#define MULLE_GLFW_EXPOSE_OPEN_GL
+#define GLFW_INCLUDE_GLEXT
+
 #import "import.h"
 
 #include <string.h>
@@ -16,7 +20,7 @@ static int   log_enabled;
  */
 static int   frameCallback( GLFWOSWindow *window)
 {
-   struct MulleIntegerSize   framebufferSize;
+   CGPixelSize   framebufferSize;
 
    framebufferSize = [window os_framebufferSize];
 

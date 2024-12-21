@@ -1,18 +1,20 @@
 //
 // Copyright (c) 2021 Nat!, Mulle kybernetiK
 //
+#define GL_SILENCE_DEPRECATION
+
 #import "GLFWOSWindow.h"
 
 #import "import-private.h"
 
 #import "GLFWOSWindow+UIEvent.h"
-#import "GLFWOSWindow+DebugPrivate.h"
+#import <MulleUIApplication/UIOSWindow+DebugPrivate.h>
 
 
 
 @interface GLFWOSWindow( UIEventFuture)
 
-- (void) _windowFramebufferResizeCallback:(struct MulleIntegerSize) size;
+- (void) _windowFramebufferResizeCallback:(CGPixelSize) size;
 
 @end
 
@@ -37,11 +39,36 @@
 }
 
 
-
 static struct
 {
-   mulle_atomic_pointer_t   shareIDs;
+   mulle_atomic_pointer_t   _shareIDs;
+   NSUInteger               _debuggingFlags;
 } Self;
+
+
+// this will be called for subclasses as well, does it matter ?
++ (void) initialize
+{
+   char   *s;
+
+   // don't run again for subclass
+   if( MulleObjCClassGetID( self) != @selector( GLFWOSWindow))
+      return;
+
+   s = getenv( MULLE_C_STRINGIFY( GLFWOSWindow) "DebuggingFlags");
+   if( ! s)
+      s = getenv( "UIOSWindowDebuggingFlags");
+   if( ! s)
+      s = getenv( "UIDebuggingFlags");
+   if( s)
+      Self._debuggingFlags = strtol( s, NULL, 0);
+}
+
+
++ (void) setDebuggingFlags:(NSUInteger) flag  MULLE_OBJC_THREADSAFE_METHOD
+{
+   Self._debuggingFlags = flag;
+}
 
 
 // as we don't know, if we even use OpenGL here
@@ -51,7 +78,7 @@ static int   defaultFrameCallback( GLFWOSWindow *window)
 "Typically you can use something like this with OpenGL:\n"
 "   static int  frameCallback( GLFWOSWindow *window)\n"
 "   {\n"
-"      struct MulleIntegerSize   framebufferSize;\n"
+"      CGPixelSize   framebufferSize;\n"
 "\n"
 "      framebufferSize = [window os_framebufferSize];\n"
 "      glViewport( 0, 0, framebufferSize.width, framebufferSize.height);\n"
@@ -173,6 +200,12 @@ static void   glfw_os_window_break_on_me( void)
    glfw_os_window_break_on_me();
 #endif
 
+#ifdef GLFW_OS_WINDOW_DEBUGGING_FLAGS
+   _debuggingFlags = GLFW_OS_WINDOW_DEBUGGING_FLAGS;
+#else
+   _debuggingFlags = Self._debuggingFlags;
+#endif
+
    // TODO: create windows invisible always, but make visible after first
    //       render call. pro: window won't show up empty for an unknown
    //       amount of time. con: window won't show up at all for an unknown
@@ -217,12 +250,12 @@ static void   glfw_os_window_break_on_me( void)
     * OpenGL Context Hints
     */
 
-   api       = -1;
-   lib       = -1;
-   profile   = -1;
-   forward   = -1;
-   major     = -1;
-   minor     = -1;
+   api     = -1;
+   lib     = -1;
+   profile = -1;
+   forward = -1;
+   major   = -1;
+   minor   = -1;
 
 //
 // These function can only be called from main thread (see above)
@@ -268,9 +301,9 @@ static void   glfw_os_window_break_on_me( void)
 
    switch( GLFWGraphicsHintsGetAPI( hints))
    {
-   case 1  : api = GLFW_NO_API; break;  // special, don't want to hit this by default
-   case 2  : api = GLFW_OPENGL_ES_API; break;
-   case 3  : api = GLFW_OPENGL_API; break;
+   case 1 : api = GLFW_NO_API; break;  // special, don't want to hit this by default
+   case 2 : api = GLFW_OPENGL_ES_API; break;
+   case 3 : api = GLFW_OPENGL_API; break;
    }
    if( api != -1)
       glfwWindowHint( GLFW_CLIENT_API, api);
@@ -285,11 +318,18 @@ static void   glfw_os_window_break_on_me( void)
    // TODO: could retry for profiles as well as for libs (see below)
    switch( GLFWGraphicsHintsGetProfile( hints))
    {
-   case 1  : profile = GLFW_OPENGL_ANY_PROFILE; break;
-   case 2  : profile = GLFW_OPENGL_CORE_PROFILE; break;
-   case 3  : profile = GLFW_OPENGL_COMPAT_PROFILE; break;
+   case 1 : profile = GLFW_OPENGL_ANY_PROFILE; break;
+   case 2 : profile = GLFW_OPENGL_CORE_PROFILE; break;
+   case 3 : profile = GLFW_OPENGL_COMPAT_PROFILE; break;
    }
-
+#ifdef __APPLE__
+   if( profile == GLFW_OPENGL_COMPAT_PROFILE)
+   {
+      UIOSWindowLog( "OpenGL compat not posible with Apple");
+      [self release];
+      return( nil);
+   }
+#endif
    // you can't set this or GLFW_OPENGL_CORE_PROFILE or GLFW_OPENGL_COMPAT_PROFILE on GL < 3.2
    if( profile != -1)
       glfwWindowHint( GLFW_OPENGL_PROFILE, profile);
@@ -406,7 +446,7 @@ retry:
 
    _sharingWindow = (GLFWOSWindow *) [sharingWindow retain];
    if( ! _sharingWindow)
-      _shareID = (NSInteger) _mulle_atomic_pointer_increment( &Self.shareIDs) + 1;
+      _shareID = (NSInteger) _mulle_atomic_pointer_increment( &Self._shareIDs) + 1;
 
    if( _sharingWindow)
       UIOSWindowLog( "window %p (sharing with %p) created", _window, _sharingWindow);
@@ -444,7 +484,15 @@ retry:
    {
       glfwMakeContextCurrent( _window);  // needed, otherwise glGetIntegerv( GL_SAMPLES_ARB, &samples) fails
       samples = 0;
+#if defined(__APPLE__)
+      GLint sampleBuffers = 0;
+
+      glGetIntegerv( GL_SAMPLE_BUFFERS, &sampleBuffers);
+      if( sampleBuffers > 0) 
+         glGetIntegerv( GL_SAMPLES, &samples);
+#else
       glGetIntegerv( GL_SAMPLES_ARB, &samples);
+#endif
       if( samples == 4)
          _antiAliasing = YES;
 //      else
@@ -586,6 +634,13 @@ retry:
 }
 
 
+// hmm, need to thread protect this...
+- (mulle_absolutetime_t) lastSwapBuffersTimestamp
+{
+   return( _lastSwapBuffersTimestamp);
+}
+
+
 - (void) setFrameRate:(mulle_relativetime_t) frameRate
 {
    [_windowInfoLock lock];
@@ -615,6 +670,21 @@ retry:
 }
 
 
+- (NSUInteger) discardEventsMask
+{
+   void   *mask;
+
+   mask = _mulle_atomic_pointer_read( &_discardEventsMask);
+   return( (NSUInteger) mask);
+}
+
+
+- (void) setDiscardEventsMask:(NSUInteger) mask
+{
+   _mulle_atomic_pointer_write( &_discardEventsMask, (void *) mask);
+}
+
+
 - (id <UIScreen>) screenOrPrimaryScreen:(BOOL) flag
 {
    struct UIOSWindowInfo   info;
@@ -637,16 +707,6 @@ retry:
 }
 
 
-- (void) os_destroyWindow
-{
-   if( _window)
-   {
-      glfwDestroyWindow( _window);
-      _window = NULL;
-   }
-}
-
-
 - (void *) os_window
 {
    return( _window);
@@ -666,6 +726,8 @@ retry:
       UIOSWindowLog( "activate window: %p", _window);
       glfwMakeContextCurrent( _window);
    }      
+   else
+      UIOSWindowLogVerbose( "Activated, but we have no graphics context");
 }
 
 
@@ -685,6 +747,9 @@ retry:
       UIOSWindowLog( "activate window: %p", _window);
       glfwMakeContextCurrent( _window);
    }
+   else
+      UIOSWindowLogVerbose( "Did activate, but we have no graphics context");
+
    return( YES);
 }
 
@@ -860,6 +925,7 @@ static struct
    // it'as assume that context need not be active here, but is it true ?
    assert( _window);
 
+   // TODO: atomic ?
    if( _haveGraphicsContext)
    {
       // https://github.com/glfw/glfw/issues/2109
@@ -867,8 +933,14 @@ static struct
       {
          UIOSWindowLogVerbose( "\033[1mswapped buffers\033[0m");
          glfwSwapBuffers( _window);
+
+         // swapping buffers can take some time, so refresh with actual
+         // TODO: atomic ?
+         _lastSwapBuffersTimestamp = mulle_absolutetime_now();  // or do we need ... now here ?
       }
    }
+   else
+      UIOSWindowLogVerbose( "Can't swap, have no graphics context");
 }
 
 
@@ -877,6 +949,8 @@ static struct
    // can be called from any thread
    if( _haveGraphicsContext)
       glfwSwapInterval( (int) value);  // need for smooth pointer/control sync
+   else
+      UIOSWindowLogVerbose( "Can't set swap interval, have no graphics context");
 }
 
 
@@ -886,6 +960,8 @@ static struct
    // we are finalized if _window nil 
    if( _window)
       glfwSetWindowShouldClose( _window, GL_TRUE);
+   else
+      UIOSWindowLogVerbose( "Can't set request close, have no window any more");
 }
 
 
@@ -906,12 +982,14 @@ static struct
 
 - (void) applicationDidAddWindow:(UIApplication *) app
 {
+   assert( [NSThread mulleIsMainThread]);
    // ignore
 }
 
 
 - (void) applicationDidRemoveWindow:(UIApplication *) app
 {
+   assert( [NSThread mulleIsMainThread]);
    [self mullePerformFinalize];
 }
 
@@ -938,6 +1016,16 @@ static struct
    assert( _window);
 
    glfwHideWindow( _window);
+}
+
+
+- (void) os_destroyWindow
+{
+   if( _window)
+   {
+      glfwDestroyWindow( _window);
+      _window = NULL;
+   }
 }
 
 
@@ -1015,7 +1103,7 @@ static struct
 }
 
 
-- (struct MulleIntegerSize) os_framebufferSize
+- (CGPixelSize) os_framebufferSize
 {
    int   w;
    int   h;
@@ -1024,12 +1112,16 @@ static struct
    assert( _window);
 
    glfwGetFramebufferSize( _window, &w, &h);  // just to be sure...
-   return( MulleIntegerSizeMake( w, h));
+   return( CGPixelSizeMake( w, h));
 }
 
 
+// TODO: framebuffer / size ?
 - (CGVector) os_UIScale
 {
+   assert( [NSThread mulleIsMainThread]);
+   assert( _window);
+
 //   float xscale, yscale;
 
 //   glfwGetWindowContentScale( _window, &xscale, &yscale);
@@ -1083,7 +1175,7 @@ static struct
    // events, which it shouldn't :) and then it will ask us if we need
    // to draw the frame...
    //
-   [UIEvent os_sendEmptyEvent];
+   [[UIApplication sharedInstance] os_sendEmptyEvent];
 }
 
 
@@ -1122,11 +1214,10 @@ static struct
    [self os_activateGraphicsContext];
    {
      (*self->_frameCallback)( self);
-     [self os_swapBuffers];
+     [self os_swapBuffers]; // sets _lastSwapBuffersTimestamp
    }
    [self os_deactivateGraphicsContext];
 
-   _lastSwapBuffersTimestamp = now;  // or do we need ..._now() here ?
 
 //   fprintf( stderr, "%p - swapped now:%.4f really:%.4f\n",
 //                           self, now, mulle_absolutetime_now());
@@ -1135,7 +1226,7 @@ static struct
 }
 
 
-- (void) setWindowEventsCallback:(GLFWOSWindowEventCallback_t) callback
+- (void) setWindowEventsCallback:(UIOSWindowEventCallback_t) callback
 {
    _windowEventsCallback = callback;
    if( callback)
@@ -1143,7 +1234,7 @@ static struct
 }
 
 
-- (void) setOtherRetainedEventsCallback:(GLFWOSWindowRetainedEventCallback_t) callback
+- (void) setOtherRetainedEventsCallback:(UIOSWindowRetainedEventCallback_t) callback
 {
    _otherRetainedEventsCallback = callback;
    if( callback)
@@ -1185,6 +1276,17 @@ static struct
    assert( [NSThread mulleIsMainThread]);
 
    return( _inputState.keyModifiers);
+}
+
+
+- (char *) UTF8String
+{
+   char   *s;
+
+   s = MulleObjC_asprintf( "<%s %p>",
+                           MulleObjCInstanceGetClassNameUTF8String( self),
+                           self);
+   return( s);
 }
 
 @end

@@ -17,17 +17,10 @@ endif()
 # Disable for this platform: `mulle-sourcetree mark glfw no-cmake-platform-${MULLE_UNAME}`
 # Disable for a sdk: `mulle-sourcetree mark glfw no-cmake-sdk-<name>`
 #
-if( NOT GLFW_LIBRARY)
-   find_library( GLFW_LIBRARY NAMES
-      ${CMAKE_STATIC_LIBRARY_PREFIX}glfw3${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-      ${CMAKE_STATIC_LIBRARY_PREFIX}glfw3${CMAKE_STATIC_LIBRARY_SUFFIX}
-      glfw3
-      ${CMAKE_STATIC_LIBRARY_PREFIX}glfw${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-      ${CMAKE_STATIC_LIBRARY_PREFIX}glfw${CMAKE_STATIC_LIBRARY_SUFFIX}
-      glfw
-      NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH
-   )
-   if( NOT GLFW_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
+if( COLLECT_DEPENDENCY_LIBRARIES_AS_NAMES)
+   list( APPEND DEPENDENCY_LIBRARIES "glfw3")
+else()
+   if( NOT GLFW_LIBRARY)
       find_library( GLFW_LIBRARY NAMES
          ${CMAKE_STATIC_LIBRARY_PREFIX}glfw3${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
          ${CMAKE_STATIC_LIBRARY_PREFIX}glfw3${CMAKE_STATIC_LIBRARY_SUFFIX}
@@ -35,61 +28,72 @@ if( NOT GLFW_LIBRARY)
          ${CMAKE_STATIC_LIBRARY_PREFIX}glfw${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
          ${CMAKE_STATIC_LIBRARY_PREFIX}glfw${CMAKE_STATIC_LIBRARY_SUFFIX}
          glfw
+         NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH
       )
-   endif()
-   message( STATUS "GLFW_LIBRARY is ${GLFW_LIBRARY}")
-   #
-   # The order looks ascending, but due to the way this file is read
-   # it ends up being descending, which is what we need.
-   #
-   if( GLFW_LIBRARY)
+      if( NOT GLFW_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
+         find_library( GLFW_LIBRARY NAMES
+            ${CMAKE_STATIC_LIBRARY_PREFIX}glfw3${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
+            ${CMAKE_STATIC_LIBRARY_PREFIX}glfw3${CMAKE_STATIC_LIBRARY_SUFFIX}
+            glfw3
+            ${CMAKE_STATIC_LIBRARY_PREFIX}glfw${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
+            ${CMAKE_STATIC_LIBRARY_PREFIX}glfw${CMAKE_STATIC_LIBRARY_SUFFIX}
+            glfw
+         )
+      endif()
+      message( STATUS "GLFW_LIBRARY is ${GLFW_LIBRARY}")
       #
-      # Add GLFW_LIBRARY to DEPENDENCY_LIBRARIES list.
-      # Disable with: `mulle-sourcetree mark glfw no-cmake-add`
+      # The order looks ascending, but due to the way this file is read
+      # it ends up being descending, which is what we need.
       #
-      list( APPEND DEPENDENCY_LIBRARIES ${GLFW_LIBRARY})
-      #
-      # Inherit information from dependency.
-      # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
-      # Disable with: `mulle-sourcetree mark glfw no-cmake-inherit`
-      #
-      # temporarily expand CMAKE_MODULE_PATH
-      get_filename_component( _TMP_GLFW_ROOT "${GLFW_LIBRARY}" DIRECTORY)
-      get_filename_component( _TMP_GLFW_ROOT "${_TMP_GLFW_ROOT}" DIRECTORY)
-      #
-      #
-      # Search for "Definitions.cmake" and "DependenciesAndLibraries.cmake" to include.
-      # Disable with: `mulle-sourcetree mark glfw no-cmake-dependency`
-      #
-      foreach( _TMP_GLFW_NAME "glfw3" "glfw")
-         set( _TMP_GLFW_DIR "${_TMP_GLFW_ROOT}/include/${_TMP_GLFW_NAME}/cmake")
-         # use explicit path to avoid "surprises"
-         if( IS_DIRECTORY "${_TMP_GLFW_DIR}")
-            list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_GLFW_DIR}")
-            # we only want top level INHERIT_OBJC_LOADERS, so disable them
-            if( NOT NO_INHERIT_OBJC_LOADERS)
-               set( NO_INHERIT_OBJC_LOADERS OFF)
+      if( GLFW_LIBRARY)
+         #
+         # Add GLFW_LIBRARY to DEPENDENCY_LIBRARIES list.
+         # Disable with: `mulle-sourcetree mark glfw no-cmake-add`
+         #
+         list( APPEND DEPENDENCY_LIBRARIES ${GLFW_LIBRARY})
+         #
+         # Inherit information from dependency.
+         # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
+         # Disable with: `mulle-sourcetree mark glfw no-cmake-inherit`
+         #
+         # temporarily expand CMAKE_MODULE_PATH
+         get_filename_component( _TMP_GLFW_ROOT "${GLFW_LIBRARY}" DIRECTORY)
+         get_filename_component( _TMP_GLFW_ROOT "${_TMP_GLFW_ROOT}" DIRECTORY)
+         #
+         #
+         # Search for "Definitions.cmake" and "DependenciesAndLibraries.cmake" to include.
+         # Disable with: `mulle-sourcetree mark glfw no-cmake-dependency`
+         #
+         foreach( _TMP_GLFW_NAME "glfw3" "glfw")
+            set( _TMP_GLFW_DIR "${_TMP_GLFW_ROOT}/include/${_TMP_GLFW_NAME}/cmake")
+            # use explicit path to avoid "surprises"
+            if( IS_DIRECTORY "${_TMP_GLFW_DIR}")
+               list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_GLFW_DIR}")
+               # we only want top level INHERIT_OBJC_LOADERS, so disable them
+               if( NOT NO_INHERIT_OBJC_LOADERS)
+                  set( NO_INHERIT_OBJC_LOADERS OFF)
+               endif()
+               list( APPEND _TMP_INHERIT_OBJC_LOADERS ${NO_INHERIT_OBJC_LOADERS})
+               set( NO_INHERIT_OBJC_LOADERS ON)
+               #
+               include( "${_TMP_GLFW_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
+               #
+               list( GET _TMP_INHERIT_OBJC_LOADERS -1 NO_INHERIT_OBJC_LOADERS)
+               list( REMOVE_AT _TMP_INHERIT_OBJC_LOADERS -1)
+               list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_GLFW_DIR}")
+               #
+               unset( GLFW_DEFINITIONS)
+               include( "${_TMP_GLFW_DIR}/Definitions.cmake" OPTIONAL)
+               list( APPEND INHERITED_DEFINITIONS ${GLFW_DEFINITIONS})
+               break()
+            else()
+               message( STATUS "${_TMP_GLFW_DIR} not found")
             endif()
-            list( APPEND _TMP_INHERIT_OBJC_LOADERS ${NO_INHERIT_OBJC_LOADERS})
-            set( NO_INHERIT_OBJC_LOADERS ON)
-            #
-            include( "${_TMP_GLFW_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
-            #
-            list( GET _TMP_INHERIT_OBJC_LOADERS -1 NO_INHERIT_OBJC_LOADERS)
-            list( REMOVE_AT _TMP_INHERIT_OBJC_LOADERS -1)
-            list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_GLFW_DIR}")
-            #
-            unset( GLFW_DEFINITIONS)
-            include( "${_TMP_GLFW_DIR}/Definitions.cmake" OPTIONAL)
-            list( APPEND INHERITED_DEFINITIONS ${GLFW_DEFINITIONS})
-            break()
-         else()
-            message( STATUS "${_TMP_GLFW_DIR} not found")
-         endif()
-      endforeach()
-   else()
-      # Disable with: `mulle-sourcetree mark glfw no-require-link`
-      message( FATAL_ERROR "GLFW_LIBRARY was not found")
+         endforeach()
+      else()
+         # Disable with: `mulle-sourcetree mark glfw no-require-link`
+         message( SEND_ERROR "GLFW_LIBRARY was not found")
+      endif()
    endif()
 endif()
 
@@ -100,77 +104,81 @@ endif()
 # Disable for this platform: `mulle-sourcetree mark MulleUIApplication no-cmake-platform-${MULLE_UNAME}`
 # Disable for a sdk: `mulle-sourcetree mark MulleUIApplication no-cmake-sdk-<name>`
 #
-if( NOT MULLE_UI_APPLICATION_LIBRARY)
-   find_library( MULLE_UI_APPLICATION_LIBRARY NAMES
-      ${CMAKE_STATIC_LIBRARY_PREFIX}MulleUIApplication${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-      ${CMAKE_STATIC_LIBRARY_PREFIX}MulleUIApplication${CMAKE_STATIC_LIBRARY_SUFFIX}
-      MulleUIApplication
-      NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH
-   )
-   if( NOT MULLE_UI_APPLICATION_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
+if( COLLECT_ALL_LOAD_DEPENDENCY_LIBRARIES_AS_NAMES)
+   list( APPEND ALL_LOAD_DEPENDENCY_LIBRARIES "MulleUIApplication")
+else()
+   if( NOT MULLE_UI_APPLICATION_LIBRARY)
       find_library( MULLE_UI_APPLICATION_LIBRARY NAMES
          ${CMAKE_STATIC_LIBRARY_PREFIX}MulleUIApplication${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
          ${CMAKE_STATIC_LIBRARY_PREFIX}MulleUIApplication${CMAKE_STATIC_LIBRARY_SUFFIX}
          MulleUIApplication
+         NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH
       )
-   endif()
-   message( STATUS "MULLE_UI_APPLICATION_LIBRARY is ${MULLE_UI_APPLICATION_LIBRARY}")
-   #
-   # The order looks ascending, but due to the way this file is read
-   # it ends up being descending, which is what we need.
-   #
-   if( MULLE_UI_APPLICATION_LIBRARY)
+      if( NOT MULLE_UI_APPLICATION_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
+         find_library( MULLE_UI_APPLICATION_LIBRARY NAMES
+            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleUIApplication${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
+            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleUIApplication${CMAKE_STATIC_LIBRARY_SUFFIX}
+            MulleUIApplication
+         )
+      endif()
+      message( STATUS "MULLE_UI_APPLICATION_LIBRARY is ${MULLE_UI_APPLICATION_LIBRARY}")
       #
-      # Add MULLE_UI_APPLICATION_LIBRARY to ALL_LOAD_DEPENDENCY_LIBRARIES list.
-      # Disable with: `mulle-sourcetree mark MulleUIApplication no-cmake-add`
+      # The order looks ascending, but due to the way this file is read
+      # it ends up being descending, which is what we need.
       #
-      list( APPEND ALL_LOAD_DEPENDENCY_LIBRARIES ${MULLE_UI_APPLICATION_LIBRARY})
-      #
-      # Inherit information from dependency.
-      # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
-      # Disable with: `mulle-sourcetree mark MulleUIApplication no-cmake-inherit`
-      #
-      # temporarily expand CMAKE_MODULE_PATH
-      get_filename_component( _TMP_MULLE_UI_APPLICATION_ROOT "${MULLE_UI_APPLICATION_LIBRARY}" DIRECTORY)
-      get_filename_component( _TMP_MULLE_UI_APPLICATION_ROOT "${_TMP_MULLE_UI_APPLICATION_ROOT}" DIRECTORY)
-      #
-      #
-      # Search for "Definitions.cmake" and "DependenciesAndLibraries.cmake" to include.
-      # Disable with: `mulle-sourcetree mark MulleUIApplication no-cmake-dependency`
-      #
-      foreach( _TMP_MULLE_UI_APPLICATION_NAME "MulleUIApplication")
-         set( _TMP_MULLE_UI_APPLICATION_DIR "${_TMP_MULLE_UI_APPLICATION_ROOT}/include/${_TMP_MULLE_UI_APPLICATION_NAME}/cmake")
-         # use explicit path to avoid "surprises"
-         if( IS_DIRECTORY "${_TMP_MULLE_UI_APPLICATION_DIR}")
-            list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_MULLE_UI_APPLICATION_DIR}")
-            #
-            include( "${_TMP_MULLE_UI_APPLICATION_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
-            #
-            list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_UI_APPLICATION_DIR}")
-            #
-            unset( MULLE_UI_APPLICATION_DEFINITIONS)
-            include( "${_TMP_MULLE_UI_APPLICATION_DIR}/Definitions.cmake" OPTIONAL)
-            list( APPEND INHERITED_DEFINITIONS ${MULLE_UI_APPLICATION_DEFINITIONS})
-            break()
-         else()
-            message( STATUS "${_TMP_MULLE_UI_APPLICATION_DIR} not found")
-         endif()
-      endforeach()
-      #
-      # Search for "MulleObjCLoader+<name>.h" in include directory.
-      # Disable with: `mulle-sourcetree mark MulleUIApplication no-cmake-loader`
-      #
-      if( NOT NO_INHERIT_OBJC_LOADERS)
+      if( MULLE_UI_APPLICATION_LIBRARY)
+         #
+         # Add MULLE_UI_APPLICATION_LIBRARY to ALL_LOAD_DEPENDENCY_LIBRARIES list.
+         # Disable with: `mulle-sourcetree mark MulleUIApplication no-cmake-add`
+         #
+         list( APPEND ALL_LOAD_DEPENDENCY_LIBRARIES ${MULLE_UI_APPLICATION_LIBRARY})
+         #
+         # Inherit information from dependency.
+         # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
+         # Disable with: `mulle-sourcetree mark MulleUIApplication no-cmake-inherit`
+         #
+         # temporarily expand CMAKE_MODULE_PATH
+         get_filename_component( _TMP_MULLE_UI_APPLICATION_ROOT "${MULLE_UI_APPLICATION_LIBRARY}" DIRECTORY)
+         get_filename_component( _TMP_MULLE_UI_APPLICATION_ROOT "${_TMP_MULLE_UI_APPLICATION_ROOT}" DIRECTORY)
+         #
+         #
+         # Search for "Definitions.cmake" and "DependenciesAndLibraries.cmake" to include.
+         # Disable with: `mulle-sourcetree mark MulleUIApplication no-cmake-dependency`
+         #
          foreach( _TMP_MULLE_UI_APPLICATION_NAME "MulleUIApplication")
-            set( _TMP_MULLE_UI_APPLICATION_FILE "${_TMP_MULLE_UI_APPLICATION_ROOT}/include/${_TMP_MULLE_UI_APPLICATION_NAME}/MulleObjCLoader+${_TMP_MULLE_UI_APPLICATION_NAME}.h")
-            if( EXISTS "${_TMP_MULLE_UI_APPLICATION_FILE}")
-               list( APPEND INHERITED_OBJC_LOADERS ${_TMP_MULLE_UI_APPLICATION_FILE})
+            set( _TMP_MULLE_UI_APPLICATION_DIR "${_TMP_MULLE_UI_APPLICATION_ROOT}/include/${_TMP_MULLE_UI_APPLICATION_NAME}/cmake")
+            # use explicit path to avoid "surprises"
+            if( IS_DIRECTORY "${_TMP_MULLE_UI_APPLICATION_DIR}")
+               list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_MULLE_UI_APPLICATION_DIR}")
+               #
+               include( "${_TMP_MULLE_UI_APPLICATION_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
+               #
+               list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_UI_APPLICATION_DIR}")
+               #
+               unset( MULLE_UI_APPLICATION_DEFINITIONS)
+               include( "${_TMP_MULLE_UI_APPLICATION_DIR}/Definitions.cmake" OPTIONAL)
+               list( APPEND INHERITED_DEFINITIONS ${MULLE_UI_APPLICATION_DEFINITIONS})
                break()
+            else()
+               message( STATUS "${_TMP_MULLE_UI_APPLICATION_DIR} not found")
             endif()
          endforeach()
+         #
+         # Search for "MulleObjCLoader+<name>.h" in include directory.
+         # Disable with: `mulle-sourcetree mark MulleUIApplication no-cmake-loader`
+         #
+         if( NOT NO_INHERIT_OBJC_LOADERS)
+            foreach( _TMP_MULLE_UI_APPLICATION_NAME "MulleUIApplication")
+               set( _TMP_MULLE_UI_APPLICATION_FILE "${_TMP_MULLE_UI_APPLICATION_ROOT}/include/${_TMP_MULLE_UI_APPLICATION_NAME}/MulleObjCLoader+${_TMP_MULLE_UI_APPLICATION_NAME}.h")
+               if( EXISTS "${_TMP_MULLE_UI_APPLICATION_FILE}")
+                  list( APPEND INHERITED_OBJC_LOADERS ${_TMP_MULLE_UI_APPLICATION_FILE})
+                  break()
+               endif()
+            endforeach()
+         endif()
+      else()
+         # Disable with: `mulle-sourcetree mark MulleUIApplication no-require-link`
+         message( SEND_ERROR "MULLE_UI_APPLICATION_LIBRARY was not found")
       endif()
-   else()
-      # Disable with: `mulle-sourcetree mark MulleUIApplication no-require-link`
-      message( FATAL_ERROR "MULLE_UI_APPLICATION_LIBRARY was not found")
    endif()
 endif()

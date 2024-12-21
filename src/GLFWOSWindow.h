@@ -129,15 +129,6 @@ static inline int   GLFWGraphicsHintsBySettingAPILibrary( GLFWGraphicsHints t, i
 
 
 //
-// Why is it relative time ? For animation purposes its more useful
-// to use CLOCK_MONOTONIC:
-// https://stackoverflow.com/questions/3523442/difference-between-clock-realtime-and-clock-monotonic
-//
-typedef void   (*GLFWOSWindowEventCallback_t)( GLFWOSWindow *window, UIWindowEvent *event);
-typedef void   (*GLFWOSWindowRetainedEventCallback_t)( GLFWOSWindow *window, UIEvent *retainedEvent);
-typedef int    (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
-
-//
 // The GLFWOSWindow has the GLFW window handle and implicitly the
 // drawing context. A UIWindow will have possibly two GLFWOSWindows
 // associated with it. One for drawing offscreen and one for display onscreen.
@@ -161,6 +152,7 @@ typedef int    (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 
    mulle_absolutetime_t     _lastSwapBuffersTimestamp;
    mulle_atomic_pointer_t   _needsRefresh;
+   mulle_atomic_pointer_t   _discardEventsMask;
 
    NSLock                   *_windowInfoLock;
    struct UIOSWindowInfo    _windowInfo;
@@ -170,35 +162,34 @@ typedef int    (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 
 // window events are called via -handleEvent:
 // event is autoreleased
-@property( assign) id <UIEventReceiver>        windowEventsReceiver;
+@property( assign) id <UIEventReceiver>                windowEventsReceiver;
 
 // window events are called via -receiveRetainedEvent:
 // event must be released by receiver!
-@property( assign) id <UIEventReceiver>        eventsReceiver;
+@property( assign) id <UIEventReceiver>                eventsReceiver;
 
-// if you chose to overwrite eventsCallback, the eventsReceiver
+// if you chose to overwrite events callbacks, the eventsReceiver
 // and the windowEventsReceiver will not get anything. Setting either will
 // also enable OS events for windowEvents or other
 
 // default: GLFWOSWindowEventDefaultCallback
-@property( assign) GLFWOSWindowEventCallback_t         windowEventsCallback;
+@property( assign) UIOSWindowEventCallback_t           windowEventsCallback;
 // default: GLFWOSWindowRetainedEventDefaultCallback
-@property( assign) GLFWOSWindowRetainedEventCallback_t otherRetainedEventsCallback;
-
-@property( assign, readonly) UIGraphicsBackend         backend;
-
+@property( assign) UIOSWindowRetainedEventCallback_t   otherRetainedEventsCallback;
 //
 // very basic rendering and event support. Does not use CGContext!
 // view port is not setup and framebuffer is not cleared!
-@property( assign) GLFWOSWindowFrameCallback_t         frameCallback;
+@property( assign) UIOSWindowFrameCallback_t           frameCallback;
 
-@property( assign) NSUInteger                          discardEventsMask;
+@property( assign, readonly) BOOL                      haveGraphicsContext;
+@property( assign, readonly) NSUInteger                styleMask;
+@property( dynamic, assign) mulle_relativetime_t       frameRate           MULLE_OBJC_THREADSAFE_PROPERTY;
+
+
+@property( dynamic, assign) NSUInteger                 discardEventsMask   MULLE_OBJC_THREADSAFE_PROPERTY;
 @property( assign) CGFloat                             scrollWheelSensitivity;
 @property( assign, getter=isScrollWheelNatural) BOOL   scrollWheelNatural;
 
-@property( assign, readonly) NSUInteger                styleMask;
-@property( dynamic, assign) mulle_relativetime_t       frameRate;
-@property( assign, readonly) BOOL                      haveGraphicsContext;
 
 // renderGraphicsContext  is always nil! glfw has no drawing functionality
 @property( assign, readonly) id <UIGraphicsContext>    renderGraphicsContext;
@@ -209,12 +200,16 @@ typedef int    (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 @property( readonly, getter=isAntiAliasing) BOOL       antiAliasing;
 
 @property( readonly) struct UIInputState               inputState;
+@property( assign, readonly) UIGraphicsBackend         backend;
 
-@property( assign) NSUInteger                          debugEnabled;
+@property( assign) NSUInteger                          debuggingFlags   MULLE_OBJC_THREADSAFE_PROPERTY;
 
 @property( assign) BOOL                                uninitializedFramebuffer;
 
 
+//
+// window creation must be done on the main thread only
+//
 + (instancetype) windowWithFrame:(CGRect) frame
                  titleUTF8String:(char *) title
                        styleMask:(NSUInteger) styleMask
@@ -259,7 +254,7 @@ typedef int    (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 //
 // This method can be called from any thread
 //
-- (void) getOSWindowInfo:(struct UIOSWindowInfo *) info;
+- (void) getOSWindowInfo:(struct UIOSWindowInfo *) info  MULLE_OBJC_THREADSAFE_METHOD;
 
 //
 // screen the windows is on (either fully or for the most part)
@@ -272,62 +267,65 @@ typedef int    (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 // The shareID never changes for a Window
 // This method can be called from any thread
 // 0 means, no sharing
-- (NSInteger) shareID;
+- (NSInteger) shareID      MULLE_OBJC_THREADSAFE_METHOD;
 
 // This method can be called from any thread
-- (BOOL) shouldClose;
+- (BOOL) shouldClose       MULLE_OBJC_THREADSAFE_METHOD;
 
+
+
+- (void *) os_window                               MULLE_OBJC_THREADSAFE_METHOD;         // GLFW window, use this for glfw functions
+- (void) os_setSwapInterval:(NSUInteger) value     MULLE_OBJC_THREADSAFE_METHOD;
+- (void) os_swapBuffers                            MULLE_OBJC_THREADSAFE_METHOD;
+
+// bind GL context of the window to the current thread
+// synonymous with activate. These methods do not call mulleGainAccess or
+// mulleRelinquishAccess
+//
+- (void) os_activateGraphicsContext                MULLE_OBJC_THREADSAFE_METHOD;
+- (void) os_deactivateGraphicsContext              MULLE_OBJC_THREADSAFE_METHOD;
+- (BOOL) os_tryActivateGraphicsContext             MULLE_OBJC_THREADSAFE_METHOD;
+
+// This method can be called from any thread
+- (void) os_requestClose                           MULLE_OBJC_THREADSAFE_METHOD;
+
+// This method can be called from any thread
+- (BOOL) os_windowShouldClose                      MULLE_OBJC_THREADSAFE_METHOD;
 
 //
 // All defined in the protocol already
 // All must be called from the mainThread unless specifically noted
 //
-- (void) os_destroyWindow;
+- (struct CGPixelSize) os_framebufferSize          MULLE_UI_MAIN_THREAD_ONLY;
 
-- (void *) os_window;         // GLFW window, use this for glfw functions
+- (CGPoint) os_windowPosition                      MULLE_UI_MAIN_THREAD_ONLY;
+- (CGSize) os_windowSize                           MULLE_UI_MAIN_THREAD_ONLY;
+- (CGRect) os_windowFrame                          MULLE_UI_MAIN_THREAD_ONLY;
+- (CGVector) os_UIScale                            MULLE_UI_MAIN_THREAD_ONLY;
 
-- (CGPoint) os_windowPosition;
-- (void) os_setWindowPosition:(CGPoint) position;
-- (CGSize) os_windowSize;
-- (void) os_setWindowSize:(CGSize) size;
-- (CGRect) os_windowFrame;
-- (void) os_setWindowFrame:(CGRect) rect;
-- (void) os_setWindowSize:(CGSize) size;
-- (void) os_setSwapInterval:(NSUInteger) value;
+- (void) os_setWindowPosition:(CGPoint) position   MULLE_UI_MAIN_THREAD_ONLY;
+- (void) os_setWindowSize:(CGSize) size            MULLE_UI_MAIN_THREAD_ONLY;
+- (void) os_setWindowFrame:(CGRect) rect           MULLE_UI_MAIN_THREAD_ONLY;
 
-- (struct MulleIntegerSize) os_framebufferSize;
 
-- (CGVector) os_UIScale;
-
-// bind GL context of the window to the current thread
-// synonymous with activate
-- (void) os_activateGraphicsContext;
-- (void) os_deactivateGraphicsContext;
-- (void) os_swapBuffers;
-
-// This method can be called from any thread
-- (void) os_requestClose;
-
-// This method can be called from any thread
-- (BOOL) os_windowShouldClose;
-
-- (void) os_show;
-- (void) os_hide;
+- (void) os_show                                   MULLE_UI_MAIN_THREAD_ONLY;
+- (void) os_hide                                   MULLE_UI_MAIN_THREAD_ONLY;
+- (void) os_destroyWindow                          MULLE_UI_MAIN_THREAD_ONLY;
 
 // query function to check what context we got
-- (char *) os_contextInfoUTF8String;
-- (char *) os_windowInfoUTF8String;
+- (char *) os_contextInfoUTF8String                MULLE_UI_MAIN_THREAD_ONLY;
+- (char *) os_windowInfoUTF8String                 MULLE_UI_MAIN_THREAD_ONLY;
 
-- (void) os_setTitleUTF8String:(char *) s;
+- (void) os_setTitleUTF8String:(char *) s          MULLE_UI_MAIN_THREAD_ONLY;
 
 
-- (void) os_setCursor:(void *) cursor;
+- (void) os_setCursor:(void *) cursor              MULLE_UI_MAIN_THREAD_ONLY;
 
 //
 // OS Pasteboard (Might need to be moved to UIApplication)
 // prefix with os ?
-- (char *) pasteboardCString;
-- (void) setPasteboardCString:(char *) s;
+- (char *) pasteboardCString                       MULLE_UI_MAIN_THREAD_ONLY;
+- (void) setPasteboardCString:(char *) s           MULLE_UI_MAIN_THREAD_ONLY;
 
 //
 // this checks "needsRefresh", if set to yes it unconditionally refreshes
@@ -338,6 +336,12 @@ typedef int    (*GLFWOSWindowFrameCallback_t)( GLFWOSWindow *window);
 
 @end
 
+void   GLFWOSWindowEventDefaultCallback( id <UIOSWindow> window, UIWindowEvent *event);
+void   GLFWOSWindowRetainedEventDefaultCallback( id <UIOSWindow> window, UIEvent *retainedEvent);
 
-void   GLFWOSWindowEventDefaultCallback( GLFWOSWindow *window, UIWindowEvent *event);
-void   GLFWOSWindowRetainedEventDefaultCallback( GLFWOSWindow *window, UIEvent *retainedEvent);
+
+//
+// Why is it relative time ? For animation purposes its more useful
+// to use CLOCK_MONOTONIC:
+// https://stackoverflow.com/questions/3523442/difference-between-clock-realtime-and-clock-monotonic
+//

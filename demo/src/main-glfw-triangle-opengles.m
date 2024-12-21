@@ -22,13 +22,17 @@
 //    distribution.
 //
 //========================================================================
-#define _GNU_SOURCE
+#ifdef __APPLE__
+# define GLFW_INCLUDE_GLCOREARB
+#else
+# define GLFW_INCLUDE_ES2  // ** IMPORTANT**
+#endif
 
+#define _GNU_SOURCE
 #import "import.h"
 
 //#define GLAD_GLES2_IMPLEMENTATION
 //#include <glad/gles2.h>
-#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
 #include "linmath.h"
@@ -48,6 +52,10 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <math.h>
+#ifndef M_PI
+# define M_PI 3.14159265358979323846264338327950288
+#endif
 
 typedef struct Vertex
 {
@@ -164,9 +172,9 @@ static void   init_scene( void)
 }
 
 
-static void   display( GLFWOSWindow *gWindow)
+static int   display( GLFWOSWindow *gWindow)
 {
-   struct MulleIntegerSize    framebufferSize;
+   CGPixelSize    framebufferSize;
    float                  ratio;
    mulle_absolutetime_t   now;
 
@@ -197,6 +205,8 @@ static void   display( GLFWOSWindow *gWindow)
 
 // not needed
    glFlush();
+
+   return( 0);
 }
 
 
@@ -380,7 +390,7 @@ int   main( int argc, char *argv[])
       // so the Hz here don't really matter.
       [gWindow setFrameRate: 1 / 1000.0];
    }
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

@@ -27,6 +27,6 @@
    sourcetree, then you don't need it.
  */
 
-#import "_demos-import.h"
+#import "_demo-import.h"
 
 /* You can add some more import statements here */

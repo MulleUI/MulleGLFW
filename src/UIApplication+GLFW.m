@@ -11,6 +11,7 @@
 #import "import-private.h"
 
 #import "GLFWOSScreen.h"
+#import "GLFWOSGamepad.h"
 
 
 #ifdef DEBUG
@@ -23,6 +24,20 @@
 // does not call [UIWindow terminate]
 - (void) _removeScreen:(id <UIScreen>) screen;
 
+@end
+
+
+
+@interface UIApplication( UIGamepadPrivate)
+
+- (void) _addGamepad:(id <UIGamepad>) gamepad;
+// does not call [UIWindow terminate]
+- (void) _removeGamepad:(id <UIGamepad>) gamepad;
+
+@end
+
+
+@interface UIApplication ( GLFW)
 @end
 
 
@@ -67,6 +82,43 @@ static void   monitorCallback( GLFWmonitor *monitor, int event)
 }
 
 
+static void   joystickCallback( int jid, int event)
+{
+   GLFWOSGamepad        *gamepad;
+   UIGamepadEvent       *gamepadEvent;
+   UIGamepadEventType   type;
+
+   switch( event)
+   {
+   case GLFW_CONNECTED    : type    = UIGamepadEventTypeConnected;
+                            gamepad = [[[GLFWOSGamepad alloc] initWithOSGamepad:(void *) (uintptr_t) jid] autorelease];
+                            break;
+
+   case GLFW_DISCONNECTED : type    = UIGamepadEventTypeDisconnected;
+                            gamepad = glfwGetJoystickUserPointer( jid);
+                            break;
+
+   default                : MulleUICLog( "GLFW unknown monitor event %d\n", event);
+                            return;
+   }
+
+   if( ! gamepad)
+   {
+      MulleUICLog( "GLFW stray uninitializable gamepad event");
+      return;
+   }
+
+   gamepadEvent = [[[UIGamepadEvent alloc] initWithGamepad:gamepad
+                                          gamepadEventType:type] autorelease];
+
+#ifdef DEBUG
+   if( ! UIApp)
+      MulleUICLog( "UIApp is not available, as +sharedInstance hasn't been called.");
+#endif
+   [UIApp handleGamepadEvent:gamepadEvent];
+}
+
+
 + (void) os_initialize
 {
    assert( [NSThread mulleIsMainThread]);
@@ -82,6 +134,10 @@ static void   monitorCallback( GLFWmonitor *monitor, int event)
    //
    // Additional calls to this function after successful initialization but
    // before termination will return GLFW_TRUE immediately.
+
+   // we don't want those mixed in, though frankly we don't want joysticks
+   // either... (prefer gamepads)
+   glfwInitHint( GLFW_JOYSTICK_HAT_BUTTONS, GLFW_FALSE);
 
    if( ! glfwInit())
    {
@@ -110,19 +166,33 @@ static void   monitorCallback( GLFWmonitor *monitor, int event)
 {
    NSUInteger     i, n;
    GLFWOSScreen   *screen;
+   GLFWOSGamepad  *gamepad;
+   NSRange        range;
+   NSUInteger     max;
 
    n = [GLFWOSScreen numberOfScreens];
    for( i = 0; i < n; i++)
    {
-      screen = [GLFWOSScreen screenAtIndex:i];
+      screen = (GLFWOSScreen *) [GLFWOSScreen screenAtIndex:i];
       [self _addScreen:screen];
    }
-
    glfwSetMonitorCallback( monitorCallback);
+
+   range = [GLFWOSGamepad osIndexRange];
+   max   = NSMaxRange( range);
+   for( i = range.location; i < max; i++)
+   {
+      gamepad = (GLFWOSGamepad *) [GLFWOSGamepad gamepadAtOSIndex:i];
+      if( gamepad)
+         [self _addGamepad:gamepad];
+   }
+   glfwSetJoystickCallback( joystickCallback);
 }
+
 
 - (void) os_finalize
 {
+   glfwSetJoystickCallback( 0);
    glfwSetMonitorCallback( 0);
 }
 
@@ -148,6 +218,26 @@ static void   monitorCallback( GLFWmonitor *monitor, int event)
 }
 
 
+- (void *) os_createCursorWithBitmap:(struct CGBitmap) bitmap
+                             hotSpot:(struct CGPixelPoint) hotSpot
+{
+   assert( [NSThread mulleIsMainThread]);
+
+   GLFWcursor   *cursor;
+   GLFWimage    image;
+
+   if( CGBitmapIsNull( bitmap))
+      return( NULL);
+
+   image.width  = CGBitmapGetWidth( bitmap);
+   image.height = CGBitmapGetHeight( bitmap);
+   image.pixels = CGBitmapGetBytes( bitmap);
+
+   cursor = glfwCreateCursor( &image, hotSpot.x, hotSpot.y);
+   return( cursor);
+}
+
+
 - (void) os_destroyCursor:(void *) cursor
 {
    assert( [NSThread mulleIsMainThread]);
@@ -155,4 +245,71 @@ static void   monitorCallback( GLFWmonitor *monitor, int event)
    glfwDestroyCursor( cursor);
 }
 
+
+//
+// don't use this manually on UIWindow, since we are using a queuing mechanism
+// with our own timeout code. Use pollEvents on UIWindow, or maybe better
+// use UIApplication run
+- (void) os_waitEventsWithTimeout:(mulle_relativetime_t) timeout
+{
+   assert( [NSThread mulleIsMainThread]);
+
+   // glfw can't cope with infinity and don't like < 0.0
+   if( isinf( timeout))
+      glfwWaitEvents();
+   else
+      if( timeout <= 0.0)
+         glfwPollEvents();
+      else
+         glfwWaitEventsTimeout( timeout);
+}
+
+
+- (void) os_pollEvents
+{
+   assert( [NSThread mulleIsMainThread]);
+
+   glfwPollEvents();
+}
+
+
+- (void) os_sendEmptyEvent
+{
+   // can be called from any thread
+   glfwPostEmptyEvent();
+}
+
+
+- (void) os_pollGamepads
+{
+   id <UIGamepad>  gamepad;
+   int             i;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   // glfw actually lies and sends events during joystick functions and
+   // not in pollEvents
+   //     event=0x55555663d8f0) at /home/src/srcO/MulleUI/MulleUIApplication/src/UIApplication+UIEvent.m:50
+   // #21 0x000055555586eb7c in joystickCallback (jid=1, event=262146) at /home/src/srcO/MulleUI/MulleGLFW/src/UIApplication+GLFW.m:118
+   // #22 0x0000555555a47b4f in _glfwInputJoystick (js=0x55555606cc08 <_glfw+10152>, event=262146)
+   //     at /home/nat/.mulle/var/demos-4fd3f1c00ec5/stash/glfw/src/input.c:427
+   // #23 0x0000555555a64ade in closeJoystick (js=0x55555606cc08 <_glfw+10152>)
+   //     at /home/nat/.mulle/var/demos-4fd3f1c00ec5/stash/glfw/src/linux_joystick.c:248
+   // #24 0x0000555555a650d3 in _glfwPollJoystickLinux (js=0x55555606cc08 <_glfw+10152>, mode=0)
+   //     at /home/nat/.mulle/var/demos-4fd3f1c00ec5/stash/glfw/src/linux_joystick.c:398
+   // #25 0x0000555555a4a48e in glfwJoystickIsGamepad (jid=1) at /home/nat/.mulle/var/demos-4fd3f1c00ec5/stash/glfw/src/input.c:1336
+   // #26 0x000055555586675f in -[GLFWOSGamepad updateGamepadInfo] (self=0x555558f50bf0, _cmd=<unvollständiger Typ>)
+
+   // so UIApplication can't really do locking of its array and then call
+   // -updateGamepadInfo, so we lame here
+   for( i = GLFW_JOYSTICK_1; i <= GLFW_JOYSTICK_LAST; i++)
+   {
+      gamepad = glfwGetJoystickUserPointer( i);
+      [gamepad os_pollGamepadInfo];
+   }
+}
+
+
+
 @end
+
