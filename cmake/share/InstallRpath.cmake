@@ -27,10 +27,13 @@ if( MULLE_NO_CMAKE_INSTALL_RPATH)
    set( CMAKE_SKIP_BUILD_RPATH ON)
 else()
    if( APPLE)
-      set( CMAKE_INSTALL_RPATH
-         "@loader_path/../lib/"
-         "@loader_path/../Frameworks/"
-      )
+      # Modern CMake handles lib path automatically
+      if( CMAKE_VERSION VERSION_LESS 3.20)
+         set(CMAKE_INSTALL_RPATH
+            "@loader_path/../lib/"
+            "@loader_path/../Frameworks/"
+         )
+      endif()
    else()
       set( CMAKE_INSTALL_RPATH "\$ORIGIN/../lib")
    endif()

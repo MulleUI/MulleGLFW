@@ -1,6 +1,6 @@
 cmake_minimum_required( VERSION 3.15)
 
-project( demos C)
+project( demo C)
 
 #
 # Turn an "Executable" into a "Library"
@@ -42,7 +42,9 @@ foreach( MAIN_SOURCE ${SOURCES})
    target_compile_options( "${EXECUTABLE_COMPILE_TARGET}" PUBLIC)
    # use EXECUTABLE_LINK_TARGET for linker options
    if( LINK_PHASE)
-      target_link_options( "${EXECUTABLE_LINK_TARGET}" PUBLIC -lEGL)
+      if( NOT APPLE)
+          target_link_options("${EXECUTABLE_LINK_TARGET}" PUBLIC -lEGL)
+      endif()
    endif()
 
    include( InstallExecutable)

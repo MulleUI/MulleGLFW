@@ -16,7 +16,8 @@ if( NOT __CMAKE_TWEAKS_C_CMAKE__)
    set_property( GLOBAL PROPERTY USE_FOLDERS ON)
 
    if( APPLE)
-      cmake_minimum_required (VERSION 3.0)
+      # actually 3.0 but cmake gets pissy then nowadays
+      # cmake_minimum_required (VERSION 3.5)
 
       # CMAKE_OSX_SYSROOT must be set for CMAKE_OSX_DEPLOYMENT_TARGET (cmake bug)
       if( NOT CMAKE_OSX_SYSROOT)
@@ -38,10 +39,10 @@ if( NOT __CMAKE_TWEAKS_C_CMAKE__)
    else()
       if( WIN32)
          # may not be enough though...
-         cmake_minimum_required( VERSION 3.4)
+         # cmake_minimum_required( VERSION 3.5)
       else()
          # UNIXy gcc based
-         cmake_minimum_required( VERSION 3.0)
+         # cmake_minimum_required( VERSION 3.5)
       endif()
       #
       # so we build static libs, but they might be linked into code
@@ -55,7 +56,7 @@ if( NOT __CMAKE_TWEAKS_C_CMAKE__)
          # (230213) turn this on for mulle-objc-optimize
          set( CMAKE_POSITION_INDEPENDENT_CODE ON)
          # but don't link as such
-         set( CMAKE_EXE_LINKER_FLAGS -no-pie ${CMAKE_EXE_LINKER_FLAGS})
+         set( CMAKE_EXE_LINKER_FLAGS "-no-pie ${CMAKE_EXE_LINKER_FLAGS}")
       else()
          set( CMAKE_POSITION_INDEPENDENT_CODE ON)
       endif()

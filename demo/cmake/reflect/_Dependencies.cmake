@@ -17,79 +17,82 @@ endif()
 # Disable for this platform: `mulle-sourcetree mark MulleGLFW no-cmake-platform-${MULLE_UNAME}`
 # Disable for a sdk: `mulle-sourcetree mark MulleGLFW no-cmake-sdk-<name>`
 #
-if( NOT MULLE_GLFW_LIBRARY)
-   if( DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
+if( COLLECT_ALL_LOAD_DEPENDENCY_LIBRARIES_AS_NAMES)
+   list( APPEND ALL_LOAD_DEPENDENCY_LIBRARIES "MulleGLFW")
+else()
+   if( NOT MULLE_GLFW_LIBRARY)
       find_library( MULLE_GLFW_LIBRARY NAMES
          ${CMAKE_STATIC_LIBRARY_PREFIX}MulleGLFW${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
          ${CMAKE_STATIC_LIBRARY_PREFIX}MulleGLFW${CMAKE_STATIC_LIBRARY_SUFFIX}
          MulleGLFW
          NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH
       )
-   else()
-      find_library( MULLE_GLFW_LIBRARY NAMES
-         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleGLFW${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleGLFW${CMAKE_STATIC_LIBRARY_SUFFIX}
-         MulleGLFW
-      )
-   endif()
-   message( STATUS "MULLE_GLFW_LIBRARY is ${MULLE_GLFW_LIBRARY}")
-   #
-   # The order looks ascending, but due to the way this file is read
-   # it ends up being descending, which is what we need.
-   #
-   if( MULLE_GLFW_LIBRARY)
+      if( NOT MULLE_GLFW_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
+         find_library( MULLE_GLFW_LIBRARY NAMES
+            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleGLFW${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
+            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleGLFW${CMAKE_STATIC_LIBRARY_SUFFIX}
+            MulleGLFW
+         )
+      endif()
+      message( STATUS "MULLE_GLFW_LIBRARY is ${MULLE_GLFW_LIBRARY}")
       #
-      # Add MULLE_GLFW_LIBRARY to ALL_LOAD_DEPENDENCY_LIBRARIES list.
-      # Disable with: `mulle-sourcetree mark MulleGLFW no-cmake-add`
+      # The order looks ascending, but due to the way this file is read
+      # it ends up being descending, which is what we need.
       #
-      list( APPEND ALL_LOAD_DEPENDENCY_LIBRARIES ${MULLE_GLFW_LIBRARY})
-      #
-      # Inherit information from dependency.
-      # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
-      # Disable with: `mulle-sourcetree mark MulleGLFW no-cmake-inherit`
-      #
-      # temporarily expand CMAKE_MODULE_PATH
-      get_filename_component( _TMP_MULLE_GLFW_ROOT "${MULLE_GLFW_LIBRARY}" DIRECTORY)
-      get_filename_component( _TMP_MULLE_GLFW_ROOT "${_TMP_MULLE_GLFW_ROOT}" DIRECTORY)
-      #
-      #
-      # Search for "Definitions.cmake" and "DependenciesAndLibraries.cmake" to include.
-      # Disable with: `mulle-sourcetree mark MulleGLFW no-cmake-dependency`
-      #
-      foreach( _TMP_MULLE_GLFW_NAME "MulleGLFW")
-         set( _TMP_MULLE_GLFW_DIR "${_TMP_MULLE_GLFW_ROOT}/include/${_TMP_MULLE_GLFW_NAME}/cmake")
-         # use explicit path to avoid "surprises"
-         if( IS_DIRECTORY "${_TMP_MULLE_GLFW_DIR}")
-            list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_MULLE_GLFW_DIR}")
-            #
-            include( "${_TMP_MULLE_GLFW_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
-            #
-            list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_GLFW_DIR}")
-            #
-            unset( MULLE_GLFW_DEFINITIONS)
-            include( "${_TMP_MULLE_GLFW_DIR}/Definitions.cmake" OPTIONAL)
-            list( APPEND INHERITED_DEFINITIONS ${MULLE_GLFW_DEFINITIONS})
-            break()
-         else()
-            message( STATUS "${_TMP_MULLE_GLFW_DIR} not found")
-         endif()
-      endforeach()
-      #
-      # Search for "MulleObjCLoader+<name>.h" in include directory.
-      # Disable with: `mulle-sourcetree mark MulleGLFW no-cmake-loader`
-      #
-      if( NOT NO_INHERIT_OBJC_LOADERS)
+      if( MULLE_GLFW_LIBRARY)
+         #
+         # Add MULLE_GLFW_LIBRARY to ALL_LOAD_DEPENDENCY_LIBRARIES list.
+         # Disable with: `mulle-sourcetree mark MulleGLFW no-cmake-add`
+         #
+         list( APPEND ALL_LOAD_DEPENDENCY_LIBRARIES ${MULLE_GLFW_LIBRARY})
+         #
+         # Inherit information from dependency.
+         # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
+         # Disable with: `mulle-sourcetree mark MulleGLFW no-cmake-inherit`
+         #
+         # temporarily expand CMAKE_MODULE_PATH
+         get_filename_component( _TMP_MULLE_GLFW_ROOT "${MULLE_GLFW_LIBRARY}" DIRECTORY)
+         get_filename_component( _TMP_MULLE_GLFW_ROOT "${_TMP_MULLE_GLFW_ROOT}" DIRECTORY)
+         #
+         #
+         # Search for "Definitions.cmake" and "DependenciesAndLibraries.cmake" to include.
+         # Disable with: `mulle-sourcetree mark MulleGLFW no-cmake-dependency`
+         #
          foreach( _TMP_MULLE_GLFW_NAME "MulleGLFW")
-            set( _TMP_MULLE_GLFW_FILE "${_TMP_MULLE_GLFW_ROOT}/include/${_TMP_MULLE_GLFW_NAME}/MulleObjCLoader+${_TMP_MULLE_GLFW_NAME}.h")
-            if( EXISTS "${_TMP_MULLE_GLFW_FILE}")
-               list( APPEND INHERITED_OBJC_LOADERS ${_TMP_MULLE_GLFW_FILE})
+            set( _TMP_MULLE_GLFW_DIR "${_TMP_MULLE_GLFW_ROOT}/include/${_TMP_MULLE_GLFW_NAME}/cmake")
+            # use explicit path to avoid "surprises"
+            if( IS_DIRECTORY "${_TMP_MULLE_GLFW_DIR}")
+               list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_MULLE_GLFW_DIR}")
+               #
+               include( "${_TMP_MULLE_GLFW_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
+               #
+               list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_GLFW_DIR}")
+               #
+               unset( MULLE_GLFW_DEFINITIONS)
+               include( "${_TMP_MULLE_GLFW_DIR}/Definitions.cmake" OPTIONAL)
+               list( APPEND INHERITED_DEFINITIONS ${MULLE_GLFW_DEFINITIONS})
                break()
+            else()
+               message( STATUS "${_TMP_MULLE_GLFW_DIR} not found")
             endif()
          endforeach()
+         #
+         # Search for "MulleObjCLoader+<name>.h" in include directory.
+         # Disable with: `mulle-sourcetree mark MulleGLFW no-cmake-loader`
+         #
+         if( NOT NO_INHERIT_OBJC_LOADERS)
+            foreach( _TMP_MULLE_GLFW_NAME "MulleGLFW")
+               set( _TMP_MULLE_GLFW_FILE "${_TMP_MULLE_GLFW_ROOT}/include/${_TMP_MULLE_GLFW_NAME}/MulleObjCLoader+${_TMP_MULLE_GLFW_NAME}.h")
+               if( EXISTS "${_TMP_MULLE_GLFW_FILE}")
+                  list( APPEND INHERITED_OBJC_LOADERS ${_TMP_MULLE_GLFW_FILE})
+                  break()
+               endif()
+            endforeach()
+         endif()
+      else()
+         # Disable with: `mulle-sourcetree mark MulleGLFW no-require-link`
+         message( SEND_ERROR "MULLE_GLFW_LIBRARY was not found")
       endif()
-   else()
-      # Disable with: `mulle-sourcetree mark MulleGLFW no-require-link`
-      message( FATAL_ERROR "MULLE_GLFW_LIBRARY was not found")
    endif()
 endif()
 
@@ -100,41 +103,44 @@ endif()
 # Disable for this platform: `mulle-sourcetree mark MulleObjC-startup no-cmake-platform-${MULLE_UNAME}`
 # Disable for a sdk: `mulle-sourcetree mark MulleObjC-startup no-cmake-sdk-<name>`
 #
-if( NOT MULLE_OBJC_STARTUP_LIBRARY)
-   if( DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
-      find_library( MULLE_OBJC_STARTUP_LIBRARY NAMES
+if( COLLECT_STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES_AS_NAMES)
+   list( APPEND STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES "MulleObjC-startup")
+else()
+   if( NOT MULLE_OBJC__STARTUP_LIBRARY)
+      find_library( MULLE_OBJC__STARTUP_LIBRARY NAMES
          ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
          ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_STATIC_LIBRARY_SUFFIX}
          NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH
       )
-   else()
-      find_library( MULLE_OBJC_STARTUP_LIBRARY NAMES
-         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_STATIC_LIBRARY_SUFFIX}
-      )
-   endif()
-   message( STATUS "MULLE_OBJC_STARTUP_LIBRARY is ${MULLE_OBJC_STARTUP_LIBRARY}")
-   #
-   # The order looks ascending, but due to the way this file is read
-   # it ends up being descending, which is what we need.
-   #
-   if( MULLE_OBJC_STARTUP_LIBRARY)
+      if( NOT MULLE_OBJC__STARTUP_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
+         find_library( MULLE_OBJC__STARTUP_LIBRARY NAMES
+            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
+            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_STATIC_LIBRARY_SUFFIX}
+         )
+      endif()
+      message( STATUS "MULLE_OBJC__STARTUP_LIBRARY is ${MULLE_OBJC__STARTUP_LIBRARY}")
       #
-      # Add MULLE_OBJC_STARTUP_LIBRARY to STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES list.
-      # Disable with: `mulle-sourcetree mark MulleObjC-startup no-cmake-add`
+      # The order looks ascending, but due to the way this file is read
+      # it ends up being descending, which is what we need.
       #
-      list( APPEND STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES ${MULLE_OBJC_STARTUP_LIBRARY})
-      #
-      # Inherit information from dependency.
-      # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
-      # Disable with: `mulle-sourcetree mark MulleObjC-startup no-cmake-inherit`
-      #
-      # temporarily expand CMAKE_MODULE_PATH
-      get_filename_component( _TMP_MULLE_OBJC_STARTUP_ROOT "${MULLE_OBJC_STARTUP_LIBRARY}" DIRECTORY)
-      get_filename_component( _TMP_MULLE_OBJC_STARTUP_ROOT "${_TMP_MULLE_OBJC_STARTUP_ROOT}" DIRECTORY)
-      #
-   else()
-      # Disable with: `mulle-sourcetree mark MulleObjC-startup no-require-link`
-      message( FATAL_ERROR "MULLE_OBJC_STARTUP_LIBRARY was not found")
+      if( MULLE_OBJC__STARTUP_LIBRARY)
+         #
+         # Add MULLE_OBJC__STARTUP_LIBRARY to STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES list.
+         # Disable with: `mulle-sourcetree mark MulleObjC-startup no-cmake-add`
+         #
+         list( APPEND STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES ${MULLE_OBJC__STARTUP_LIBRARY})
+         #
+         # Inherit information from dependency.
+         # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
+         # Disable with: `mulle-sourcetree mark MulleObjC-startup no-cmake-inherit`
+         #
+         # temporarily expand CMAKE_MODULE_PATH
+         get_filename_component( _TMP_MULLE_OBJC__STARTUP_ROOT "${MULLE_OBJC__STARTUP_LIBRARY}" DIRECTORY)
+         get_filename_component( _TMP_MULLE_OBJC__STARTUP_ROOT "${_TMP_MULLE_OBJC__STARTUP_ROOT}" DIRECTORY)
+         #
+      else()
+         # Disable with: `mulle-sourcetree mark MulleObjC-startup no-require-link`
+         message( SEND_ERROR "MULLE_OBJC__STARTUP_LIBRARY was not found")
+      endif()
    endif()
 endif()

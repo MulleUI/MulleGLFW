@@ -12,30 +12,36 @@ if( MULLE_TRACE_INCLUDE)
 endif()
 
 #
-# Generated from sourcetree: E39DCDDC-1F8B-4C3B-A106-5C92EE25BAA7;GL;no-build,no-cmake-inherit,no-delete,no-dependency,no-fs,no-import,no-share,no-update;
+# Generated from sourcetree: E39DCDDC-1F8B-4C3B-A106-5C92EE25BAA7;GL;no-build,no-cmake-inherit,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-share,no-update;
 # Disable with : `mulle-sourcetree mark GL `
 # Disable for this platform: `mulle-sourcetree mark GL no-cmake-platform-${MULLE_UNAME}`
 # Disable for a sdk: `mulle-sourcetree mark GL no-cmake-sdk-<name>`
 #
-if( NOT GL_LIBRARY)
-   find_library( GL_LIBRARY NAMES
-      GL
-   )
-   message( STATUS "GL_LIBRARY is ${GL_LIBRARY}")
-   #
-   # The order looks ascending, but due to the way this file is read
-   # it ends up being descending, which is what we need.
-   #
-   if( GL_LIBRARY)
-      #
-      # Add GL_LIBRARY to ALL_LOAD_OS_SPECIFIC_LIBRARIES list.
-      # Disable with: `mulle-sourcetree mark GL no-cmake-add`
-      #
-      list( APPEND ALL_LOAD_OS_SPECIFIC_LIBRARIES ${GL_LIBRARY})
-      # intentionally left blank
+if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+   if( COLLECT_ALL_LOAD_OS_SPECIFIC_LIBRARIES_AS_NAMES)
+      list( APPEND ALL_LOAD_OS_SPECIFIC_LIBRARIES "GL")
    else()
-      # Disable with: `mulle-sourcetree mark GL no-require-link`
-      message( FATAL_ERROR "GL_LIBRARY was not found")
+      if( NOT GL_LIBRARY)
+         find_library( GL_LIBRARY NAMES
+            GL
+         )
+         message( STATUS "GL_LIBRARY is ${GL_LIBRARY}")
+         #
+         # The order looks ascending, but due to the way this file is read
+         # it ends up being descending, which is what we need.
+         #
+         if( GL_LIBRARY)
+            #
+            # Add GL_LIBRARY to ALL_LOAD_OS_SPECIFIC_LIBRARIES list.
+            # Disable with: `mulle-sourcetree mark GL no-cmake-add`
+            #
+            list( APPEND ALL_LOAD_OS_SPECIFIC_LIBRARIES ${GL_LIBRARY})
+            # intentionally left blank
+         else()
+            # Disable with: `mulle-sourcetree mark GL no-require-link`
+            message( SEND_ERROR "GL_LIBRARY was not found")
+         endif()
+      endif()
    endif()
 endif()
 
@@ -47,28 +53,32 @@ endif()
 # Disable for a sdk: `mulle-sourcetree mark CoreVideo no-cmake-sdk-<name>`
 #
 if( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-   if( NOT CORE_VIDEO_FRAMEWORK)
-      find_library( CORE_VIDEO_FRAMEWORK NAMES
-         CoreVideo
-      )
-      message( STATUS "CORE_VIDEO_FRAMEWORK is ${CORE_VIDEO_FRAMEWORK}")
-      #
-      # The order looks ascending, but due to the way this file is read
-      # it ends up being descending, which is what we need.
-      #
-      if( CORE_VIDEO_FRAMEWORK)
+   if( COLLECT_ALL_LOAD_OS_SPECIFIC_FRAMEWORKS_AS_NAMES)
+      list( APPEND ALL_LOAD_OS_SPECIFIC_FRAMEWORKS "CoreVideo")
+   else()
+      if( NOT CORE_VIDEO_FRAMEWORK)
+         find_library( CORE_VIDEO_FRAMEWORK NAMES
+            CoreVideo
+         )
+         message( STATUS "CORE_VIDEO_FRAMEWORK is ${CORE_VIDEO_FRAMEWORK}")
          #
-         # Add CORE_VIDEO_FRAMEWORK to ALL_LOAD_OS_SPECIFIC_FRAMEWORKS list.
-         # Disable with: `mulle-sourcetree mark CoreVideo no-cmake-add`
+         # The order looks ascending, but due to the way this file is read
+         # it ends up being descending, which is what we need.
          #
-         list( APPEND ALL_LOAD_OS_SPECIFIC_FRAMEWORKS ${CORE_VIDEO_FRAMEWORK})
-         # intentionally left blank
-      else()
-         # Disable with: `mulle-sourcetree mark CoreVideo no-require-link`
-         message( FATAL_ERROR "CORE_VIDEO_FRAMEWORK was not found")
+         if( CORE_VIDEO_FRAMEWORK)
+            #
+            # Add CORE_VIDEO_FRAMEWORK to ALL_LOAD_OS_SPECIFIC_FRAMEWORKS list.
+            # Disable with: `mulle-sourcetree mark CoreVideo no-cmake-add`
+            #
+            list( APPEND ALL_LOAD_OS_SPECIFIC_FRAMEWORKS ${CORE_VIDEO_FRAMEWORK})
+            # intentionally left blank
+         else()
+            # Disable with: `mulle-sourcetree mark CoreVideo no-require-link`
+            message( SEND_ERROR "CORE_VIDEO_FRAMEWORK was not found")
+         endif()
       endif()
    endif()
-   endif()
+endif()
 
 
 #
@@ -78,25 +88,29 @@ if( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 # Disable for a sdk: `mulle-sourcetree mark OpenGL no-cmake-sdk-<name>`
 #
 if( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-   if( NOT OPEN_GL_FRAMEWORK)
-      find_library( OPEN_GL_FRAMEWORK NAMES
-         OpenGL
-      )
-      message( STATUS "OPEN_GL_FRAMEWORK is ${OPEN_GL_FRAMEWORK}")
-      #
-      # The order looks ascending, but due to the way this file is read
-      # it ends up being descending, which is what we need.
-      #
-      if( OPEN_GL_FRAMEWORK)
+   if( COLLECT_ALL_LOAD_OS_SPECIFIC_FRAMEWORKS_AS_NAMES)
+      list( APPEND ALL_LOAD_OS_SPECIFIC_FRAMEWORKS "OpenGL")
+   else()
+      if( NOT OPEN_GL_FRAMEWORK)
+         find_library( OPEN_GL_FRAMEWORK NAMES
+            OpenGL
+         )
+         message( STATUS "OPEN_GL_FRAMEWORK is ${OPEN_GL_FRAMEWORK}")
          #
-         # Add OPEN_GL_FRAMEWORK to ALL_LOAD_OS_SPECIFIC_FRAMEWORKS list.
-         # Disable with: `mulle-sourcetree mark OpenGL no-cmake-add`
+         # The order looks ascending, but due to the way this file is read
+         # it ends up being descending, which is what we need.
          #
-         list( APPEND ALL_LOAD_OS_SPECIFIC_FRAMEWORKS ${OPEN_GL_FRAMEWORK})
-         # intentionally left blank
-      else()
-         # Disable with: `mulle-sourcetree mark OpenGL no-require-link`
-         message( FATAL_ERROR "OPEN_GL_FRAMEWORK was not found")
+         if( OPEN_GL_FRAMEWORK)
+            #
+            # Add OPEN_GL_FRAMEWORK to ALL_LOAD_OS_SPECIFIC_FRAMEWORKS list.
+            # Disable with: `mulle-sourcetree mark OpenGL no-cmake-add`
+            #
+            list( APPEND ALL_LOAD_OS_SPECIFIC_FRAMEWORKS ${OPEN_GL_FRAMEWORK})
+            # intentionally left blank
+         else()
+            # Disable with: `mulle-sourcetree mark OpenGL no-require-link`
+            message( SEND_ERROR "OPEN_GL_FRAMEWORK was not found")
+         endif()
       endif()
    endif()
-   endif()
+endif()

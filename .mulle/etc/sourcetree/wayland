@@ -1,4 +1,4 @@
-craftinfo/glfw-craftinfo.wayland;local;no-delete,no-header,no-link,no-share,no-subproject,no-update;0C476604-075D-4453-82B9-298857E6F782;;;;;
+craftinfo/glfw-craftinfo.wayland-craftinfo;local;no-delete,no-header,no-link,no-share,no-subproject,no-update;0C476604-075D-4453-82B9-298857E6F782;;;;;
 glfw;${GLFW_NODETYPE:-tar};no-all-load,no-import;C4446E9D-1BD4-4793-879F-C3B03515A24C;${GLFW_URL:-https://github.com/glfw/glfw/archive/refs/tags/${MULLE_TAG}.tar.gz};${GLFW_BRANCH};${GLFW_TAG:-3.4};;base64:aW5jbHVkZT1HTEZXL2dsZnczLmgKYWxpYXNlcz1nbGZ3MyxnbGZ3Cg==
 m;none;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-update;9E236CF7-0590-4B14-B866-3DFA88FDF5C0;m;${M_BRANCH};;;
 mulle-objc-list;${MULLE_OBJC_LIST_NODETYPE:-tar};no-all-load,no-bequeath,no-cmake-inherit,no-header,no-link,no-singlephase;71C0602E-8EF7-4AC4-A53D-1150AA94E88D;${MULLE_OBJC_LIST_URL:-https://github.com/mulle-objc/mulle-objc-list/archive/${MULLE_TAG}.tar.gz};${MULLE_OBJC_LIST_BRANCH};${MULLE_OBJC_LIST_TAG:-latest};;

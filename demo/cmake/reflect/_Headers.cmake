@@ -19,8 +19,8 @@ src/reflect
 # contents selected with patternfile ??-header--private-generated-headers
 #
 set( PRIVATE_GENERATED_HEADERS
-src/reflect/_demos-import-private.h
-src/reflect/_demos-include-private.h
+src/reflect/_demo-import-private.h
+src/reflect/_demo-include-private.h
 )
 
 #
@@ -35,10 +35,10 @@ src/include-private.h
 # contents selected with patternfile ??-header--public-generated-headers
 #
 set( PUBLIC_GENERATED_HEADERS
-src/reflect/_demos-export.h
-src/reflect/_demos-import.h
-src/reflect/_demos-include.h
-src/reflect/_demos-provide.h
+src/reflect/_demo-export.h
+src/reflect/_demo-import.h
+src/reflect/_demo-include.h
+src/reflect/_demo-provide.h
 )
 
 #

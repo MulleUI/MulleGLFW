@@ -1,4 +1,4 @@
-craftinfo/glfw-craftinfo.x11;local;no-delete,no-header,no-link,no-share,no-subproject,no-update;1C476604-075D-4453-82B9-298857E6F782;;;;;
+craftinfo/glfw-craftinfo.x11-craftinfo;local;no-delete,no-header,no-link,no-share,no-subproject,no-update;1C476604-075D-4453-82B9-298857E6F782;;;;;
 glfw;${GLFW_NODETYPE:-tar};no-all-load,no-import;C5771105-A729-47DA-86DF-55FD0703B958;${GLFW_URL:-https://github.com/glfw/glfw/archive/refs/tags/${MULLE_TAG}.tar.gz};${GLFW_BRANCH};${GLFW_TAG:-3.4};;base64:aW5jbHVkZT1HTEZXL2dsZnczLmgKYWxpYXNlcz1nbGZ3MyxnbGZ3Cg==
 GL;none;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;CFAC3EAB-1163-418A-AB7C-70A8EDEDC5EF;GL;${GL_BRANCH};;;include=GL/glext.h
 GLU;none;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;5D546569-2C1B-42BA-9DEA-746D09C1A0AF;GLU;${GLU_BRANCH};;;

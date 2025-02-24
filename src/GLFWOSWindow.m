@@ -498,10 +498,10 @@ retry:
 //      else
 //         if( ! glfwExtensionSupported( "GL_ARB_multisample"))
 //            fprintf( stderr, "MSAA OpenGL support not present\n");
-   }
 
-   _contextLock = [NSLock new];
-   glfwMakeContextCurrent( NULL); // turn off to be consistent with lock
+      glfwMakeContextCurrent( NULL); // turn off to be consistent with lock
+      _contextLock = [NSLock new];
+   }
 
    if( ! (styleMask & UIWindowStyleInvisible))
       [self os_show];
@@ -553,7 +553,8 @@ retry:
 {
    // keep render context locked. As the window/context will be unusuable
    // a deadlock seems preferable and easier to debug for misbehavers
-   [_contextLock tryLock]; // if already locked don't deadlock here
+   if( [_contextLock tryLock]) // if already locked don't deadlock here
+      _activeThread = [NSThread currentThread];
 
    [_sharingWindow autorelease];
    _sharingWindow = nil;
@@ -725,6 +726,7 @@ retry:
    {
       UIOSWindowLog( "activate window: %p", _window);
       glfwMakeContextCurrent( _window);
+      _activeThread = [NSThread currentThread];
    }      
    else
       UIOSWindowLogVerbose( "Activated, but we have no graphics context");
@@ -746,6 +748,7 @@ retry:
    {
       UIOSWindowLog( "activate window: %p", _window);
       glfwMakeContextCurrent( _window);
+      _activeThread = [NSThread currentThread];
    }
    else
       UIOSWindowLogVerbose( "Did activate, but we have no graphics context");
@@ -763,9 +766,16 @@ retry:
    {
       UIOSWindowLog( "deactivate window: %p", _window);
       glfwMakeContextCurrent( NULL);
+      _activeThread = nil;
    }
    UIOSWindowLog( "unlock: %p", _window);
    [_contextLock unlock];
+}
+
+
+- (NSThread *) activeThread
+{
+   return( _activeThread);
 }
 
 

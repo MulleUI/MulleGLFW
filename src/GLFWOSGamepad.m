@@ -36,6 +36,7 @@
 
 #import "import-private.h"
 
+#import <MulleObjC/NSDebug.h>
 
 
 @implementation GLFWOSGamepad
@@ -98,7 +99,10 @@
                                     osName:osName
                                     osGuid:osGuid])
    {
-      MulleUILog( "\"%s\" looks not like a valid joystick", osName ? osName : (osGuid ? osGuid : "???"));
+      if( NSDebugEnabled)
+      {
+         MulleUILog( "\"%s\" does not look like a valid joystick", osName ? osName : (osGuid ? osGuid : "???"));
+      }
       [self release];
       return( nil);
    }

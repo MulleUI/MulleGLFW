@@ -146,7 +146,6 @@ static inline int   GLFWGraphicsHintsBySettingAPILibrary( GLFWGraphicsHints t, i
    void                     *_window;   // GLFWwindow handle
 
    NSLock                   *_contextLock;
-
    GLFWOSWindow             *_sharingWindow;
    NSInteger                _shareID;
 
@@ -156,6 +155,11 @@ static inline int   GLFWGraphicsHintsBySettingAPILibrary( GLFWGraphicsHints t, i
 
    NSLock                   *_windowInfoLock;
    struct UIOSWindowInfo    _windowInfo;
+
+@private
+   // _activeThread is not retained(!) if -haveGraphicsContext returns NO
+   // then this will always be nil
+   NSThread                 *_activeThread;
 }
 
 // NONE OF THESE PROPERTIES are thread safe, except those which are readonly
@@ -286,6 +290,7 @@ static inline int   GLFWGraphicsHintsBySettingAPILibrary( GLFWGraphicsHints t, i
 - (void) os_deactivateGraphicsContext              MULLE_OBJC_THREADSAFE_METHOD;
 - (BOOL) os_tryActivateGraphicsContext             MULLE_OBJC_THREADSAFE_METHOD;
 
+
 // This method can be called from any thread
 - (void) os_requestClose                           MULLE_OBJC_THREADSAFE_METHOD;
 
@@ -320,6 +325,12 @@ static inline int   GLFWGraphicsHintsBySettingAPILibrary( GLFWGraphicsHints t, i
 
 
 - (void) os_setCursor:(void *) cursor              MULLE_UI_MAIN_THREAD_ONLY;
+
+// if the (OpenGL) OS thread is active, then this will return the thread
+// who called os_(try)activateGraphicsContext. If he window has no
+// graphics context, this will return nil
+//
+- (NSThread *) activeThread;
 
 //
 // OS Pasteboard (Might need to be moved to UIApplication)

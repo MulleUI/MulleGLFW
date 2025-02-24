@@ -1,6 +1,6 @@
-# demos
+# demo
 
-OpenGL demos of MulleGLFW. These demos should run on all platforms that
+OpenGL demo of MulleGLFW. These demo should run on all platforms that
 are supported by glfw3 and have OpenGL.
 
 
@@ -105,4 +105,4 @@ To fetch and build everything say:
 mulle-sde craft --[release|debug]
 ```
 
-The resultant demos will be in `kitchen/{Release/Debug}`.
+The resultant demo will be in `kitchen/{Release/Debug}`.

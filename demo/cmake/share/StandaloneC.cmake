@@ -26,19 +26,16 @@ if( STANDALONE)
       set( LIBRARY_NAME "${PROJECT_NAME}")
    endif()
 
-   if( NOT LIBRARY_IDENTIFIER)
-      string( MAKE_C_IDENTIFIER "${LIBRARY_NAME}" LIBRARY_IDENTIFIER)
-   endif()
-
    include( StringCase)
 
+   if( NOT LIBRARY_IDENTIFIER)
+      snakeCaseString( "${LIBRARY_NAME}" LIBRARY_IDENTIFIER)
+   endif()
    if( NOT LIBRARY_UPCASE_IDENTIFIER)
-      snakeCaseString( "${LIBRARY_IDENTIFIER}" LIBRARY_UPCASE_IDENTIFIER)
-      string( TOUPPER "${LIBRARY_UPCASE_IDENTIFIER}" LIBRARY_UPCASE_IDENTIFIER)
+      string( TOUPPER "${LIBRARY_IDENTIFIER}" LIBRARY_UPCASE_IDENTIFIER)
    endif()
    if( NOT LIBRARY_DOWNCASE_IDENTIFIER)
-      snakeCaseString( "${LIBRARY_IDENTIFIER}" LIBRARY_DOWNCASE_IDENTIFIER)
-      string( TOLOWER "${LIBRARY_DOWNCASE_IDENTIFIER}" LIBRARY_DOWNCASE_IDENTIFIER)
+      string( TOLOWER "${LIBRARY_IDENTIFIER}" LIBRARY_DOWNCASE_IDENTIFIER)
    endif()
 
    if( NOT STANDALONE_LIBRARY_NAME)
@@ -46,7 +43,7 @@ if( STANDALONE)
    endif()
 
    if( NOT STANDALONE_DEFINITIONS)
-      set( STANDALONE_DEFINITIONS ${DEMOS_DEFINITIONS})
+      set( STANDALONE_DEFINITIONS ${DEMO_DEFINITIONS})
    endif()
 
    #
@@ -88,7 +85,7 @@ if( STANDALONE)
       if( NOT STANDALONE_SOURCES)
          message( FATAL_ERROR "You need to define STANDALONE_SOURCES. Add a file
 ${STANDALONE_LIBRARY_NAME}.c with contents like this to it:
-int  ___demos_unused__;
+int  ___demo_unused__;
 and everybody will be happy")
       endif()
 
