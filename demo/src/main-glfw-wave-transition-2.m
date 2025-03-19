@@ -461,8 +461,9 @@ static void   receiveOtherEvents( GLFWOSWindow *window, UIEvent *event)
 }
 
 
-static int   frameCallback( GLFWOSWindow *gWindow)
+static UIWindowDisplayBits   frameCallback( id <UIOSWindow> window_in)
 {
+    GLFWOSWindow  *gWindow = MULLE_OBJC_CLASS_CAST( GLFWOSWindow, window_in);
     mulle_relativetime_t t, dt_total;
     static mulle_relativetime_t t_old;
     GLFWwindow* window;
@@ -497,7 +498,7 @@ static int   frameCallback( GLFWOSWindow *gWindow)
 
     // Draw wave grid to OpenGL display
     draw_scene(window);
-    return( 0);
+    return( 1);
 }
 
 

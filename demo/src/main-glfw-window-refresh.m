@@ -426,8 +426,9 @@ int main(int argc, char* argv[])
 
 
 #if 0
-static int   frameCallback( GLFWOSWindow *window)
+static UIWindowDisplayBits   frameCallback( id <UIOSWindow> window_in)
 {
+   GLFWOSWindow  *window = MULLE_OBJC_CLASS_CAST( GLFWOSWindow, window_in);
    CGPixelSize   framebufferSize;
 
    framebufferSize = [window os_framebufferSize];

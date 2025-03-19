@@ -31,17 +31,18 @@ static void   otherRetainedEventsCallback( GLFWOSWindow *window, UIEvent *event)
 }
 
 
-static int   renderFrame( GLFWOSWindow *window)
+static UIWindowDisplayBits   renderFrame( id <UIOSWindow> window_in)
 {
+   GLFWOSWindow  *window = MULLE_OBJC_CLASS_CAST( GLFWOSWindow, window_in);
    CGPixelSize   framebufferSize;
 
    framebufferSize = [window os_framebufferSize];
    glViewport( 0, 0, framebufferSize.width, framebufferSize.height);
    glClearColor( 0, 0, 0, 0);
    glClear( GL_COLOR_BUFFER_BIT);
-
    return( 0);
 }
+
 
 //#define HINTS  GLFW_NO_CONTEXT
 #define HINTS 0

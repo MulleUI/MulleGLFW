@@ -1,19 +1,34 @@
-#define _GNU_SOURCE
-#define MULLE_GLFW_EXPOSE_OPEN_GL
-#define GLFW_INCLUDE_GLEXT
-
 #import "import.h"
 
 #include <math.h>
 
 
+//#define GLAD_GL_IMPLEMENTATION
+//#include <glad/gl.h>
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
+
+
+// GLFW_INCLUDE_... keep undefined for OpenGL3
+// see: https://www.glfw.org/docs/latest/build_guide.html
+#define GL_GLEXT_PROTOTYPES
+#ifdef __APPLE__
+# include <OpenGL/gl.h>
+# include <OpenGL/glext.h>
+#else
+# include <GL/gl.h>
+# include <GL/glext.h>
+#endif
+
+
+
 /*
- * This demo is an original GLUT demo converted to MulleGLFW with
- * minimal changes. There is little immediate advantage had by doing so, but it
+ * This demo is an original GLUT demo converted to MulleUICore with
+ * minimal changes. There is no immediate advantage got by doing so, but it
  * is a first step.
  *
  * The major changes are mostly event related. And of course the whole
- * window setup is done with GLFWOSWindow.
+ * window setup is done with MulleUI.
  *
  * This demo does not use UIWindow but GLFWOSWindow, because we do not want
  * to have nanovg involved. This means that everything like CAAnimation,
@@ -62,6 +77,8 @@ static char   texture[ 8 * 8][ 4] =
 // this hasn't changed
 static void   init_texture()
 {
+   glClearColor( 0.0, 0.0, 0.0, 0.0);
+
    glGenTextures( 1, &textureName);
    glBindTexture( GL_TEXTURE_2D, textureName);
 
@@ -86,43 +103,66 @@ static void   init_texture()
 
 
 //
-// pretty much unchanged. The call signature with "window" and "now"
-// is different, but they aren't used
+// pretty much unchanged.
 //
-static int   display( GLFWOSWindow *window)
+static UIWindowDisplayBits   display( id <UIOSWindow> window_in)
 {
-   static GLfloat vertices[][3] = {
+   GLFWOSWindow  *window = MULLE_OBJC_CLASS_CAST( GLFWOSWindow, window_in);
+
+   static GLint faces[][4] = {{4,5,6,7},
+                              {1,2,6,5},
+                              {0,1,5,4},
+                              {0,3,2,1},
+                              {0,4,7,3},
+                              {2,3,7,6}
+                             };
+
+// Vertices
+   static GLfloat vertices[][3] = {{-1.0,-1.0,-1.0},
+                                   { 1.0,-1.0,-1.0},
+                                   { 1.0, 1.0,-1.0},
+                                   {-1.0, 1.0,-1.0},
                                    {-1.0,-1.0, 1.0},
                                    { 1.0,-1.0, 1.0},
                                    { 1.0, 1.0, 1.0},
-                                   {-1.0, 1.0, 1.0}
-                                   };
+                                   {-1.0, 1.0, 1.0}};
 
-   glClearColor( 0.3f, 0.3f, 0.3f, 0.0f);
    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
    glBindTexture( GL_TEXTURE_2D, textureName);
 
-   // Draw the quad
+   // Draw the cube
 
-   glBegin(GL_POLYGON);
+   for(int f = 0; f < 6; f++)
+   {
+      glBegin(GL_POLYGON);
 
-   int v;
+      int v;
 
-   glTexCoord2f(0.0, 0.0);  // Map to the bottom left texel
-   glVertex3fv(vertices[0]);
+      v = faces[f][0];
 
-   glTexCoord2f(0.0, 1.0);  // Map to the bottom right texel
-   glVertex3fv(vertices[1]);
+      glTexCoord2f(0.0, 0.0);  // Map to the bottom left texel
+      glVertex3fv(vertices[v]);
 
-   glTexCoord2f(1.0, 1.0);  // Map to the top right texel
-   glVertex3fv(vertices[2]);
+      v = faces[f][1];
 
-   glTexCoord2f(1.0, 0.0);  // Map to the top left texel
-   glVertex3fv(vertices[3]);
+      glTexCoord2f(0.0, 1.0);  // Map to the bottom right texel
+      glVertex3fv(vertices[v]);
 
-   glEnd();
+      v = faces[f][2];
 
-   return( 0);
+      glTexCoord2f(1.0, 1.0);  // Map to the top right texel
+      glVertex3fv(vertices[v]);
+
+      v = faces[f][3];
+
+      glTexCoord2f(1.0, 0.0);  // Map to the top left texel
+      glVertex3fv(vertices[v]);
+
+      glEnd();
+   }
+   glFlush();
+
+   return( 1);
 }
 
 
@@ -163,23 +203,14 @@ void   update()
    glRotatef(angle[2], 0.0, 0.0, 1.0);
 }
 
-
 // this loses some functions, also the signature is different
 static void   timerCallback( NSTimer *timer, id userInfo)
 {
-   GLFWOSWindow   *window;
-
-   window = userInfo;
-
-   [window os_activateGraphicsContext];
    update();
-   [window os_deactivateGraphicsContext];
-//   [window setNeedsRefresh];
 //
 //  glutPostRedisplay();
 //  glutTimerFunc(delay, timer, 0);
 }
-
 
 // This is new.
 static void   receiveWindowEvents( GLFWOSWindow *window, UIWindowEvent *event)
@@ -213,42 +244,41 @@ int   main( int argc, char *argv[])
 
    app = [UIApplication sharedInstance];
 //   glutInit( &argc, argv);
-
-   @autoreleasepool
    {
       //
       // we are using an GLFWOSWindow here because we just want to do OpenGL
       //
       window = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0.0, 0.0, 500.0, 500.0)
                                     titleUTF8String:"Demo"
-                                          styleMask:UIWindowOpenGLDeprecated|UIWindowStyleResizable
-                                      graphicsHints:0] autorelease];
+                                          styleMask:UIWindowStyleResizable] autorelease];
+
 //    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 //    glutInitWindowSize(500, 500);
 //    glutCreateWindow("Demo");
-      [app addWindow:window];
       assert( window);
+      [app addWindow:window];
 
       [window setWindowEventsCallback:receiveWindowEvents];
 //    glutReshapeFunc(reshape);
-      timer = [[[NSTimer alloc] mulleInitWithRelativeTimeInterval:0.0 
+      timer = [[[NSTimer alloc] mulleInitWithRelativeTimeInterval:0.0
                                                    repeatInterval:delay/1000.0
-                                                         callback:timerCallback 
-                                                         userInfo:window] autorelease];
+                                                         callback:timerCallback
+                                                         userInfo:nil] autorelease];
       [app addTimer:timer
    forTimerReceiver:app];   
-      //    glutTimerFunc(delay, timer, 0);
+
+//    glutTimerFunc(delay, timer, 0);
 
       [window os_activateGraphicsContext];
-
-      init_texture();
-
+      {
+         init_texture();
+      }
       [window os_deactivateGraphicsContext];
 
       [window setFrameCallback:display];
 //    glutDisplayFunc(display);
 
-      [window setFrameRate:1 / 100.0];
+      [window setFrameRateHz:100.0];
 //    glutMainLoop();
    }
    return( [app runApp]);

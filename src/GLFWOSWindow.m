@@ -72,12 +72,13 @@ static struct
 
 
 // as we don't know, if we even use OpenGL here
-static int   defaultFrameCallback( GLFWOSWindow *window)
+static UIWindowDisplayBits   defaultFrameCallback( id <UIOSWindow> window_in)
 {
    fprintf( stderr, "The GLFW window needs a frameCallback.\n"
 "Typically you can use something like this with OpenGL:\n"
-"   static int  frameCallback( GLFWOSWindow *window)\n"
+"   static UIWindowDisplayBits  frameCallback( id <UIOSWindow> window_in)\n"
 "   {\n"
+"      GLFWOSWindow  *window = MULLE_OBJC_CLASS_CAST( GLFWOSWindow, window_in);\n"
 "      CGPixelSize   framebufferSize;\n"
 "\n"
 "      framebufferSize = [window os_framebufferSize];\n"
@@ -87,7 +88,7 @@ static int   defaultFrameCallback( GLFWOSWindow *window)
 "      return( 0);  // or 1, if you are animating\n"
 "   }\n"
 "\n"
-"   [glfwWindow setFrameCallback:frameCallback];\n"
+"   [window setFrameCallback:frameCallback];\n"
 "\n");
    abort();
 }
@@ -776,6 +777,12 @@ retry:
 - (NSThread *) activeThread
 {
    return( _activeThread);
+}
+
+
+- (BOOL) isGraphicsContextActive
+{
+   return( _activeThread != nil);
 }
 
 

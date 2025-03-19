@@ -331,6 +331,7 @@ static inline int   GLFWGraphicsHintsBySettingAPILibrary( GLFWGraphicsHints t, i
 // graphics context, this will return nil
 //
 - (NSThread *) activeThread;
+- (BOOL) isGraphicsContextActive;
 
 //
 // OS Pasteboard (Might need to be moved to UIApplication)

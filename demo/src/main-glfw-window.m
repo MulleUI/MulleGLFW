@@ -18,8 +18,9 @@ static int   log_enabled;
  *
  * The only interesting thing happening is the output of the fprintf.
  */
-static int   frameCallback( GLFWOSWindow *window)
+static UIWindowDisplayBits   frameCallback( id <UIOSWindow> window_in)
 {
+   GLFWOSWindow  *window = MULLE_OBJC_CLASS_CAST( GLFWOSWindow, window_in);
    CGPixelSize   framebufferSize;
 
    framebufferSize = [window os_framebufferSize];

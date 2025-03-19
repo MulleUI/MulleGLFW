@@ -498,8 +498,9 @@ void init_opengl(void)
 }
 
 
-static int   display( GLFWOSWindow *gWindow)
+static UIWindowDisplayBits   display( id <UIOSWindow> window_in)
 {
+    //GLFWOSWindow  *window = MULLE_OBJC_CLASS_CAST( GLFWOSWindow, window_in);{
     // Compute height of each vertex
     adjust_grid();
     // Draw wave grid to OpenGL display

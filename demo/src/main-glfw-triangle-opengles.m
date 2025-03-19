@@ -172,9 +172,10 @@ static void   init_scene( void)
 }
 
 
-static int   display( GLFWOSWindow *gWindow)
+static UIWindowDisplayBits   display( id <UIOSWindow> window_in)
 {
-   CGPixelSize    framebufferSize;
+   GLFWOSWindow           *gWindow = MULLE_OBJC_CLASS_CAST( GLFWOSWindow, window_in);
+   CGPixelSize            framebufferSize;
    float                  ratio;
    mulle_absolutetime_t   now;
 
@@ -206,7 +207,7 @@ static int   display( GLFWOSWindow *gWindow)
 // not needed
    glFlush();
 
-   return( 0);
+   return( 1);
 }
 
 

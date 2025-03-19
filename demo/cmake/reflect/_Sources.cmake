@@ -19,6 +19,7 @@ src/main-glfw-events.m
 src/main-glfw-events-objc.m
 src/main-glfw-framebuffer.m
 src/main-glfw-gears.m
+src/main-glfw-sharing.m
 src/main-glfw-single-buffer.m
 src/main-glfw-texture.m
 src/main-glfw-triangle-opengles.m
