@@ -95,38 +95,52 @@ static UIWindowDisplayBits   defaultFrameCallback( id <UIOSWindow> window_in)
 
 
 + (instancetype) windowWithFrame:(CGRect) frame
-                 titleUTF8String:(char *) title
-                       styleMask:(NSUInteger) styleMask
+                titleUTF8String:(char *) title
+                      styleMask:(NSUInteger) styleMask
 {
-   return( [[[self alloc] initWithFrame:frame
-                        titleUTF8String:title
-                              styleMask:styleMask] autorelease]);
+   GLFWOSWindow *obj;
+
+   obj = [self alloc];
+   obj = [obj initWithFrame:frame
+              titleUTF8String:title
+                    styleMask:styleMask];
+   obj = [obj autorelease];
+   return(obj);
 }
 
-
 + (instancetype) windowWithFrame:(CGRect) frame
-                 titleUTF8String:(char *) title
-                       styleMask:(NSUInteger) styleMask
-                   graphicsHints:(GLFWGraphicsHints) graphicsHints
+                titleUTF8String:(char *) title
+                      styleMask:(NSUInteger) styleMask
+                  graphicsHints:(GLFWGraphicsHints) graphicsHints
 {
-   return( [[[self alloc] initWithFrame:frame
-                        titleUTF8String:title
-                              styleMask:styleMask
-                          graphicsHints:graphicsHints] autorelease]);
+   GLFWOSWindow *obj;
+
+   obj = [self alloc];
+   obj = [obj initWithFrame:frame
+              titleUTF8String:title
+                    styleMask:styleMask
+                graphicsHints:graphicsHints];
+   obj = [obj autorelease];
+   return(obj);
 }
 
 // sharingWindow is retained. We will be able to share textures with it
 + (instancetype) windowWithFrame:(CGRect) frame
-                 titleUTF8String:(char *) title
-                       styleMask:(NSUInteger) styleMask
-                   graphicsHints:(GLFWGraphicsHints) graphicsHints
-                   sharingWindow:(id <UIOSWindow>) sharingWindow
+                titleUTF8String:(char *) title
+                      styleMask:(NSUInteger) styleMask
+                  graphicsHints:(GLFWGraphicsHints) graphicsHints
+                  sharingWindow:(id <UIOSWindow>) sharingWindow
 {
-   return( [[[self alloc] initWithFrame:frame
-                        titleUTF8String:title
-                              styleMask:styleMask
-                          graphicsHints:graphicsHints
-                          sharingWindow:sharingWindow] autorelease]);
+   GLFWOSWindow *obj;
+
+   obj = [self alloc];
+   obj = [obj initWithFrame:frame
+              titleUTF8String:title
+                    styleMask:styleMask
+                graphicsHints:graphicsHints
+                sharingWindow:sharingWindow];
+   obj = [obj autorelease];
+   return(obj);
 }
 
 
@@ -721,11 +735,11 @@ retry:
    // can be called from any thread
    assert( _window);
 
-   UIOSWindowLog( "lock: %p", _window);
+   UIOSWindowSwapLog( "lock: %p", _window);
    [_contextLock lock];
    if( _haveGraphicsContext)
    {
-      UIOSWindowLog( "activate window: %p", _window);
+      UIOSWindowSwapLog( "activate window: %p", _window);
       glfwMakeContextCurrent( _window);
       _activeThread = [NSThread currentThread];
    }      
@@ -743,11 +757,11 @@ retry:
    if( ! [_contextLock tryLock])
       return( NO);
 
-   UIOSWindowLog( "lock: %p", _window);
+   UIOSWindowSwapLog( "lock: %p", _window);
 
    if( _haveGraphicsContext)
    {
-      UIOSWindowLog( "activate window: %p", _window);
+      UIOSWindowSwapLog( "activate window: %p", _window);
       glfwMakeContextCurrent( _window);
       _activeThread = [NSThread currentThread];
    }
@@ -765,11 +779,11 @@ retry:
 
    if( _haveGraphicsContext)
    {
-      UIOSWindowLog( "deactivate window: %p", _window);
+      UIOSWindowSwapLog( "deactivate window: %p", _window);
       glfwMakeContextCurrent( NULL);
       _activeThread = nil;
    }
-   UIOSWindowLog( "unlock: %p", _window);
+   UIOSWindowSwapLog( "unlock: %p", _window);
    [_contextLock unlock];
 }
 
@@ -777,12 +791,6 @@ retry:
 - (NSThread *) activeThread
 {
    return( _activeThread);
-}
-
-
-- (BOOL) isGraphicsContextActive
-{
-   return( _activeThread != nil);
 }
 
 
@@ -948,7 +956,7 @@ static struct
       // https://github.com/glfw/glfw/issues/2109
       if( glfwGetWindowAttrib( _window, GLFW_VISIBLE))
       {
-         UIOSWindowLogVerbose( "\033[1mswapped buffers\033[0m");
+         UIOSWindowSwapLog( "\033[1mswapped buffers\033[0m");
          glfwSwapBuffers( _window);
 
          // swapping buffers can take some time, so refresh with actual
@@ -965,7 +973,10 @@ static struct
 {
    // can be called from any thread
    if( _haveGraphicsContext)
+   {
+      UIOSWindowSwapLog( " swap interval set to %d", (int) value);
       glfwSwapInterval( (int) value);  // need for smooth pointer/control sync
+   }
    else
       UIOSWindowLogVerbose( "Can't set swap interval, have no graphics context");
 }
@@ -1293,17 +1304,6 @@ static struct
    assert( [NSThread mulleIsMainThread]);
 
    return( _inputState.keyModifiers);
-}
-
-
-- (char *) UTF8String
-{
-   char   *s;
-
-   s = MulleObjC_asprintf( "<%s %p>",
-                           MulleObjCInstanceGetClassNameUTF8String( self),
-                           self);
-   return( s);
 }
 
 @end

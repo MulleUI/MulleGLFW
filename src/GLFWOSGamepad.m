@@ -365,16 +365,4 @@ static inline void   UIGamepadInfoMemcpyGLFWHats( unsigned char *dst, unsigned c
 }
 
 
-- (char *) UTF8String
-{
-   char   *s;
-
-   s = MulleObjC_asprintf( "<%s %p \"%s\">",
-                           MulleObjCInstanceGetClassNameUTF8String( self),
-                           self,
-                           _nameUTF8String);
-   return( s);
-}
-
-
 @end

@@ -295,16 +295,4 @@
    return( glfwGetPrimaryMonitor() == _monitor);
 }
 
-
-- (char *) UTF8String
-{
-   char   *s;
-
-   s = MulleObjC_asprintf( "<%s %p \"%s\">",
-                           MulleObjCInstanceGetClassNameUTF8String( self),
-                           self,
-                           _nameUTF8String);
-   return( s);
-}
-
 @end
