@@ -45,7 +45,6 @@ void   GLFWOSWindowRetainedEventDefaultCallback( id <UIOSWindow> window,
 }
 
 
-
 static void   windowMoveCallback( GLFWwindow* window, int xpos, int ypos)
 {
    GLFWOSWindow   *self;
@@ -115,7 +114,6 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
    glfwSetWindowRefreshCallback( _window, windowRefreshCallback);
    glfwSetWindowCloseCallback( _window, windowCloseCallback);
 }
-
 
 
 - (void) os_finalizeWindowEvents
@@ -193,7 +191,7 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
 //   fprintf( stderr, "%p moved: x=%d y=%d\n", self, xpos, ypos);
    [_windowInfoLock lock];
    {
-      _windowInfo.base.frame.origin = CGPointMakeWithIntegerPoint( position);
+      _windowInfo.base.frame.origin = CGPointMakeWithPixelPoint( position);
       [self _updateWindowRefreshRate];
    }
    [_windowInfoLock unlock];
@@ -213,10 +211,10 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
    // reason being, because the window manager is resizing in another
    // process
 
-   // assert( CGSizeEqualToSize( [self os_windowSize], CGSizeMakeWithIntegerSize( size)));
+   // assert( CGSizeEqualToSize( [self os_windowSize], CGSizeMakeWithPixelSize( size)));
    [_windowInfoLock lock];
    {
-      _windowInfo.base.frame.size = CGSizeMakeWithIntegerSize( size);
+      _windowInfo.base.frame.size = CGSizeMakeWithPixelSize( size);
       [self _updateWindowRefreshRate];
    }
    [_windowInfoLock unlock];
@@ -509,7 +507,7 @@ static inline int   shouldDiscardEvent( GLFWOSWindow *self, NSUInteger eventType
 {
    UIEvent   *event;
 
-   UIOSWindowEventLog( "%.1f, %.1f", pos.x, pos.y);
+   UIOSWindowMouseMotionEventLog( "%.1f, %.1f", pos.x, pos.y);
 
    //
    // Coordinates are window relative! So for screen coordinates we'd need
@@ -530,7 +528,7 @@ static inline int   shouldDiscardEvent( GLFWOSWindow *self, NSUInteger eventType
    //
    if( shouldDiscardEvent( self, UIEventTypeMotion))
    {
-      UIOSWindowEventLogVerbose( "discarded event");
+      UIOSWindowMouseMotionEventLog( "discarded event");
       return;
    }
 
@@ -574,6 +572,49 @@ static inline int   shouldDiscardEvent( GLFWOSWindow *self, NSUInteger eventType
    event = [[UIMouseScrollEvent alloc] initWithInputState:&self->_inputState
                                              scrollOffset:scrollOffset];
    _otherRetainedEventsCallback( self, event);
+}
+
+
+- (void) os_pollInputState:(struct UIInputState *)state
+{
+   double   x, y;
+
+   assert( _window);
+   // Get mouse position
+   glfwGetCursorPos( _window, &x, &y);
+   state->locationInWindow.x = x;
+   state->locationInWindow.y = y;
+
+   // Get mouse button states
+   state->buttonStates = 0;
+   if( glfwGetMouseButton( _window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+      state->buttonStates |= (1 << 0);
+   if( glfwGetMouseButton( _window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+      state->buttonStates |= (1 << 1);
+   if( glfwGetMouseButton( _window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS)
+      state->buttonStates |= (1 << 2);
+   if( glfwGetMouseButton( _window, GLFW_MOUSE_BUTTON_4) == GLFW_PRESS) // X1 button
+      state->buttonStates |= (1 << 3);
+   if( glfwGetMouseButton( _window, GLFW_MOUSE_BUTTON_5) == GLFW_PRESS) // X2 button
+      state->buttonStates |= (1 << 4);
+
+   // Get keyboard modifiers
+   state->keyModifiers = 0;
+   if( glfwGetKey( _window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
+       glfwGetKey( _window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS)
+      state->keyModifiers |= (1 << 0);
+
+   if( glfwGetKey( _window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS ||
+       glfwGetKey( _window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS)
+      state->keyModifiers |= (1 << 1);
+
+   if( glfwGetKey( _window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS ||
+       glfwGetKey( _window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS)
+      state->keyModifiers |= (1 << 2);
+
+   if( glfwGetKey( _window, GLFW_KEY_LEFT_SUPER) == GLFW_PRESS ||
+       glfwGetKey( _window, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS)
+      state->keyModifiers |= (1 << 3);
 }
 
 @end

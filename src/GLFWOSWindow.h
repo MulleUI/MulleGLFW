@@ -159,7 +159,7 @@ static inline int   GLFWGraphicsHintsBySettingAPILibrary( GLFWGraphicsHints t, i
 @private
    // _activeThread is not retained(!) if -haveGraphicsContext returns NO
    // then this will always be nil
-   NSThread                 *_activeThread;
+   mulle_atomic_pointer_t   _atomicActiveThread;
 }
 
 // NONE OF THESE PROPERTIES are thread safe, except those which are readonly
@@ -203,7 +203,7 @@ static inline int   GLFWGraphicsHintsBySettingAPILibrary( GLFWGraphicsHints t, i
 // which may be antialiasing as a fallback
 @property( readonly, getter=isAntiAliasing) BOOL       antiAliasing;
 
-@property( readonly) struct UIInputState               inputState;
+@property( assign, readonly) struct UIInputState       inputState;
 @property( assign, readonly) UIGraphicsBackend         backend;
 
 @property( assign) NSUInteger                          debuggingFlags   MULLE_OBJC_THREADSAFE_PROPERTY;
@@ -330,7 +330,7 @@ static inline int   GLFWGraphicsHintsBySettingAPILibrary( GLFWGraphicsHints t, i
 // who called os_(try)activateGraphicsContext. If he window has no
 // graphics context, this will return nil
 //
-- (NSThread *) activeThread;
+- (NSThread *) activeThread                        MULLE_OBJC_THREADSAFE_METHOD;
 
 //
 // OS Pasteboard (Might need to be moved to UIApplication)

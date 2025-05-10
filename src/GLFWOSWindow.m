@@ -486,13 +486,21 @@ retry:
    _backend                     = getWindowBackend( (GLFWwindow *) _window);
    _frameCallback               = defaultFrameCallback;
    _haveGraphicsContext         = glfwGetWindowAttrib( _window, GLFW_CLIENT_API) != GLFW_NO_API;
-   _inputState.locationInWindow = CGPointMake( -1.0, -1.0);
    _otherRetainedEventsCallback = GLFWOSWindowRetainedEventDefaultCallback;
    _scrollWheelSensitivity      = 20.0;
    _styleMask                   = styleMask;
    _uninitializedFramebuffer    = YES;
    _windowEventsCallback        = GLFWOSWindowEventDefaultCallback;
 
+   // get initial state for some demos
+   {
+      double   x, y;
+
+      glfwGetCursorPos( _window, &x, &y);
+
+      _inputState.locationInWindow.x = x;
+      _inputState.locationInWindow.y = y;
+   }
    assert( (api == GLFW_NO_API && ! _haveGraphicsContext) || _haveGraphicsContext);
 
    if( _haveGraphicsContext)
@@ -518,7 +526,7 @@ retry:
       _contextLock = [NSLock new];
    }
 
-   if( ! (styleMask & UIWindowStyleInvisible))
+   if( ! (styleMask & UIWindowStyleHidden))
       [self os_show];
 
 #ifdef DEBUG
@@ -569,7 +577,7 @@ retry:
    // keep render context locked. As the window/context will be unusuable
    // a deadlock seems preferable and easier to debug for misbehavers
    if( [_contextLock tryLock]) // if already locked don't deadlock here
-      _activeThread = [NSThread currentThread];
+      _mulle_atomic_pointer_write( &_atomicActiveThread, [NSThread currentThread]);
 
    [_sharingWindow autorelease];
    _sharingWindow = nil;
@@ -741,7 +749,7 @@ retry:
    {
       UIOSWindowSwapLog( "activate window: %p", _window);
       glfwMakeContextCurrent( _window);
-      _activeThread = [NSThread currentThread];
+      _mulle_atomic_pointer_write( &_atomicActiveThread, [NSThread currentThread]);
    }      
    else
       UIOSWindowLogVerbose( "Activated, but we have no graphics context");
@@ -763,7 +771,7 @@ retry:
    {
       UIOSWindowSwapLog( "activate window: %p", _window);
       glfwMakeContextCurrent( _window);
-      _activeThread = [NSThread currentThread];
+      _mulle_atomic_pointer_write( &_atomicActiveThread, [NSThread currentThread]);
    }
    else
       UIOSWindowLogVerbose( "Did activate, but we have no graphics context");
@@ -781,7 +789,7 @@ retry:
    {
       UIOSWindowSwapLog( "deactivate window: %p", _window);
       glfwMakeContextCurrent( NULL);
-      _activeThread = nil;
+      _mulle_atomic_pointer_write( &_atomicActiveThread, NULL);
    }
    UIOSWindowSwapLog( "unlock: %p", _window);
    [_contextLock unlock];
@@ -790,7 +798,7 @@ retry:
 
 - (NSThread *) activeThread
 {
-   return( _activeThread);
+   return( _mulle_atomic_pointer_read( &_atomicActiveThread));
 }
 
 
@@ -1277,9 +1285,8 @@ static struct
 }
 
 
-- (void) writeOSWindowPropertyChangesIfNeeded
+- (void) syncOSWindowPropertyChangesIfNeeded
 {
-   // GLFWOS windows property changes immediately
 }
 
 

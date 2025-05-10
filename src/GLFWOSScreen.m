@@ -95,9 +95,9 @@
    {
       mode                = (GLFWvidmode *) glfwGetVideoMode( _monitor);
 
-      _info.frame.origin  = CGPointMakeWithIntegerPoint( [self os_position]);
+      _info.frame.origin  = CGPointMakeWithPixelPoint( [self os_position]);
       _info.frame.size    = CGSizeMake( mode->width, mode->height);
-      _info.canvas        = CGRectMakeWithIntegerRect( [self os_canvas]);
+      _info.canvas        = CGRectMakeWithPixelRect( [self os_canvas]);
       _info.contentScale  = [self os_contentScale];
       _info.physicalSize  = [self os_physicalSize];
       _info.dpi           = [self os_dpi];

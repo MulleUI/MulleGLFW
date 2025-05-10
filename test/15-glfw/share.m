@@ -12,12 +12,12 @@ int   main( void)
    {
       window[ 0] = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0, 0, 128, 128)
                                         titleUTF8String:"Foo"
-                                              styleMask:UIWindowStyleBare|UIWindowStyleInvisible
+                                              styleMask:UIWindowStyleBare|UIWindowStyleHidden
                                           graphicsHints:0] autorelease];
 
       window[ 1] = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 128, 0, 128, 128)
                                         titleUTF8String:"Bar"
-                                              styleMask:UIWindowStyleBare|UIWindowStyleInvisible
+                                              styleMask:UIWindowStyleBare|UIWindowStyleHidden
                                           graphicsHints:0
                                           sharingWindow:window[ 0]] autorelease];
       if( ! window[ 1])

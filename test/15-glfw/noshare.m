@@ -10,7 +10,7 @@ int   main( void)
 
    window = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0, 0, 128, 128)
                                titleUTF8String:"Foo"
-                                     styleMask:UIWindowStyleBare|UIWindowStyleInvisible
+                                     styleMask:UIWindowStyleBare|UIWindowStyleHidden
                                  graphicsHints:0
                                  sharingWindow:nil] autorelease];
    if( ! window)

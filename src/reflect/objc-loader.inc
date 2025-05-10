@@ -1,4 +1,3 @@
-      { @selector( MulleObjCLoader), @selector( MulleFoundationBase) },      // 47a9beb6;MulleObjCLoader;efab19ea;MulleFoundationBase
       { @selector( MulleObjCLoader), @selector( MulleUIApplication) },      // 47a9beb6;MulleObjCLoader;55c305e6;MulleUIApplication
       { @selector( MulleObjCLoader), @selector( MulleUIBase) },      // 47a9beb6;MulleObjCLoader;3ebba954;MulleUIBase
       { @selector( GLFWOSGamepad), MULLE_OBJC_NO_CATEGORYID },      // d4a6fcad;GLFWOSGamepad;;
