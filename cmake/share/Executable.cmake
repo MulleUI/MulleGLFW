@@ -31,6 +31,9 @@ if( NOT EXECUTABLE_SOURCES)
    set( __EXECUTABLE_SOURCES_UNSET ON)
 endif()
 
+option( EXE_EXPORT_ALL "Export all global symbols for executable" ON)
+set( CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ${EXE_EXPORT_ALL})
+
 #
 # must be ahead of AllLoadC
 #
@@ -84,6 +87,19 @@ if( LINK_PHASE)
          CXX_STANDARD 11
 #         DEFINE_SYMBOL "${EXECUTABLE_UPCASE_IDENTIFIER}_SHARED_BUILD"
    )
+
+   #
+   # not __really__ sure why this seems to be need now (cmake >= 4)
+   # used to work fine without
+   #
+   if( APPLE)
+      set_target_properties("${EXECUTABLE_NAME}" PROPERTIES
+          INSTALL_RPATH "@loader_path/../lib/;@loader_path/../Frameworks/"
+          BUILD_RPATH "@loader_path/../lib/;@loader_path/../Frameworks/"
+      )
+   endif()
+
+   set_target_properties("${EXECUTABLE_NAME}" PROPERTIES ENABLE_EXPORTS ON)
 
    target_compile_definitions( "${EXECUTABLE_NAME}" PRIVATE "${EXECUTABLE_UPCASE_IDENTIFIER}_BUILD")
 

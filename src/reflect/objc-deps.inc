@@ -1,5 +1,6 @@
-      { @selector( MulleObjCLoader), @selector( MulleUIApplication) },      // 47a9beb6;MulleObjCLoader;55c305e6;MulleUIApplication
-      { @selector( MulleObjCLoader), @selector( MulleUIBase) },      // 47a9beb6;MulleObjCLoader;3ebba954;MulleUIBase
+      { @selector( MulleObjCDeps), @selector( MulleObjCTimeFoundation) },      // 47a9beb6;MulleObjCDeps;cc20d48b;MulleObjCTimeFoundation
+      { @selector( MulleObjCDeps), @selector( MulleUIApplication) },      // 47a9beb6;MulleObjCDeps;55c305e6;MulleUIApplication
+      { @selector( MulleObjCDeps), @selector( MulleUIBase) },      // 47a9beb6;MulleObjCDeps;3ebba954;MulleUIBase
       { @selector( GLFWOSGamepad), MULLE_OBJC_NO_CATEGORYID },      // d4a6fcad;GLFWOSGamepad;;
       { @selector( GLFWOSScreen), MULLE_OBJC_NO_CATEGORYID },      // 49c43e35;GLFWOSScreen;;
       { @selector( GLFWOSWindow), @selector( UIEvent) },      // f842a6fa;GLFWOSWindow;f88bf69f;UIEvent

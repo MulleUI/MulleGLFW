@@ -2,6 +2,7 @@
 // Copyright (c) 2021 Nat!, Mulle kybernetiK
 //
 #define GL_SILENCE_DEPRECATION
+#define GLFW_INCLUDE_GLEXT
 
 #import "GLFWOSWindow.h"
 
@@ -107,6 +108,7 @@ static UIWindowDisplayBits   defaultFrameCallback( id <UIOSWindow> window_in)
    obj = [obj autorelease];
    return(obj);
 }
+
 
 + (instancetype) windowWithFrame:(CGRect) frame
                 titleUTF8String:(char *) title

@@ -26,8 +26,16 @@
 
 #include "_MulleGLFW-include.h"
 
-#ifndef MULLE_GLFW_EXTERN_GLOBAL
-# define MULLE_GLFW_EXTERN_GLOBAL  MULLE_C_EXTERN_GLOBAL
+#ifdef MULLE_GLFW_BUILD
+# define MULLE_GLFW_GLOBAL        MULLE_C_GLOBAL
+# define MULLE_GLFW_GLOBAL_VAR    MULLE_C_GLOBAL_VAR
+#else
+# if defined( MULLE_GLFW_INCLUDE_DYNAMIC) || (defined( MULLE_INCLUDE_DYNAMIC) && ! defined( MULLE_GLFW_INCLUDE_STATIC))
+#  define MULLE_GLFW_GLOBAL       MULLE_C_EXTERN_GLOBAL
+# else
+#  define MULLE_GLFW_GLOBAL       extern
+# endif
+# define MULLE_GLFW_GLOBAL_VAR
 #endif
 
 /* You can add some more include statements here */

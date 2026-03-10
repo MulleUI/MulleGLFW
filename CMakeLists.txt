@@ -6,7 +6,7 @@
 # A convenient way to add a new source fils is:
 #    mulle-sde add src/foo.m
 #
-cmake_minimum_required( VERSION 3.16)
+cmake_minimum_required( VERSION 3.16...99.99)
 
 project( MulleGLFW C)
 

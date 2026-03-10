@@ -39,7 +39,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             # intentionally left blank
          else()
             # Disable with: `mulle-sourcetree mark GL no-require-link`
-            message( SEND_ERROR "GL_LIBRARY was not found")
+            message( SEND_ERROR "GL_LIBRARY was not found in GL")
          endif()
       endif()
    endif()
@@ -74,7 +74,7 @@ if( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             # intentionally left blank
          else()
             # Disable with: `mulle-sourcetree mark CoreVideo no-require-link`
-            message( SEND_ERROR "CORE_VIDEO_FRAMEWORK was not found")
+            message( SEND_ERROR "CORE_VIDEO_FRAMEWORK was not found in CoreVideo")
          endif()
       endif()
    endif()
@@ -109,7 +109,7 @@ if( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             # intentionally left blank
          else()
             # Disable with: `mulle-sourcetree mark OpenGL no-require-link`
-            message( SEND_ERROR "OPEN_GL_FRAMEWORK was not found")
+            message( SEND_ERROR "OPEN_GL_FRAMEWORK was not found in OpenGL")
          endif()
       endif()
    endif()

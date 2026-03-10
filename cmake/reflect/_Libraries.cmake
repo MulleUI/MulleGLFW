@@ -12,12 +12,12 @@ if( MULLE_TRACE_INCLUDE)
 endif()
 
 #
-# Generated from sourcetree: CFAC3EAB-1163-418A-AB7C-70A8EDEDC5EF;GL;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
+# Generated from sourcetree: CFAC3EAB-1163-418A-AB7C-70A8EDEDC5EF;GL;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-platform-windows,no-update;
 # Disable with : `mulle-sourcetree mark GL `
 # Disable for this platform: `mulle-sourcetree mark GL no-cmake-platform-${MULLE_UNAME}`
 # Disable for a sdk: `mulle-sourcetree mark GL no-cmake-sdk-<name>`
 #
-if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "Windows"))
    if( COLLECT_OS_SPECIFIC_LIBRARIES_AS_NAMES)
       list( APPEND OS_SPECIFIC_LIBRARIES "GL")
    else()
@@ -54,22 +54,25 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
                # use explicit path to avoid "surprises"
                if( IS_DIRECTORY "${_TMP_GL_DIR}")
                   list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_GL_DIR}")
-                  # we only want top level INHERIT_OBJC_LOADERS, so disable them
-                  if( NOT NO_INHERIT_OBJC_LOADERS)
-                     set( NO_INHERIT_OBJC_LOADERS OFF)
+                  # we only want top level INHERIT_OBJC_DEPS, so disable them
+                  if( NOT NO_INHERIT_OBJC_DEPS)
+                     set( NO_INHERIT_OBJC_DEPS OFF)
                   endif()
-                  list( APPEND _TMP_INHERIT_OBJC_LOADERS ${NO_INHERIT_OBJC_LOADERS})
-                  set( NO_INHERIT_OBJC_LOADERS ON)
+                  list( APPEND _TMP_INHERIT_OBJC_DEPS ${NO_INHERIT_OBJC_DEPS})
+                  set( NO_INHERIT_OBJC_DEPS ON)
                   #
                   include( "${_TMP_GL_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
                   #
-                  list( GET _TMP_INHERIT_OBJC_LOADERS -1 NO_INHERIT_OBJC_LOADERS)
-                  list( REMOVE_AT _TMP_INHERIT_OBJC_LOADERS -1)
+                  list( GET _TMP_INHERIT_OBJC_DEPS -1 NO_INHERIT_OBJC_DEPS)
+                  list( REMOVE_AT _TMP_INHERIT_OBJC_DEPS -1)
                   list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_GL_DIR}")
                   #
                   unset( GL_DEFINITIONS)
+                  unset( GL_RENDEZVOUS_GLOBALS)
                   include( "${_TMP_GL_DIR}/Definitions.cmake" OPTIONAL)
                   list( APPEND INHERITED_DEFINITIONS ${GL_DEFINITIONS})
+                  include( "${_TMP_GL_DIR}/Definitions.cmake" OPTIONAL)
+                  list( APPEND RENDEZVOUS_GLOBALS ${GL_RENDEZVOUS_GLOBALS})
                   break()
                else()
                   message( STATUS "${_TMP_GL_DIR} not found")
@@ -77,7 +80,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             endforeach()
          else()
             # Disable with: `mulle-sourcetree mark GL no-require-link`
-            message( SEND_ERROR "GL_LIBRARY was not found")
+            message( SEND_ERROR "GL_LIBRARY was not found in GL")
          endif()
       endif()
    endif()
@@ -85,12 +88,12 @@ endif()
 
 
 #
-# Generated from sourcetree: 5D546569-2C1B-42BA-9DEA-746D09C1A0AF;GLU;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
+# Generated from sourcetree: 5D546569-2C1B-42BA-9DEA-746D09C1A0AF;GLU;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-platform-windows,no-update;
 # Disable with : `mulle-sourcetree mark GLU `
 # Disable for this platform: `mulle-sourcetree mark GLU no-cmake-platform-${MULLE_UNAME}`
 # Disable for a sdk: `mulle-sourcetree mark GLU no-cmake-sdk-<name>`
 #
-if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "Windows"))
    if( COLLECT_OS_SPECIFIC_LIBRARIES_AS_NAMES)
       list( APPEND OS_SPECIFIC_LIBRARIES "GLU")
    else()
@@ -127,22 +130,25 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
                # use explicit path to avoid "surprises"
                if( IS_DIRECTORY "${_TMP_GLU_DIR}")
                   list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_GLU_DIR}")
-                  # we only want top level INHERIT_OBJC_LOADERS, so disable them
-                  if( NOT NO_INHERIT_OBJC_LOADERS)
-                     set( NO_INHERIT_OBJC_LOADERS OFF)
+                  # we only want top level INHERIT_OBJC_DEPS, so disable them
+                  if( NOT NO_INHERIT_OBJC_DEPS)
+                     set( NO_INHERIT_OBJC_DEPS OFF)
                   endif()
-                  list( APPEND _TMP_INHERIT_OBJC_LOADERS ${NO_INHERIT_OBJC_LOADERS})
-                  set( NO_INHERIT_OBJC_LOADERS ON)
+                  list( APPEND _TMP_INHERIT_OBJC_DEPS ${NO_INHERIT_OBJC_DEPS})
+                  set( NO_INHERIT_OBJC_DEPS ON)
                   #
                   include( "${_TMP_GLU_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
                   #
-                  list( GET _TMP_INHERIT_OBJC_LOADERS -1 NO_INHERIT_OBJC_LOADERS)
-                  list( REMOVE_AT _TMP_INHERIT_OBJC_LOADERS -1)
+                  list( GET _TMP_INHERIT_OBJC_DEPS -1 NO_INHERIT_OBJC_DEPS)
+                  list( REMOVE_AT _TMP_INHERIT_OBJC_DEPS -1)
                   list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_GLU_DIR}")
                   #
                   unset( GLU_DEFINITIONS)
+                  unset( GLU_RENDEZVOUS_GLOBALS)
                   include( "${_TMP_GLU_DIR}/Definitions.cmake" OPTIONAL)
                   list( APPEND INHERITED_DEFINITIONS ${GLU_DEFINITIONS})
+                  include( "${_TMP_GLU_DIR}/Definitions.cmake" OPTIONAL)
+                  list( APPEND RENDEZVOUS_GLOBALS ${GLU_RENDEZVOUS_GLOBALS})
                   break()
                else()
                   message( STATUS "${_TMP_GLU_DIR} not found")
@@ -150,7 +156,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             endforeach()
          else()
             # Disable with: `mulle-sourcetree mark GLU no-require-link`
-            message( SEND_ERROR "GLU_LIBRARY was not found")
+            message( SEND_ERROR "GLU_LIBRARY was not found in GLU")
          endif()
       endif()
    endif()
@@ -158,12 +164,12 @@ endif()
 
 
 #
-# Generated from sourcetree: 37E90022-6239-425E-84F9-4187CFC264FE;X11;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
+# Generated from sourcetree: 37E90022-6239-425E-84F9-4187CFC264FE;X11;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-platform-windows,no-update;
 # Disable with : `mulle-sourcetree mark X11 `
 # Disable for this platform: `mulle-sourcetree mark X11 no-cmake-platform-${MULLE_UNAME}`
 # Disable for a sdk: `mulle-sourcetree mark X11 no-cmake-sdk-<name>`
 #
-if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "Windows"))
    if( COLLECT_OS_SPECIFIC_LIBRARIES_AS_NAMES)
       list( APPEND OS_SPECIFIC_LIBRARIES "X11")
    else()
@@ -200,22 +206,25 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
                # use explicit path to avoid "surprises"
                if( IS_DIRECTORY "${_TMP_X11_DIR}")
                   list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_X11_DIR}")
-                  # we only want top level INHERIT_OBJC_LOADERS, so disable them
-                  if( NOT NO_INHERIT_OBJC_LOADERS)
-                     set( NO_INHERIT_OBJC_LOADERS OFF)
+                  # we only want top level INHERIT_OBJC_DEPS, so disable them
+                  if( NOT NO_INHERIT_OBJC_DEPS)
+                     set( NO_INHERIT_OBJC_DEPS OFF)
                   endif()
-                  list( APPEND _TMP_INHERIT_OBJC_LOADERS ${NO_INHERIT_OBJC_LOADERS})
-                  set( NO_INHERIT_OBJC_LOADERS ON)
+                  list( APPEND _TMP_INHERIT_OBJC_DEPS ${NO_INHERIT_OBJC_DEPS})
+                  set( NO_INHERIT_OBJC_DEPS ON)
                   #
                   include( "${_TMP_X11_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
                   #
-                  list( GET _TMP_INHERIT_OBJC_LOADERS -1 NO_INHERIT_OBJC_LOADERS)
-                  list( REMOVE_AT _TMP_INHERIT_OBJC_LOADERS -1)
+                  list( GET _TMP_INHERIT_OBJC_DEPS -1 NO_INHERIT_OBJC_DEPS)
+                  list( REMOVE_AT _TMP_INHERIT_OBJC_DEPS -1)
                   list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_X11_DIR}")
                   #
                   unset( X11_DEFINITIONS)
+                  unset( X11_RENDEZVOUS_GLOBALS)
                   include( "${_TMP_X11_DIR}/Definitions.cmake" OPTIONAL)
                   list( APPEND INHERITED_DEFINITIONS ${X11_DEFINITIONS})
+                  include( "${_TMP_X11_DIR}/Definitions.cmake" OPTIONAL)
+                  list( APPEND RENDEZVOUS_GLOBALS ${X11_RENDEZVOUS_GLOBALS})
                   break()
                else()
                   message( STATUS "${_TMP_X11_DIR} not found")
@@ -223,7 +232,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             endforeach()
          else()
             # Disable with: `mulle-sourcetree mark X11 no-require-link`
-            message( SEND_ERROR "X11_LIBRARY was not found")
+            message( SEND_ERROR "X11_LIBRARY was not found in X11")
          endif()
       endif()
    endif()
@@ -231,12 +240,12 @@ endif()
 
 
 #
-# Generated from sourcetree: 4401818B-6C6B-4F77-B4D1-DAF856845CD7;Xrandr;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
+# Generated from sourcetree: 4401818B-6C6B-4F77-B4D1-DAF856845CD7;Xrandr;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-platform-windows,no-update;
 # Disable with : `mulle-sourcetree mark Xrandr `
 # Disable for this platform: `mulle-sourcetree mark Xrandr no-cmake-platform-${MULLE_UNAME}`
 # Disable for a sdk: `mulle-sourcetree mark Xrandr no-cmake-sdk-<name>`
 #
-if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "Windows"))
    if( COLLECT_OS_SPECIFIC_LIBRARIES_AS_NAMES)
       list( APPEND OS_SPECIFIC_LIBRARIES "Xrandr")
    else()
@@ -273,22 +282,25 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
                # use explicit path to avoid "surprises"
                if( IS_DIRECTORY "${_TMP_XRANDR_DIR}")
                   list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_XRANDR_DIR}")
-                  # we only want top level INHERIT_OBJC_LOADERS, so disable them
-                  if( NOT NO_INHERIT_OBJC_LOADERS)
-                     set( NO_INHERIT_OBJC_LOADERS OFF)
+                  # we only want top level INHERIT_OBJC_DEPS, so disable them
+                  if( NOT NO_INHERIT_OBJC_DEPS)
+                     set( NO_INHERIT_OBJC_DEPS OFF)
                   endif()
-                  list( APPEND _TMP_INHERIT_OBJC_LOADERS ${NO_INHERIT_OBJC_LOADERS})
-                  set( NO_INHERIT_OBJC_LOADERS ON)
+                  list( APPEND _TMP_INHERIT_OBJC_DEPS ${NO_INHERIT_OBJC_DEPS})
+                  set( NO_INHERIT_OBJC_DEPS ON)
                   #
                   include( "${_TMP_XRANDR_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
                   #
-                  list( GET _TMP_INHERIT_OBJC_LOADERS -1 NO_INHERIT_OBJC_LOADERS)
-                  list( REMOVE_AT _TMP_INHERIT_OBJC_LOADERS -1)
+                  list( GET _TMP_INHERIT_OBJC_DEPS -1 NO_INHERIT_OBJC_DEPS)
+                  list( REMOVE_AT _TMP_INHERIT_OBJC_DEPS -1)
                   list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_XRANDR_DIR}")
                   #
                   unset( XRANDR_DEFINITIONS)
+                  unset( XRANDR_RENDEZVOUS_GLOBALS)
                   include( "${_TMP_XRANDR_DIR}/Definitions.cmake" OPTIONAL)
                   list( APPEND INHERITED_DEFINITIONS ${XRANDR_DEFINITIONS})
+                  include( "${_TMP_XRANDR_DIR}/Definitions.cmake" OPTIONAL)
+                  list( APPEND RENDEZVOUS_GLOBALS ${XRANDR_RENDEZVOUS_GLOBALS})
                   break()
                else()
                   message( STATUS "${_TMP_XRANDR_DIR} not found")
@@ -296,7 +308,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             endforeach()
          else()
             # Disable with: `mulle-sourcetree mark Xrandr no-require-link`
-            message( SEND_ERROR "XRANDR_LIBRARY was not found")
+            message( SEND_ERROR "XRANDR_LIBRARY was not found in Xrandr")
          endif()
       endif()
    endif()
@@ -304,12 +316,12 @@ endif()
 
 
 #
-# Generated from sourcetree: 88EE0FCD-170A-4438-82DF-D48EE8D91F24;Xxf86vm;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
+# Generated from sourcetree: 88EE0FCD-170A-4438-82DF-D48EE8D91F24;Xxf86vm;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-platform-windows,no-update;
 # Disable with : `mulle-sourcetree mark Xxf86vm `
 # Disable for this platform: `mulle-sourcetree mark Xxf86vm no-cmake-platform-${MULLE_UNAME}`
 # Disable for a sdk: `mulle-sourcetree mark Xxf86vm no-cmake-sdk-<name>`
 #
-if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "Windows"))
    if( COLLECT_OS_SPECIFIC_LIBRARIES_AS_NAMES)
       list( APPEND OS_SPECIFIC_LIBRARIES "Xxf86vm")
    else()
@@ -346,22 +358,25 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
                # use explicit path to avoid "surprises"
                if( IS_DIRECTORY "${_TMP_XXF86VM_DIR}")
                   list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_XXF86VM_DIR}")
-                  # we only want top level INHERIT_OBJC_LOADERS, so disable them
-                  if( NOT NO_INHERIT_OBJC_LOADERS)
-                     set( NO_INHERIT_OBJC_LOADERS OFF)
+                  # we only want top level INHERIT_OBJC_DEPS, so disable them
+                  if( NOT NO_INHERIT_OBJC_DEPS)
+                     set( NO_INHERIT_OBJC_DEPS OFF)
                   endif()
-                  list( APPEND _TMP_INHERIT_OBJC_LOADERS ${NO_INHERIT_OBJC_LOADERS})
-                  set( NO_INHERIT_OBJC_LOADERS ON)
+                  list( APPEND _TMP_INHERIT_OBJC_DEPS ${NO_INHERIT_OBJC_DEPS})
+                  set( NO_INHERIT_OBJC_DEPS ON)
                   #
                   include( "${_TMP_XXF86VM_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
                   #
-                  list( GET _TMP_INHERIT_OBJC_LOADERS -1 NO_INHERIT_OBJC_LOADERS)
-                  list( REMOVE_AT _TMP_INHERIT_OBJC_LOADERS -1)
+                  list( GET _TMP_INHERIT_OBJC_DEPS -1 NO_INHERIT_OBJC_DEPS)
+                  list( REMOVE_AT _TMP_INHERIT_OBJC_DEPS -1)
                   list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_XXF86VM_DIR}")
                   #
                   unset( XXF86VM_DEFINITIONS)
+                  unset( XXF86VM_RENDEZVOUS_GLOBALS)
                   include( "${_TMP_XXF86VM_DIR}/Definitions.cmake" OPTIONAL)
                   list( APPEND INHERITED_DEFINITIONS ${XXF86VM_DEFINITIONS})
+                  include( "${_TMP_XXF86VM_DIR}/Definitions.cmake" OPTIONAL)
+                  list( APPEND RENDEZVOUS_GLOBALS ${XXF86VM_RENDEZVOUS_GLOBALS})
                   break()
                else()
                   message( STATUS "${_TMP_XXF86VM_DIR} not found")
@@ -369,7 +384,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             endforeach()
          else()
             # Disable with: `mulle-sourcetree mark Xxf86vm no-require-link`
-            message( SEND_ERROR "XXF86VM_LIBRARY was not found")
+            message( SEND_ERROR "XXF86VM_LIBRARY was not found in Xxf86vm")
          endif()
       endif()
    endif()
@@ -377,12 +392,12 @@ endif()
 
 
 #
-# Generated from sourcetree: 9A874E86-1A8A-46A3-AEAA-F1D1A6F40422;Xinerama;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
+# Generated from sourcetree: 9A874E86-1A8A-46A3-AEAA-F1D1A6F40422;Xinerama;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-platform-windows,no-update;
 # Disable with : `mulle-sourcetree mark Xinerama `
 # Disable for this platform: `mulle-sourcetree mark Xinerama no-cmake-platform-${MULLE_UNAME}`
 # Disable for a sdk: `mulle-sourcetree mark Xinerama no-cmake-sdk-<name>`
 #
-if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "Windows"))
    if( COLLECT_OS_SPECIFIC_LIBRARIES_AS_NAMES)
       list( APPEND OS_SPECIFIC_LIBRARIES "Xinerama")
    else()
@@ -419,22 +434,25 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
                # use explicit path to avoid "surprises"
                if( IS_DIRECTORY "${_TMP_XINERAMA_DIR}")
                   list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_XINERAMA_DIR}")
-                  # we only want top level INHERIT_OBJC_LOADERS, so disable them
-                  if( NOT NO_INHERIT_OBJC_LOADERS)
-                     set( NO_INHERIT_OBJC_LOADERS OFF)
+                  # we only want top level INHERIT_OBJC_DEPS, so disable them
+                  if( NOT NO_INHERIT_OBJC_DEPS)
+                     set( NO_INHERIT_OBJC_DEPS OFF)
                   endif()
-                  list( APPEND _TMP_INHERIT_OBJC_LOADERS ${NO_INHERIT_OBJC_LOADERS})
-                  set( NO_INHERIT_OBJC_LOADERS ON)
+                  list( APPEND _TMP_INHERIT_OBJC_DEPS ${NO_INHERIT_OBJC_DEPS})
+                  set( NO_INHERIT_OBJC_DEPS ON)
                   #
                   include( "${_TMP_XINERAMA_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
                   #
-                  list( GET _TMP_INHERIT_OBJC_LOADERS -1 NO_INHERIT_OBJC_LOADERS)
-                  list( REMOVE_AT _TMP_INHERIT_OBJC_LOADERS -1)
+                  list( GET _TMP_INHERIT_OBJC_DEPS -1 NO_INHERIT_OBJC_DEPS)
+                  list( REMOVE_AT _TMP_INHERIT_OBJC_DEPS -1)
                   list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_XINERAMA_DIR}")
                   #
                   unset( XINERAMA_DEFINITIONS)
+                  unset( XINERAMA_RENDEZVOUS_GLOBALS)
                   include( "${_TMP_XINERAMA_DIR}/Definitions.cmake" OPTIONAL)
                   list( APPEND INHERITED_DEFINITIONS ${XINERAMA_DEFINITIONS})
+                  include( "${_TMP_XINERAMA_DIR}/Definitions.cmake" OPTIONAL)
+                  list( APPEND RENDEZVOUS_GLOBALS ${XINERAMA_RENDEZVOUS_GLOBALS})
                   break()
                else()
                   message( STATUS "${_TMP_XINERAMA_DIR} not found")
@@ -442,7 +460,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             endforeach()
          else()
             # Disable with: `mulle-sourcetree mark Xinerama no-require-link`
-            message( SEND_ERROR "XINERAMA_LIBRARY was not found")
+            message( SEND_ERROR "XINERAMA_LIBRARY was not found in Xinerama")
          endif()
       endif()
    endif()
@@ -450,12 +468,12 @@ endif()
 
 
 #
-# Generated from sourcetree: 1B5D8474-268F-4066-8AEA-FC89BD3A29FC;Xcursor;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-update;
+# Generated from sourcetree: 1B5D8474-268F-4066-8AEA-FC89BD3A29FC;Xcursor;no-all-load,no-build,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-platform-windows,no-update;
 # Disable with : `mulle-sourcetree mark Xcursor `
 # Disable for this platform: `mulle-sourcetree mark Xcursor no-cmake-platform-${MULLE_UNAME}`
 # Disable for a sdk: `mulle-sourcetree mark Xcursor no-cmake-sdk-<name>`
 #
-if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "Windows"))
    if( COLLECT_OS_SPECIFIC_LIBRARIES_AS_NAMES)
       list( APPEND OS_SPECIFIC_LIBRARIES "Xcursor")
    else()
@@ -492,22 +510,25 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
                # use explicit path to avoid "surprises"
                if( IS_DIRECTORY "${_TMP_XCURSOR_DIR}")
                   list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_XCURSOR_DIR}")
-                  # we only want top level INHERIT_OBJC_LOADERS, so disable them
-                  if( NOT NO_INHERIT_OBJC_LOADERS)
-                     set( NO_INHERIT_OBJC_LOADERS OFF)
+                  # we only want top level INHERIT_OBJC_DEPS, so disable them
+                  if( NOT NO_INHERIT_OBJC_DEPS)
+                     set( NO_INHERIT_OBJC_DEPS OFF)
                   endif()
-                  list( APPEND _TMP_INHERIT_OBJC_LOADERS ${NO_INHERIT_OBJC_LOADERS})
-                  set( NO_INHERIT_OBJC_LOADERS ON)
+                  list( APPEND _TMP_INHERIT_OBJC_DEPS ${NO_INHERIT_OBJC_DEPS})
+                  set( NO_INHERIT_OBJC_DEPS ON)
                   #
                   include( "${_TMP_XCURSOR_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
                   #
-                  list( GET _TMP_INHERIT_OBJC_LOADERS -1 NO_INHERIT_OBJC_LOADERS)
-                  list( REMOVE_AT _TMP_INHERIT_OBJC_LOADERS -1)
+                  list( GET _TMP_INHERIT_OBJC_DEPS -1 NO_INHERIT_OBJC_DEPS)
+                  list( REMOVE_AT _TMP_INHERIT_OBJC_DEPS -1)
                   list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_XCURSOR_DIR}")
                   #
                   unset( XCURSOR_DEFINITIONS)
+                  unset( XCURSOR_RENDEZVOUS_GLOBALS)
                   include( "${_TMP_XCURSOR_DIR}/Definitions.cmake" OPTIONAL)
                   list( APPEND INHERITED_DEFINITIONS ${XCURSOR_DEFINITIONS})
+                  include( "${_TMP_XCURSOR_DIR}/Definitions.cmake" OPTIONAL)
+                  list( APPEND RENDEZVOUS_GLOBALS ${XCURSOR_RENDEZVOUS_GLOBALS})
                   break()
                else()
                   message( STATUS "${_TMP_XCURSOR_DIR} not found")
@@ -515,7 +536,7 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             endforeach()
          else()
             # Disable with: `mulle-sourcetree mark Xcursor no-require-link`
-            message( SEND_ERROR "XCURSOR_LIBRARY was not found")
+            message( SEND_ERROR "XCURSOR_LIBRARY was not found in Xcursor")
          endif()
       endif()
    endif()
@@ -564,22 +585,25 @@ else()
             # use explicit path to avoid "surprises"
             if( IS_DIRECTORY "${_TMP_M_DIR}")
                list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_M_DIR}")
-               # we only want top level INHERIT_OBJC_LOADERS, so disable them
-               if( NOT NO_INHERIT_OBJC_LOADERS)
-                  set( NO_INHERIT_OBJC_LOADERS OFF)
+               # we only want top level INHERIT_OBJC_DEPS, so disable them
+               if( NOT NO_INHERIT_OBJC_DEPS)
+                  set( NO_INHERIT_OBJC_DEPS OFF)
                endif()
-               list( APPEND _TMP_INHERIT_OBJC_LOADERS ${NO_INHERIT_OBJC_LOADERS})
-               set( NO_INHERIT_OBJC_LOADERS ON)
+               list( APPEND _TMP_INHERIT_OBJC_DEPS ${NO_INHERIT_OBJC_DEPS})
+               set( NO_INHERIT_OBJC_DEPS ON)
                #
                include( "${_TMP_M_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
                #
-               list( GET _TMP_INHERIT_OBJC_LOADERS -1 NO_INHERIT_OBJC_LOADERS)
-               list( REMOVE_AT _TMP_INHERIT_OBJC_LOADERS -1)
+               list( GET _TMP_INHERIT_OBJC_DEPS -1 NO_INHERIT_OBJC_DEPS)
+               list( REMOVE_AT _TMP_INHERIT_OBJC_DEPS -1)
                list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_M_DIR}")
                #
                unset( M_DEFINITIONS)
+               unset( M_RENDEZVOUS_GLOBALS)
                include( "${_TMP_M_DIR}/Definitions.cmake" OPTIONAL)
                list( APPEND INHERITED_DEFINITIONS ${M_DEFINITIONS})
+               include( "${_TMP_M_DIR}/Definitions.cmake" OPTIONAL)
+               list( APPEND RENDEZVOUS_GLOBALS ${M_RENDEZVOUS_GLOBALS})
                break()
             else()
                message( STATUS "${_TMP_M_DIR} not found")
@@ -587,7 +611,42 @@ else()
          endforeach()
       else()
          # Disable with: `mulle-sourcetree mark m no-require-link`
-         message( SEND_ERROR "M_LIBRARY was not found")
+         message( SEND_ERROR "M_LIBRARY was not found in m")
+      endif()
+   endif()
+endif()
+
+
+#
+# Generated from sourcetree: AA56B890-81CD-4735-9DFE-B3753D40A439;opengl32;no-all-load,no-build,no-cmake-inherit,no-delete,no-dependency,no-fs,no-header,no-import,no-platform-darwin,no-platform-linux,no-share,no-update;
+# Disable with : `mulle-sourcetree mark opengl32 `
+# Disable for this platform: `mulle-sourcetree mark opengl32 no-cmake-platform-${MULLE_UNAME}`
+# Disable for a sdk: `mulle-sourcetree mark opengl32 no-cmake-sdk-<name>`
+#
+if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "Linux"))
+   if( COLLECT_OS_SPECIFIC_LIBRARIES_AS_NAMES)
+      list( APPEND OS_SPECIFIC_LIBRARIES "opengl32")
+   else()
+      if( NOT OPENGL32_LIBRARY)
+         find_library( OPENGL32_LIBRARY NAMES
+            opengl32
+         )
+         message( STATUS "OPENGL32_LIBRARY is ${OPENGL32_LIBRARY}")
+         #
+         # The order looks ascending, but due to the way this file is read
+         # it ends up being descending, which is what we need.
+         #
+         if( OPENGL32_LIBRARY)
+            #
+            # Add OPENGL32_LIBRARY to OS_SPECIFIC_LIBRARIES list.
+            # Disable with: `mulle-sourcetree mark opengl32 no-cmake-add`
+            #
+            list( APPEND OS_SPECIFIC_LIBRARIES ${OPENGL32_LIBRARY})
+            # intentionally left blank
+         else()
+            # Disable with: `mulle-sourcetree mark opengl32 no-require-link`
+            message( SEND_ERROR "OPENGL32_LIBRARY was not found in opengl32")
+         endif()
       endif()
    endif()
 endif()

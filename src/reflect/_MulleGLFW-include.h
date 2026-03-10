@@ -22,7 +22,7 @@
 //    remove #include: `mulle-sde dependency mark glfw no-header`
 //    rename              : `mulle-sde dependency|library set glfw include whatever.h`
 //    reorder             : `mulle-sde dependency move glfw <up|down>`
-//    toggle #include: `mulle-sde dependency mark glfw [no-]import`
+//    toggle objc         : `mulle-sde dependency mark glfw [no-]import`
 //    toggle public       : `mulle-sde dependency mark glfw [no-]public`
 //    toggle optional     : `mulle-sde dependency mark glfw [no-]require`
 //    remove for platform : `mulle-sde dependency mark glfw no-platform-<uname>`

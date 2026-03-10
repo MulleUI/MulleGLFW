@@ -59,7 +59,7 @@ src/GLFWOSScreen.h
 src/GLFWOSWindow+UIEvent.h
 src/GLFWOSWindow.h
 src/MulleGLFW.h
-src/MulleObjCLoader+MulleGLFW.h
+src/MulleObjCDeps+MulleGLFW.h
 src/reflect/_MulleGLFW-include-public.h
 )
 

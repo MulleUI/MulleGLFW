@@ -471,22 +471,30 @@ static inline int   shouldDiscardEvent( GLFWOSWindow *self, NSUInteger eventType
 }
 
 
-- (void) _mouseButtonCallback:(int) button
-                       action:(int) action
-                    modifiers:(int) mods
+- (void) _mouseButtonCallback:(int) glfwButton
+                       action:(int) glfwAction
+                    modifiers:(int) glfwModifiers
 {
-   UIEvent    *event;
-   uint64_t   bit;
+   UIEvent      *event;
+   NSUInteger   button;
 
-   UIOSWindowEventLog( "modifiers=0x%tx", mods);
+   UIOSWindowEventLog( "modifiers=0x%x", glfwModifiers);
 
-   self->_inputState.keyModifiers = mods;
+   MULLE_C_ASSERT( (1U << GLFW_MOUSE_BUTTON_LEFT)   == UIEventMouseButtonLeft);
+   MULLE_C_ASSERT( (1U << GLFW_MOUSE_BUTTON_MIDDLE) == UIEventMouseButtonMiddle);
+   MULLE_C_ASSERT( (1U << GLFW_MOUSE_BUTTON_RIGHT)  == UIEventMouseButtonRight);
 
-   bit = 1LL << button;
-   if( action == GLFW_PRESS)
-      self->_inputState.buttonStates |= bit;
+   MULLE_C_ASSERT( UIEventButtonActionUp     == GLFW_RELEASE);
+   MULLE_C_ASSERT( UIEventButtonActionDown   == GLFW_PRESS);
+   MULLE_C_ASSERT( UIEventButtonActionRepeat == GLFW_REPEAT);
+
+   button = (NSUInteger) (1ULL << glfwButton);
+   self->_inputState.keyModifiers = glfwModifiers;
+
+   if( glfwAction == GLFW_PRESS)
+      self->_inputState.buttonStates |= button;
    else
-      self->_inputState.buttonStates &= ~bit;
+      self->_inputState.buttonStates &= ~button;
 
    if( shouldDiscardEvent( self, UIEventTypeTouches))
    {
@@ -494,9 +502,10 @@ static inline int   shouldDiscardEvent( GLFWOSWindow *self, NSUInteger eventType
       return;
    }
 
+
    event = [[UIMouseButtonEvent alloc] initWithInputState:&_inputState
                                                    button:button
-                                                   action:action];
+                                                   action:glfwAction];
   _otherRetainedEventsCallback( self, event);
 
    // [self dump];

@@ -17,7 +17,7 @@
 #import "GLFWOSScreen.h"
 #import "GLFWOSWindow+UIEvent.h"
 #import "GLFWOSWindow.h"
-#import "MulleObjCLoader+MulleGLFW.h"
+#import "MulleObjCDeps+MulleGLFW.h"
 
 
 #endif
