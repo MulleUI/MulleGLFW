@@ -31,9 +31,9 @@
  * window setup is done with MulleUI.
  *
  * This demo does not use UIWindow but GLFWOSWindow, because we do not want
- * to have nanovg involved. This means that everything like CAAnimation,
+ * to have the backend involved. This means that everything like CAAnimation,
  * CALayer, UIView is not available. Even CGContext is not available, since
- * it's tied to nanovg. Also you can not have retained/buffered output.
+ * it's tied to the backend. Also you can not have retained/buffered output.
  *
  */
 

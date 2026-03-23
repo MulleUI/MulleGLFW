@@ -1282,6 +1282,7 @@ static struct
 
 - (void) eventHandlingWithFrameRate:(mulle_relativetime_t) frameRate
 {
+   MULLE_C_UNUSED( frameRate);
    // GLFWOS windows handles events immediately
    // with the above callbacks
 }
