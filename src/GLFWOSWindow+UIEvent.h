@@ -22,7 +22,5 @@
 
 - (void) updateWindowInfo;
 
-- (void) os_pollInputState:(struct UIInputState *) state;
-
 @end
 

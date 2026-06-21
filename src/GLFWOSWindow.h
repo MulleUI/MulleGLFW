@@ -16,7 +16,8 @@
 @class GLFWOSWindow;
 
 
-#define  GLFWOSWindowStyleMaskDefault (0)
+// MEMO: osmesa and mesa are two different things!
+
 
 //   3         2         1         0
 //  10987654321098765432109876543210
@@ -27,105 +28,37 @@
 // profile : GLFW_OPENGL_PROFILE          (0=default, 1=any, 2=core, 3=compat)
 // forward : GLFW_OPENGL_FORWARD_COMPAT   (0=NO, 1=YES)
 // api     : GLFW_CLIENT_API              (0=default, 1=NONE, 2=OpenGLES, 3=OpenGL) // vulkan, metal...
-// lib     : GLFW_CONTEXT_CREATION_API    (0=default, 1=native, 2=egl, 3=mesa)
+// lib     : GLFW_CONTEXT_CREATION_API    (0=default, 1=native, 2=egl, 3=osmesa)
 // major   : GLFW_CONTEXT_VERSION_MAJOR
 // minor   : GLFW_CONTEXT_VERSION_MINOR
 
-#define GLFWGraphicsHintsMake( profile, forward, api, lib, major, minor) \
-  ((((profile) & 0x3) << 30)  | \
-   (((forward) & 0x1) << 29)  | \
-   (((api)     & 0x7) << 26)  | \
-   (((lib)     & 0x3) << 24)  | \
-   (((major)   & 0xFF) << 16) | \
-    ((minor)   & 0xFFFF))
+typedef UIOSWindowGraphicsHints GLFWGraphicsHints;
+
+
 
 //
-// GLFW_DEFAULT_CONTEXT is often the best choice
+// Preset initialisers — use as base for struct literals:
+//   GLFWGraphicsHints hints = GLFW_GL3_2_CONTEXT;
+//   hints.forward = 1;
+//   hints.glx_vendor = "mesa";
 //
-typedef NS_OPTIONS( NSUInteger, GLFWGraphicsHints)
-{
-   GLFW_DEFAULT_CONTEXT  = 0,
-   GLFW_NO_CONTEXT       = GLFWGraphicsHintsMake( 0, 0, 1, 0, 0, 0),
-   GLFW_GL3_CONTEXT      = GLFWGraphicsHintsMake( 1, 0, 3, 0, 3, 0),
-   GLFW_GL3_2_CONTEXT    = GLFWGraphicsHintsMake( 1, 0, 3, 0, 3, 2),
-   GLFW_GLES2_CONTEXT    = GLFWGraphicsHintsMake( 1, 0, 2, 0, 2, 0),
-   GLFW_GLES3_CONTEXT    = GLFWGraphicsHintsMake( 1, 0, 2, 0, 3, 0),
-   GLFW_GLES3_2_CONTEXT  = GLFWGraphicsHintsMake( 1, 0, 2, 0, 3, 2)
-};
+#define GLFW_DEFAULT_CONTEXT  ((GLFWGraphicsHints){ 0 })
+#define GLFW_NO_CONTEXT       ((GLFWGraphicsHints){ .api = 1 })
+#define GLFW_GL3_CONTEXT      ((GLFWGraphicsHints){ .profile = 1, .api = 3, .major = 3, .minor = 0 })
+#define GLFW_GL3_2_CONTEXT    ((GLFWGraphicsHints){ .profile = 1, .api = 3, .major = 3, .minor = 2 })
+#define GLFW_GLES2_CONTEXT    ((GLFWGraphicsHints){ .profile = 1, .api = 2, .major = 2, .minor = 0 })
+#define GLFW_GLES3_CONTEXT    ((GLFWGraphicsHints){ .profile = 1, .api = 2, .major = 3, .minor = 0 })
+#define GLFW_GLES3_2_CONTEXT  ((GLFWGraphicsHints){ .profile = 1, .api = 2, .major = 3, .minor = 2 })
+
+// Apply driver-selection env vars from hints fields before glfwInit().
+// Sets __GLX_VENDOR_LIBRARY_NAME, MESA_LOADER_DRIVER_OVERRIDE,
+// LD_LIBRARY_PATH, LIBGL_DRIVERS_PATH, __EGL_VENDOR_LIBRARY_FILENAMES,
+// LIBGL_ALWAYS_SOFTWARE, DRI_PRIME as needed.
+// Must be called before [UIApplication sharedInstance].
+void   GLFWGraphicsHintsApplyDriverEnv( GLFWGraphicsHints hints);
 
 
-static inline int GLFWGraphicsHintsGetProfile( GLFWGraphicsHints t)
-{
-   return( (t >> 30) & 0x3);
-}
-
-static inline int GLFWGraphicsHintsGetForward( GLFWGraphicsHints t)
-{
-   return( (t >> 29) & 0x1);
-}
-
-static inline int GLFWGraphicsHintsGetAPI( GLFWGraphicsHints t)
-{
-   return( (t >> 26) & 0x7);
-}
-
-static inline int GLFWGraphicsHintsGetAPILibrary( GLFWGraphicsHints t)
-{
-   return( (t >> 24) & 0x3);
-}
-
-static inline int GLFWGraphicsHintsGetMajor( GLFWGraphicsHints t)
-{
-   return( (t >> 16) & 0xFF);
-}
-
-static inline int GLFWGraphicsHintsGetMinor( GLFWGraphicsHints t)
-{
-   return( t & 0xFFFF);
-}
-
-
-static inline int GLFWGraphicsHintsBySettingProfile( GLFWGraphicsHints t, int profile)
-{
-   return( GLFWGraphicsHintsMake( profile,
-                                  GLFWGraphicsHintsGetForward( t),
-                                  GLFWGraphicsHintsGetAPI( t),
-                                  GLFWGraphicsHintsGetAPILibrary( t),
-                                  GLFWGraphicsHintsGetMajor( t),
-                                  GLFWGraphicsHintsGetMinor( t)));
-}
-
-
-static inline int   GLFWGraphicsHintsBySettingForward( GLFWGraphicsHints t, int forward)
-{
-   return( GLFWGraphicsHintsMake( GLFWGraphicsHintsGetProfile( t),
-                                  forward,
-                                  GLFWGraphicsHintsGetAPI( t),
-                                  GLFWGraphicsHintsGetAPILibrary( t),
-                                  GLFWGraphicsHintsGetMajor( t),
-                                  GLFWGraphicsHintsGetMinor( t)));
-}
-
-static inline int   GLFWGraphicsHintsBySettingAPI( GLFWGraphicsHints t, int api)
-{
-   return( GLFWGraphicsHintsMake( GLFWGraphicsHintsGetProfile( t),
-                                  GLFWGraphicsHintsGetForward( t),
-                                  api,
-                                  GLFWGraphicsHintsGetAPILibrary( t),
-                                  GLFWGraphicsHintsGetMajor( t),
-                                  GLFWGraphicsHintsGetMinor( t)));
-}
-
-
-static inline int   GLFWGraphicsHintsBySettingAPILibrary( GLFWGraphicsHints t, int library)
-{
-   return( GLFWGraphicsHintsMake( GLFWGraphicsHintsGetProfile( t),
-                                  GLFWGraphicsHintsGetForward( t),
-                                  GLFWGraphicsHintsGetAPI( t),
-                                  library,
-                                  GLFWGraphicsHintsGetMajor( t),
-                                  GLFWGraphicsHintsGetMinor( t)));
-}
+#define  GLFWOSWindowStyleMaskDefault  0
 
 
 //
@@ -156,10 +89,19 @@ static inline int   GLFWGraphicsHintsBySettingAPILibrary( GLFWGraphicsHints t, i
    NSLock                   *_windowInfoLock;
    struct UIOSWindowInfo    _windowInfo;
 
+   void                     *_osmesaBlitState;  // struct mulle__osmesa_blit_state*
+
 @private
    // _activeThread is not retained(!) if -haveGraphicsContext returns NO
    // then this will always be nil
    mulle_atomic_pointer_t   _atomicActiveThread;
+
+   NSLock                   *_inputStateLock;
+
+   mulle_absolutetime_t     _lastMouseButtonPressTime;
+   NSUInteger               _mouseButtonClickCount;
+   CGPoint                  _lastMouseButtonPressLocation;
+   mulle_relativetime_t     _doubleClickInterval;
 }
 
 // NONE OF THESE PROPERTIES are thread safe, except those which are readonly
@@ -203,7 +145,7 @@ static inline int   GLFWGraphicsHintsBySettingAPILibrary( GLFWGraphicsHints t, i
 // which may be antialiasing as a fallback
 @property( readonly, getter=isAntiAliasing) BOOL       antiAliasing;
 
-@property( assign, readonly) struct UIInputState       inputState;
+@property( assign, readonly) struct UIInputState       inputState       MULLE_OBJC_THREADSAFE_PROPERTY;
 @property( assign, readonly) UIGraphicsBackend         backend;
 
 @property( assign) NSUInteger                          debuggingFlags   MULLE_OBJC_THREADSAFE_PROPERTY;
@@ -265,8 +207,8 @@ static inline int   GLFWGraphicsHintsBySettingAPILibrary( GLFWGraphicsHints t, i
 // if the window has been moved outside of any screens, this may return nil
 // This method can be called from any thread
 //
-- (id <UIScreen>) screen;
-- (id <UIScreen>) screenOrPrimaryScreen:(BOOL) flag;
+- (id <UIScreen>) screen                                 MULLE_OBJC_THREADSAFE_METHOD;
+- (id <UIScreen>) screenOrPrimaryScreen:(BOOL) flag      MULLE_OBJC_THREADSAFE_METHOD;
 
 // The shareID never changes for a Window
 // This method can be called from any thread
@@ -318,6 +260,7 @@ static inline int   GLFWGraphicsHintsBySettingAPILibrary( GLFWGraphicsHints t, i
 - (void) os_destroyWindow                          MULLE_UI_MAIN_THREAD_ONLY;
 
 // query function to check what context we got
+// there must be an active context for these methods to work
 - (char *) os_contextInfoUTF8String                MULLE_UI_MAIN_THREAD_ONLY;
 - (char *) os_windowInfoUTF8String                 MULLE_UI_MAIN_THREAD_ONLY;
 
@@ -325,6 +268,13 @@ static inline int   GLFWGraphicsHintsBySettingAPILibrary( GLFWGraphicsHints t, i
 
 
 - (void) os_setCursor:(void *) cursor              MULLE_UI_MAIN_THREAD_ONLY;
+
+// Capture the cursor for gameplay (GLFW_CURSOR_DISABLED: hidden, unlimited
+// virtual movement). Pass NO to restore normal cursor behaviour.
+// Note: while captured, locationInWindow in motion events is an unbounded
+// virtual position, not a window-relative pixel coordinate. Use deltas
+// between frames, not absolute values.
+- (void) os_setCursorCaptured:(BOOL) captured      MULLE_UI_MAIN_THREAD_ONLY;
 
 // if the (OpenGL) OS thread is active, then this will return the thread
 // who called os_(try)activateGraphicsContext. If he window has no

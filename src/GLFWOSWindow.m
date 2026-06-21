@@ -4,7 +4,11 @@
 #define GL_SILENCE_DEPRECATION
 #define GLFW_INCLUDE_GLEXT
 
+#define _POSIX_C_SOURCE 200112L
+#include <stdlib.h>
+
 #import "GLFWOSWindow.h"
+#include <mulle-buffer/mulle-buffer.h>
 
 #import "import-private.h"
 
@@ -12,8 +16,370 @@
 #import <MulleUIApplication/UIOSWindow+DebugPrivate.h>
 
 
+// ---------------------------------------------------------------------------
+// OSMesa off-screen blit support
+//
+// GLFW's swapBuffers is a confirmed no-op for OSMESA_CONTEXT_API.  We detect
+// this at runtime via glfwGetWindowAttrib(GLFW_CONTEXT_CREATION_API) and
+// perform a manual blit into the native window.
+//
+// Each backend is guarded by its own compile-time define so that the binary
+// only references the symbols that are actually available:
+//
+//   MULLE_GLFW_OSMESA   — libOSMesa / glfwGetOSMesaColorBuffer
+//   MULLE_GLFW_X11      — libX11   / glfwGetX11Display, glfwGetX11Window
+//   MULLE_GLFW_WAYLAND  — libwayland-client / glfwGetWaylandDisplay,
+//                         glfwGetWaylandWindow
+//
+// CMakeLists sets these via find_package / pkg_check_modules and adds the
+// required link targets.  If none are found the code falls back to the
+// glfwSwapBuffers no-op (harmless, just shows nothing).
+// ---------------------------------------------------------------------------
 
-@interface GLFWOSWindow( UIEventFuture)
+#if MULLE_GLFW_OSMESA
+
+# include <GL/osmesa.h>
+
+// Native platform headers — included only when the backend is available.
+// Both X11 and Wayland can coexist on the same system, so independent #if
+// blocks (not #elif).  The defines for GLFW_EXPOSE_NATIVE_* must appear
+// before the single glfw3native.h inclusion.
+// GLFW_EXPOSE_NATIVE_OSMESA exposes glfwGetOSMesaColorBuffer.
+# define GLFW_EXPOSE_NATIVE_OSMESA
+# if MULLE_GLFW_X11
+#  define GLFW_EXPOSE_NATIVE_X11
+#  include <X11/Xlib.h>
+#  include <X11/Xutil.h>
+# endif
+# if MULLE_GLFW_WAYLAND
+#  define GLFW_EXPOSE_NATIVE_WAYLAND
+#  include <wayland-client.h>
+#  include <sys/mman.h>    // mmap, munmap
+#  include <fcntl.h>       // O_* flags
+#  include <unistd.h>      // close
+// ftruncate is POSIX but hidden under ISO C99 strict mode; forward-declare.
+extern int ftruncate( int fd, long length);
+// memfd_create + flags (Linux 3.17+; guarded in case the toolchain is old)
+#  ifndef MFD_CLOEXEC
+#   define MFD_CLOEXEC      (1U)
+#   define MFD_ALLOW_SEALING (2U)
+extern int memfd_create( const char *name, unsigned int flags);
+#  endif
+# endif
+# if MULLE_GLFW_X11 || MULLE_GLFW_WAYLAND || 1   // always include for OSMESA
+#  include <GLFW/glfw3native.h>
+# endif
+
+// Swap R↔B in-place: OSMesa gives GL_RGBA (R,G,B,A bytes), both X11's
+// XRGB8888 visual and Wayland's WL_SHM_FORMAT_XRGB8888 want B,G,R,X in
+// memory (little-endian).
+static void
+mulle__osmesa_blit_rgba_to_xrgb( void *dst, const void *src, int n)
+{
+   const uint32_t *s = (const uint32_t *) src;
+   uint32_t       *d = (uint32_t *) dst;
+
+   while( n--)
+   {
+      uint32_t p = *s++;
+      // keep G (byte1) + A→X (byte3), swap R (byte0) ↔ B (byte2)
+      *d++ = (p & 0xFF00FF00u)
+           | ((p & 0x00FF0000u) >> 16)
+           | ((p & 0x000000FFu) << 16);
+   }
+}
+
+
+// ---------------------------------------------------------------------------
+// Per-window OSMesa blit state
+// ---------------------------------------------------------------------------
+
+struct mulle__osmesa_blit_state
+{
+   void    *buffer;      // malloc'd R↔B swap staging buffer
+   int      width;
+   int      height;
+
+# if MULLE_GLFW_X11
+   Display *x11_display; // borrowed from glfwGetX11Display — do NOT close
+   Window   x11_window;
+   GC       x11_gc;
+   XImage  *x11_image;   // wraps buffer; do not let XDestroyImage free it
+# endif
+
+# if MULLE_GLFW_WAYLAND
+   struct wl_display    *wl_display;   // borrowed from GLFW — do NOT destroy
+   struct wl_surface    *wl_surface;   // borrowed from GLFW — do NOT destroy
+   struct wl_registry   *wl_registry;  // our binding — we destroy it
+   struct wl_shm        *wl_shm;       // our binding — we destroy it
+   struct wl_shm_pool   *wl_pool;      // our pool   — we destroy it
+   struct wl_buffer     *wl_buffer;    // our buffer — we destroy it
+   void                 *shm_data;     // mmap region
+   size_t                shm_size;
+# endif
+};
+
+
+# if MULLE_GLFW_WAYLAND
+// ---------------------------------------------------------------------------
+// Minimal Wayland registry listener to grab wl_shm
+// ---------------------------------------------------------------------------
+
+static void
+wl_registry_handle_global( void *data,
+                            struct wl_registry *registry,
+                            uint32_t name,
+                            const char *interface,
+                            uint32_t version)
+{
+   struct mulle__osmesa_blit_state *st = data;
+
+   if( ! st->wl_shm && strcmp( interface, wl_shm_interface.name) == 0)
+      st->wl_shm = wl_registry_bind( registry, name, &wl_shm_interface, 1);
+}
+
+static void
+wl_registry_handle_global_remove( void *data,
+                                   struct wl_registry *registry,
+                                   uint32_t name)
+{
+   (void) data; (void) registry; (void) name;
+}
+
+static const struct wl_registry_listener _wl_registry_listener =
+{
+   wl_registry_handle_global,
+   wl_registry_handle_global_remove
+};
+
+
+static int
+mulle__osmesa_create_shm_file( off_t size)
+{
+   int   fd;
+
+   fd = memfd_create( "mulle-glfw-osmesa", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+   if( fd < 0)
+      return( -1);
+   if( ftruncate( fd, size) < 0)
+   {
+      close( fd);
+      return( -1);
+   }
+   return( fd);
+}
+# endif // MULLE_GLFW_WAYLAND
+
+
+// ---------------------------------------------------------------------------
+// Create blit state for the current window / platform
+// Returns non-zero on error.
+// ---------------------------------------------------------------------------
+static struct mulle__osmesa_blit_state *
+mulle__osmesa_blit_state_create( void *glfw_window, int width, int height)
+{
+   struct mulle__osmesa_blit_state *st;
+
+   st = calloc( 1, sizeof( *st));
+   if( ! st)
+      return( NULL);
+
+   st->buffer = malloc( (size_t) width * height * 4);
+   if( ! st->buffer)
+   {
+      free( st);
+      return( NULL);
+   }
+   st->width  = width;
+   st->height = height;
+
+# if MULLE_GLFW_X11
+   {
+      int   platform;
+
+      platform = glfwGetPlatform();
+      if( platform == GLFW_PLATFORM_X11)
+      {
+         Display   *dpy;
+         Window     xwin;
+
+         dpy  = glfwGetX11Display();
+         xwin = glfwGetX11Window( glfw_window);
+         if( ! dpy || ! xwin)
+         {
+            free( st->buffer);
+            free( st);
+            return( NULL);
+         }
+
+         st->x11_display = dpy;
+         st->x11_window  = xwin;
+         st->x11_gc      = XCreateGC( dpy, xwin, 0, NULL);
+         st->x11_image   = XCreateImage( dpy,
+                                         DefaultVisual( dpy, DefaultScreen( dpy)),
+                                         DefaultDepth( dpy,  DefaultScreen( dpy)),
+                                         ZPixmap, 0,
+                                         (char *) st->buffer,
+                                         width, height, 32, 0);
+         if( ! st->x11_image)
+         {
+            XFreeGC( dpy, st->x11_gc);
+            free( st->buffer);
+            free( st);
+            return( NULL);
+         }
+      }
+   }
+# endif // MULLE_GLFW_X11
+
+# if MULLE_GLFW_WAYLAND
+   {
+      int   platform;
+
+      platform = glfwGetPlatform();
+      if( platform == GLFW_PLATFORM_WAYLAND)
+      {
+         struct wl_display   *dpy;
+         struct wl_surface   *surf;
+         size_t               shm_size;
+         int                  fd;
+
+         dpy  = glfwGetWaylandDisplay();
+         surf = glfwGetWaylandWindow( glfw_window);
+         fprintf( stderr, "[OSMesa Wayland] dpy=%p surf=%p\n", dpy, surf);
+         if( ! dpy || ! surf)
+         {
+            free( st->buffer);
+            free( st);
+            return( NULL);
+         }
+
+         st->wl_display = dpy;
+         st->wl_surface = surf;
+
+         // Second registry roundtrip to grab wl_shm (GLFW owns its own copy)
+         st->wl_registry = wl_display_get_registry( dpy);
+         wl_registry_add_listener( st->wl_registry, &_wl_registry_listener, st);
+         wl_display_roundtrip( dpy);
+
+         fprintf( stderr, "[OSMesa Wayland] wl_shm=%p after roundtrip\n",
+                  st->wl_shm);
+         if( ! st->wl_shm)
+         {
+            mulle_fprintf( stderr, "MulleGLFW: OSMesa Wayland blit: "
+                           "wl_shm not available\n");
+            wl_registry_destroy( st->wl_registry);
+            free( st->buffer);
+            free( st);
+            return( NULL);
+         }
+
+         shm_size    = (size_t) width * height * 4;
+         st->shm_size = shm_size;
+
+         fd = mulle__osmesa_create_shm_file( (off_t) shm_size);
+         if( fd < 0)
+         {
+            wl_shm_destroy( st->wl_shm);
+            wl_registry_destroy( st->wl_registry);
+            free( st->buffer);
+            free( st);
+            return( NULL);
+         }
+
+         st->shm_data = mmap( NULL, shm_size,
+                              PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+         if( st->shm_data == MAP_FAILED)
+         {
+            close( fd);
+            wl_shm_destroy( st->wl_shm);
+            wl_registry_destroy( st->wl_registry);
+            free( st->buffer);
+            free( st);
+            return( NULL);
+         }
+
+         st->wl_pool   = wl_shm_create_pool( st->wl_shm, fd, (int32_t) shm_size);
+         st->wl_buffer = wl_shm_pool_create_buffer( st->wl_pool, 0,
+                                                     width, height,
+                                                     width * 4,
+                                                     WL_SHM_FORMAT_XRGB8888);
+         close( fd); // pool holds it open
+      }
+   }
+# endif // MULLE_GLFW_WAYLAND
+
+   return( st);
+}
+
+
+static void
+mulle__osmesa_blit_state_destroy( struct mulle__osmesa_blit_state *st)
+{
+   if( ! st)
+      return;
+
+# if MULLE_GLFW_X11
+   if( st->x11_image)
+   {
+      st->x11_image->data = NULL; // we own buffer; don't let X free it twice
+      XDestroyImage( st->x11_image);
+   }
+   if( st->x11_gc)
+      XFreeGC( st->x11_display, st->x11_gc);
+# endif
+
+# if MULLE_GLFW_WAYLAND
+   if( st->wl_buffer)   wl_buffer_destroy( st->wl_buffer);
+   if( st->wl_pool)     wl_shm_pool_destroy( st->wl_pool);
+   if( st->shm_data)    munmap( st->shm_data, st->shm_size);
+   if( st->wl_shm)      wl_shm_destroy( st->wl_shm);
+   if( st->wl_registry) wl_registry_destroy( st->wl_registry);
+# endif
+
+   free( st->buffer);
+   free( st);
+}
+
+
+static void
+mulle__osmesa_do_blit( struct mulle__osmesa_blit_state *st,
+                       void *pixels,
+                       int   width,
+                       int   height)
+{
+   mulle__osmesa_blit_rgba_to_xrgb( st->buffer, pixels, width * height);
+
+# if MULLE_GLFW_X11
+   if( st->x11_image)
+   {
+      fprintf( stderr, "[OSMesa blit] XPutImage %dx%d\n", width, height);
+      XPutImage( st->x11_display, st->x11_window, st->x11_gc,
+                 st->x11_image, 0, 0, 0, 0, width, height);
+      XFlush( st->x11_display);
+      return;
+   }
+# endif
+
+# if MULLE_GLFW_WAYLAND
+   if( st->wl_buffer)
+   {
+      fprintf( stderr, "[OSMesa blit] wl_shm blit %dx%d\n", width, height);
+      memcpy( st->shm_data, st->buffer, st->shm_size);
+      wl_surface_attach( st->wl_surface, st->wl_buffer, 0, 0);
+      wl_surface_damage( st->wl_surface, 0, 0, width, height);
+      wl_surface_commit( st->wl_surface);
+      wl_display_flush( st->wl_display);
+      return;
+   }
+# endif
+}
+
+#endif // MULLE_GLFW_OSMESA
+
+
+
+@interface GLFWOSWindow( UIEventFuture) < MulleObjCFuture>
 
 - (void) _windowFramebufferResizeCallback:(CGPixelSize) size;
 
@@ -22,7 +388,7 @@
 #pragma clang diagnostic ignored "-Wprotocol"
 
 
-@implementation NSObject( GLFWOSWindow)
+@implementation NSObject( UIOSWindow)
 
 - (BOOL) __isUIOSWindow
 {
@@ -30,6 +396,62 @@
 }
 
 @end
+
+
+void   GLFWGraphicsHintsApplyDriverEnv( GLFWGraphicsHints hints)
+{
+   if( hints.glx_vendor)
+      setenv( "__GLX_VENDOR_LIBRARY_NAME", hints.glx_vendor, 1);
+
+   if( hints.driver)
+      setenv( "MESA_LOADER_DRIVER_OVERRIDE", hints.driver, 1);
+
+   if( hints.lib_path)
+   {
+      char   *old;
+
+      old = getenv( "LD_LIBRARY_PATH");
+      if( ! old || ! strstr( old, hints.lib_path))
+      {
+         mulle_buffer_do( buf)
+         {
+            if( old)
+            {
+               mulle_buffer_add_string( buf, (char *) hints.lib_path);
+               mulle_buffer_add_string( buf, ":");
+               mulle_buffer_add_string( buf, old);
+            }
+            else
+               mulle_buffer_add_string( buf, (char *) hints.lib_path);
+            setenv( "LD_LIBRARY_PATH", mulle_buffer_get_string( buf), 1);
+         }
+      }
+      if( ! getenv( "LIBGL_DRIVERS_PATH"))
+      {
+         mulle_buffer_do( buf)
+         {
+            mulle_buffer_add_string( buf, (char *) hints.lib_path);
+            mulle_buffer_add_string( buf, "/dri");
+            setenv( "LIBGL_DRIVERS_PATH", mulle_buffer_get_string( buf), 0);
+         }
+      }
+   }
+
+   if( hints.egl_vendor)
+      setenv( "__EGL_VENDOR_LIBRARY_FILENAMES", hints.egl_vendor, 1);
+
+   if( hints.software)
+      setenv( "LIBGL_ALWAYS_SOFTWARE", "1", 1);
+
+   if( hints.dri_prime)
+   {
+      mulle_buffer_do( buf)
+      {
+         mulle_buffer_sprintf( buf, "%u", hints.dri_prime - 1);
+         setenv( "DRI_PRIME", mulle_buffer_get_string( buf), 1);
+      }
+   }
+}
 
 
 @implementation GLFWOSWindow
@@ -44,7 +466,7 @@ static struct
 {
    mulle_atomic_pointer_t   _shareIDs;
    NSUInteger               _debuggingFlags;
-} Self;
+} ClassStatic;
 
 
 // this will be called for subclasses as well, does it matter ?
@@ -62,20 +484,20 @@ static struct
    if( ! s)
       s = getenv( "UIDebuggingFlags");
    if( s)
-      Self._debuggingFlags = strtol( s, NULL, 0);
+      ClassStatic._debuggingFlags = strtol( s, NULL, 0);
 }
 
 
 + (void) setDebuggingFlags:(NSUInteger) flag  MULLE_OBJC_THREADSAFE_METHOD
 {
-   Self._debuggingFlags = flag;
+   ClassStatic._debuggingFlags = flag;
 }
 
 
 // as we don't know, if we even use OpenGL here
 static UIWindowDisplayBits   defaultFrameCallback( id <UIOSWindow> window_in)
 {
-   fprintf( stderr, "The GLFW window needs a frameCallback.\n"
+   mulle_fprintf( stderr, "The GLFW window needs a frameCallback.\n"
 "Typically you can use something like this with OpenGL:\n"
 "   static UIWindowDisplayBits  frameCallback( id <UIOSWindow> window_in)\n"
 "   {\n"
@@ -208,7 +630,9 @@ static void   glfw_os_window_break_on_me( void)
    int   major;
    int   minor;
    int   profile;
+   int   explicit_lib_requested;
    int   first_lib;
+   int   sharing_lib;
    int   samples;
 
    assert( [NSThread mulleIsMainThread]);
@@ -220,7 +644,7 @@ static void   glfw_os_window_break_on_me( void)
 #ifdef GLFW_OS_WINDOW_DEBUGGING_FLAGS
    _debuggingFlags = GLFW_OS_WINDOW_DEBUGGING_FLAGS;
 #else
-   _debuggingFlags = Self._debuggingFlags;
+   _debuggingFlags = ClassStatic._debuggingFlags;
 #endif
 
    // TODO: create windows invisible always, but make visible after first
@@ -284,39 +708,39 @@ static void   glfw_os_window_break_on_me( void)
    if( styleMask & UIWindowOpenGLDeprecated)
    {
 #ifdef DEBUG
-     fprintf( stderr, "Deprecated OpenGL requested\n");
+     mulle_fprintf( stderr, "Deprecated OpenGL requested\n");
 #endif
 
-      hints = GLFWGraphicsHintsBySettingAPI( hints, 3);     // setOpenGL
-      hints = GLFWGraphicsHintsBySettingProfile( hints, 3); // compat
-      hints = GLFWGraphicsHintsBySettingForward( hints, 0); // no forward
+      hints.api     = 3; // setOpenGL
+      hints.profile = 3; // compat
+      hints.forward = 0; // no forward
 
       assert( ! (styleMask & UIWindowOpenGLForward));
       assert( ! (styleMask & UIWindowOpenGLCoreProfile)) ;
    }
 
-   major = GLFWGraphicsHintsGetMajor( hints);
+   major = hints.major;
    if( major)
    {
       glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, major);
-      minor = GLFWGraphicsHintsGetMinor( hints);
+      minor = hints.minor;
       glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, minor);
    }
 
    // If requesting an OpenGL version below 3.2, GLFW_OPENGL_ANY_PROFILE must
    // be used. if we don't set major, the default in glfw is 1.0
    if( major < 3 || (major == 3 && minor < 2))
-      hints = GLFWGraphicsHintsBySettingProfile( hints, 1); //any
+      hints.profile = 1; //any
 
    forward = styleMask & UIWindowOpenGLForward;
    if( forward)
-      hints = GLFWGraphicsHintsBySettingForward( hints, 1);
+      hints.forward = 1;
 
    // not super sure about this, but lets try to avoid "old" OpenGL
    // calls. alas, we are doing OpenGLES 2.0 minimum, so I don't know
    // if this is useful.
 
-   switch( GLFWGraphicsHintsGetAPI( hints))
+   switch( hints.api)
    {
    case 1 : api = GLFW_NO_API; break;  // special, don't want to hit this by default
    case 2 : api = GLFW_OPENGL_ES_API; break;
@@ -329,11 +753,11 @@ static void   glfw_os_window_break_on_me( void)
    if( (major > 3 || (major == 3 && minor >= 2)) && api == GLFW_OPENGL_API)
    {
       if( styleMask & UIWindowOpenGLCoreProfile)
-         hints = GLFWGraphicsHintsBySettingProfile( hints, 2);
+         hints.profile = 2;
    }
 
    // TODO: could retry for profiles as well as for libs (see below)
-   switch( GLFWGraphicsHintsGetProfile( hints))
+   switch( hints.profile)
    {
    case 1 : profile = GLFW_OPENGL_ANY_PROFILE; break;
    case 2 : profile = GLFW_OPENGL_CORE_PROFILE; break;
@@ -353,17 +777,34 @@ static void   glfw_os_window_break_on_me( void)
 
    // forward compatibility is actually fairly restrictive
    // https://www.glfw.org/docs/3.3/window_guide.html#GLFW_OPENGL_FORWARD_COMPAT_hint
-   if( GLFWGraphicsHintsGetForward( hints))
+   if( hints.forward)
       glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);  // why not ?
 
    // remember what was opened first for retries
-   switch( GLFWGraphicsHintsGetAPILibrary( hints))
+   switch( hints.lib)
    {
    case 1 : lib = GLFW_NATIVE_CONTEXT_API; break;
    case 2 : lib = GLFW_EGL_CONTEXT_API; break;
    case 3 : lib = GLFW_OSMESA_CONTEXT_API; break;
    }
-   first_lib = lib;
+   explicit_lib_requested = hints.lib != 0;
+   first_lib              = lib;
+   sharing_lib            = -1;
+
+   if( sharingWindow)
+   {
+      sharing_lib = glfwGetWindowAttrib( ((GLFWOSWindow *) sharingWindow)->_window,
+                                         GLFW_CONTEXT_CREATION_API);
+      if( sharing_lib > 0)
+      {
+         if( lib > 0 && lib != sharing_lib)
+            mulle_fprintf( stderr, "warning: shared context forces creation API %d over requested %d\n",
+                           sharing_lib,
+                           lib);
+         lib = sharing_lib;
+         first_lib = lib;
+      }
+   }
 
    if( styleMask & UIWindowStyleAntiAlias)
       UIOSWindowLog( "MSAA requested");
@@ -390,7 +831,9 @@ retry:
       switch( code)
       {
       case 65542 :
-         if( styleMask & UIWindowOpenGLLibraryFallback)
+         if( ! sharingWindow
+             && ! explicit_lib_requested
+             && (styleMask & UIWindowOpenGLLibraryFallback))
          {
             switch( first_lib)
             {
@@ -444,6 +887,9 @@ retry:
                abort();
             }
          }
+         else
+            if( explicit_lib_requested)
+               aux = "\nRequested context creation API failed; automatic fallback is disabled for explicit API selection.";
          break;
 
       case 65543 :
@@ -453,22 +899,21 @@ retry:
       case 65537 :
          aux = "\nUIApplication is likely not initialized yet.";
       }
-      fprintf( stderr, "error #%d: glfwCreateWindow failed \"%s\"%s\n", code, description, aux);
+      mulle_fprintf( stderr, "error #%d: glfwCreateWindow failed \"%s\"%s\n", code, description, aux);
       [self release];
       return( nil);
    }
 
-   // just a sanity assert
-   assert( _window);
-
    _sharingWindow = (GLFWOSWindow *) [sharingWindow retain];
-   if( ! _sharingWindow)
-      _shareID = (NSInteger) _mulle_atomic_pointer_increment( &Self._shareIDs) + 1;
-
    if( _sharingWindow)
+   {
       UIOSWindowLog( "window %p (sharing with %p) created", _window, _sharingWindow);
+   }
    else
+   {
       UIOSWindowLog( "window %p created", _window);
+      _shareID = (NSInteger) _mulle_atomic_pointer_increment( &ClassStatic._shareIDs) + 1;
+   }
 
    // needed for wayland, else exit on zero size window during resize
    glfwSetWindowSizeLimits( _window, 32, 32, GLFW_DONT_CARE, GLFW_DONT_CARE);
@@ -493,6 +938,9 @@ retry:
    _styleMask                   = styleMask;
    _uninitializedFramebuffer    = YES;
    _windowEventsCallback        = GLFWOSWindowEventDefaultCallback;
+   _doubleClickInterval         = [UIMouseButtonEvent doubleClickInterval]; // cache this to avoid latency
+   if( _doubleClickInterval == 0.0)
+      _doubleClickInterval = 1 / 3.0f;
 
    // get initial state for some demos
    {
@@ -508,6 +956,33 @@ retry:
    if( _haveGraphicsContext)
    {
       glfwMakeContextCurrent( _window);  // needed, otherwise glGetIntegerv( GL_SAMPLES_ARB, &samples) fails
+
+      // A NULL GL_VERSION means the context was created by GLFW but GL
+      // function calls are not reaching it. The most common cause is using
+      // GLFW_OSMESA_CONTEXT_API without a function loader (GLAD /
+      // glfwGetProcAddress): OSMesa maintains its own context TLS separate
+      // from libGL's GLX/EGL dispatch, so direct libGL calls return NULL.
+      if( ! glGetString( GL_VERSION))
+      {
+         int          code;
+         const char   *description;
+
+         code = glfwGetError( &description);
+         mulle_fprintf( stderr, "error: GL context is not functional "
+                                "(glGetString( GL_VERSION) returned NULL)\n"
+                                "       Likely cause: context creation API is not "
+                                "reachable via direct libGL calls.\n"
+                                "       If OSMesa (--mesa) was requested, GL "
+                                "functions must be loaded via glfwGetProcAddress "
+                                "or GLAD — direct libGL calls do not route through "
+                                "OSMesa.\n"
+                                "       GLFW error %d: %s\n",
+                        code, description ? description : "(none)");
+         glfwMakeContextCurrent( NULL);
+         [self release];
+         return( nil);
+      }
+
       samples = 0;
 #if defined(__APPLE__)
       GLint sampleBuffers = 0;
@@ -532,8 +1007,10 @@ retry:
       [self os_show];
 
 #ifdef DEBUG
-   fprintf( stderr, "window style            : %s\n", [self os_windowInfoUTF8String]);
-   fprintf( stderr, "window graphics context : %s\n", [self os_contextInfoUTF8String]);
+   glfwMakeContextCurrent( _window);
+   mulle_fprintf( stderr, "window style            : %s\n", [self os_windowInfoUTF8String]);
+   mulle_fprintf( stderr, "window graphics context : %s\n", [self os_contextInfoUTF8String]);
+   glfwMakeContextCurrent( NULL);
 #endif
 
    // read values once, afterwards these values are just updated by events
@@ -544,6 +1021,7 @@ retry:
 
    // init afterwards
    _windowInfoLock = [NSLock new];
+   _inputStateLock = [NSLock new];
 
    return( self);
 }
@@ -569,7 +1047,7 @@ retry:
    return( [self initWithFrame:frame
                titleUTF8String:title
                      styleMask:styleMask
-                 graphicsHints:0
+                 graphicsHints:GLFW_DEFAULT_CONTEXT
                  sharingWindow:nil]);
 }
 
@@ -595,6 +1073,12 @@ retry:
 {
    [_contextLock release];
    [_windowInfoLock release];
+   [_inputStateLock release];
+
+#if MULLE_GLFW_OSMESA
+   mulle__osmesa_blit_state_destroy( _osmesaBlitState);
+   _osmesaBlitState = NULL;
+#endif
 
    [super dealloc];
 }
@@ -897,7 +1381,7 @@ static char  *context_profile_utf8string( int value)
 
    glfwGetVersion( &glfw_major, &glfw_minor, &glfw_revision);
 
-   s = MulleObjC_asprintf( "%s %u.%u.%u%s%s%s%s %s (%s) - GLFW v%d.%d.%d",
+   s = MulleObjC_asprintf( "%s %u.%u.%u%s%s%s%s %s (%s) [%s] - GLFW v%d.%d.%d",
                            context_api_utf8string( api),
                            major,
                            minor,
@@ -908,6 +1392,7 @@ static char  *context_profile_utf8string( int value)
                            forward_s,
                            msaa_utf8string( _antiAliasing ? 4 : 0),
                            context_vendor_utf8string( vendor),
+                           glGetString( GL_RENDERER) ? (char *) glGetString( GL_RENDERER) : "unknown",
                            glfw_major,
                            glfw_minor,
                            glfw_revision);
@@ -967,7 +1452,41 @@ static struct
       if( glfwGetWindowAttrib( _window, GLFW_VISIBLE))
       {
          UIOSWindowSwapLog( "\033[1mswapped buffers\033[0m");
-         glfwSwapBuffers( _window);
+
+#if MULLE_GLFW_OSMESA
+         if( glfwGetWindowAttrib( _window, GLFW_CONTEXT_CREATION_API)
+               == GLFW_OSMESA_CONTEXT_API)
+         {
+            // glfwSwapBuffers is a confirmed no-op for OSMesa contexts.
+            // Lazily create the blit state on first swap.
+            int   buf_w, buf_h, buf_fmt;
+            void *pixels = NULL;
+
+            glfwGetOSMesaColorBuffer( _window, &buf_w, &buf_h,
+                                      &buf_fmt, &pixels);
+            fprintf( stderr, "[OSMesa blit] glfwGetOSMesaColorBuffer: "
+                     "pixels=%p buf_w=%d buf_h=%d buf_fmt=0x%x\n",
+                     pixels, buf_w, buf_h, buf_fmt);
+            if( pixels && buf_fmt == GL_RGBA)
+            {
+               if( ! _osmesaBlitState)
+               {
+                  fprintf( stderr, "[OSMesa blit] creating blit state\n");
+                  _osmesaBlitState = mulle__osmesa_blit_state_create(
+                                          _window, buf_w, buf_h);
+                  fprintf( stderr, "[OSMesa blit] blit state=%p\n",
+                           _osmesaBlitState);
+               }
+               if( _osmesaBlitState)
+                  mulle__osmesa_do_blit( _osmesaBlitState,
+                                        pixels, buf_w, buf_h);
+            }
+         }
+         else
+#endif // MULLE_GLFW_OSMESA
+         {
+            glfwSwapBuffers( _window);
+         }
 
          // swapping buffers can take some time, so refresh with actual
          // TODO: atomic ?
@@ -1020,6 +1539,8 @@ static struct
 
 - (void) applicationDidAddWindow:(UIApplication *) app
 {
+   MULLE_C_UNUSED( app);
+
    assert( [NSThread mulleIsMainThread]);
    // ignore
 }
@@ -1027,6 +1548,8 @@ static struct
 
 - (void) applicationDidRemoveWindow:(UIApplication *) app
 {
+   MULLE_C_UNUSED( app);
+
    assert( [NSThread mulleIsMainThread]);
    [self mullePerformFinalize];
 }
@@ -1061,6 +1584,12 @@ static struct
 {
    if( _window)
    {
+#if MULLE_GLFW_OSMESA
+      // Destroy blit state before the window — the blit state borrows native
+      // handles (Display*, wl_surface*) that are valid only while _window lives.
+      mulle__osmesa_blit_state_destroy( _osmesaBlitState);
+      _osmesaBlitState = NULL;
+#endif
       glfwDestroyWindow( _window);
       _window = NULL;
    }
@@ -1174,6 +1703,16 @@ static struct
    assert( _window);
 
    glfwSetCursor( _window, cursor);
+}
+
+
+- (void) os_setCursorCaptured:(BOOL) captured
+{
+   assert( [NSThread mulleIsMainThread]);
+   assert( _window);
+
+   glfwSetInputMode( _window, GLFW_CURSOR,
+                     captured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 }
 
 
@@ -1293,27 +1832,143 @@ static struct
 }
 
 
+- (struct UIInputState) inputState
+{
+   struct UIInputState  rval;
+
+   NSLockingDo( _inputStateLock)
+   {
+      rval = _inputState;
+   }
+   return( rval);
+}
+
+
 - (CGPoint) mouseLocation
 {
-   assert( [NSThread mulleIsMainThread]);
+   CGPoint  rval;
 
-   return( _inputState.locationInWindow);
+   NSLockingDo( _inputStateLock)
+   {
+      rval = _inputState.locationInWindow;
+   }
+   return( rval);
 }
 
 
 - (NSUInteger) buttonStates
 {
-   assert( [NSThread mulleIsMainThread]);
+   NSUInteger  rval;
 
-   return( _inputState.buttonStates);
+   NSLockingDo( _inputStateLock)
+   {
+      rval = _inputState.buttonStates;
+   }
+   return( rval);
 }
 
 
 - (NSUInteger) keyModifiers
 {
-   assert( [NSThread mulleIsMainThread]);
+   NSUInteger  rval;
 
-   return( _inputState.keyModifiers);
+   NSLockingDo( _inputStateLock)
+   {
+      rval = _inputState.keyModifiers;
+   }
+   return( rval);
+}
+
+
+- (struct UIKeyStates) keyStates
+{
+   struct UIKeyStates  rval;
+
+   NSLockingDo( _inputStateLock)
+   {
+      rval = _inputState.keyStates;
+   }
+   return( rval);
+}
+
+
+- (NSUInteger) os_pressedKeys:(NSUInteger *) keys
+                        count:(NSUInteger) count
+{
+   NSUInteger   n;
+   int          key;
+
+   assert( _window);
+
+   n = 0;
+   for( key = GLFW_KEY_SPACE; key <= GLFW_KEY_LAST; key++)
+   {
+      if( n >= count)
+         break;
+      if( glfwGetKey( _window, key) == GLFW_PRESS)
+         keys[ n++] = key;  // GLFW key values == UIEventKey values
+   }
+   return( n);
+}
+
+
+- (void) os_pollInputState:(struct UIInputState *) state
+{
+   double   x, y;
+
+   assert( _window);
+   assert( state);
+
+   memset( state, 0, sizeof( struct UIInputState));
+
+   glfwGetCursorPos( _window, &x, &y);
+   state->locationInWindow.x = x;
+   state->locationInWindow.y = y;
+
+   if( glfwGetMouseButton( _window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+      state->buttonStates |= (1 << 0);
+   if( glfwGetMouseButton( _window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+      state->buttonStates |= (1 << 1);
+   if( glfwGetMouseButton( _window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS)
+      state->buttonStates |= (1 << 2);
+   if( glfwGetMouseButton( _window, GLFW_MOUSE_BUTTON_4) == GLFW_PRESS)
+      state->buttonStates |= (1 << 3);
+   if( glfwGetMouseButton( _window, GLFW_MOUSE_BUTTON_5) == GLFW_PRESS)
+      state->buttonStates |= (1 << 4);
+
+   if( glfwGetKey( _window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
+       glfwGetKey( _window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS)
+      state->keyModifiers |= (1 << 0);
+
+   if( glfwGetKey( _window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS ||
+       glfwGetKey( _window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS)
+      state->keyModifiers |= (1 << 1);
+
+   if( glfwGetKey( _window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS ||
+       glfwGetKey( _window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS)
+      state->keyModifiers |= (1 << 2);
+
+   if( glfwGetKey( _window, GLFW_KEY_LEFT_SUPER) == GLFW_PRESS ||
+       glfwGetKey( _window, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS)
+      state->keyModifiers |= (1 << 3);
+
+   state->keyStates._count = [self os_pressedKeys:state->keyStates._keys
+                                            count:UIKeyStatesMaxKeys];
+}
+
+
+- (NSUInteger) pressedKeys:(NSUInteger *) keys
+                     count:(NSUInteger) count
+{
+   NSUInteger   n;
+
+   NSLockingDo( _inputStateLock)
+   {
+      n = UIKeyStatesGetPressedKeys( UIInputStateGetKeyStates( &_inputState),
+                                     keys,
+                                     count);
+   }
+   return( n);
 }
 
 @end

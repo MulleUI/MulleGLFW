@@ -13,6 +13,7 @@ endif()
 set( INCLUDE_DIRS
 src/reflect
 src
+src/glad
 )
 
 #
@@ -53,6 +54,7 @@ src/include.h
 # contents selected with patternfile ??-header--public-headers
 #
 set( PUBLIC_HEADERS
+src/glad/gl.h
 src/linmath.h
 )
 

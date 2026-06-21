@@ -8,13 +8,14 @@
 #import <MulleUIApplication/UIOSWindow+DebugPrivate.h>
 
 
-@interface GLFWOSWindow( UIEventFuture)
+@interface GLFWOSWindow( UIEventFuture) < MulleObjCFuture>
 
 - (void) _windowFramebufferResizeCallback:(CGPixelSize) size;
 - (void) _windowResizeCallback:(CGPixelSize) size;
 - (void) _windowCloseCallback;
 - (void) _windowRefreshCallback;
 - (void) _windowMoveCallback:(CGPixelPoint) position;
+- (void) _windowFocusCallback:(BOOL) focused;
 
 - (void) _updateWindowRefreshRate;
 
@@ -78,6 +79,17 @@ static void   windowCloseCallback( GLFWwindow* window)
 }
 
 
+static void   windowFocusCallback( GLFWwindow* window, int focused)
+{
+   GLFWOSWindow   *self;
+
+   assert( [NSThread mulleIsMainThread]);
+
+   self = glfwGetWindowUserPointer( window);
+   [self _windowFocusCallback:(BOOL) focused];
+}
+
+
 // framebufferResize is more interesting though
 static void   windowResizeCallback( GLFWwindow* window, int width, int height)
 {
@@ -113,6 +125,7 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
    glfwSetFramebufferSizeCallback( _window, windowFramebufferResizeCallback);
    glfwSetWindowRefreshCallback( _window, windowRefreshCallback);
    glfwSetWindowCloseCallback( _window, windowCloseCallback);
+   glfwSetWindowFocusCallback( _window, windowFocusCallback);
 }
 
 
@@ -128,6 +141,7 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
    glfwSetFramebufferSizeCallback( _window, 0);
    glfwSetWindowRefreshCallback( _window, 0);
    glfwSetWindowCloseCallback( _window, 0);
+   glfwSetWindowFocusCallback( _window, 0);
 }
 
 
@@ -270,6 +284,28 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
 }
 
 
+- (void) _windowFocusCallback:(BOOL) focused
+{
+   UIWindowEvent   *event;
+
+   UIOSWindowEventLog( "focused=%d", (int) focused);
+
+   if( focused)
+   {
+      // GLFW clears its internal key state on focus loss,
+      // so os_pressedKeys can't resync. But GLFW also sends synthetic
+      // key-up events on focus loss, so keyboard state is already correct.
+      // Nothing to do here for keyboard state.
+      event = [[[UIWindowFocusGainedEvent alloc] init] autorelease];
+   }
+   else
+   {
+      event = [[[UIWindowFocusLostEvent alloc] init] autorelease];
+   }
+   _windowEventsCallback( self, event);
+}
+
+
 /*
  * Regular events to be handled by UIWindow
  */
@@ -402,41 +438,33 @@ static inline int   shouldDiscardEvent( GLFWOSWindow *self, NSUInteger eventType
                action:(int) action
             modifiers:(int) mods
 {
-   UIEvent      *event;
+   UIEvent               *event;
+   struct UIInputState   state;
 
 
    UIOSWindowEventLog( "modifiers=0x%tx", mods);
 
-//   //
-//   // modifier bits are not set yet properly, but we want them
-//   // for scrollEvents for example
-//   //
-//   if( action == GLFW_PRESS)
-//   {
-//      switch( key)
-//      {
-//      case GLFW_KEY_LEFT_SHIFT    :
-//      case GLFW_KEY_RIGHT_SHIFT   :
-//         self->_inputState.keyModifiers |= GLFW_MOD_SHIFT;
-//         break;
-//      case GLFW_KEY_LEFT_CONTROL  :
-//      case GLFW_KEY_RIGHT_CONTROL :
-//         self->_inputState.keyModifiers |= GLFW_MOD_CONTROL;
-//         break;
-//      case GLFW_KEY_LEFT_ALT      :
-//      case GLFW_KEY_RIGHT_ALT     :
-//         self->_inputState.keyModifiers |= GLFW_MOD_ALT;
-//         break;
-//      case GLFW_KEY_LEFT_SUPER    :
-//      case GLFW_KEY_RIGHT_SUPER   :
-//         self->_inputState.keyModifiers |= GLFW_MOD_SUPER;
-//         break;
-//      }
-//   }
-//   else
+   NSLockingDo( _inputStateLock)
+   {
+      self->_inputState.timestamp    = mulle_absolutetime_now();
+      self->_inputState.keyModifiers = mods;
 
-   self->_inputState.keyModifiers = mods;
+      if( action == GLFW_PRESS)
+      {
+         UIKeyStatesHandleKeyDown( UIInputStateGetKeyStates( &self->_inputState), key);
+         UIOSWindowEventLogVerbose( "keyboardState: down key=%d, count=%ld", key, (long) self->_inputState.keyStates._count);
+      }
+      else
+      {
+         if( action == GLFW_RELEASE)
+         {
+            UIKeyStatesHandleKeyUp( UIInputStateGetKeyStates( &self->_inputState), key);
+            UIOSWindowEventLogVerbose( "keyboardState: up key=%d, count=%ld", key, (long) self->_inputState.keyStates._count);
+         }
+      }
 
+      state = self->_inputState;
+   }
 
    if( shouldDiscardEvent( self, UIEventTypePresses))
    {
@@ -444,7 +472,7 @@ static inline int   shouldDiscardEvent( GLFWOSWindow *self, NSUInteger eventType
       return;
    }
 
-   event = [[UIKeyboardEvent alloc] initWithInputState:&self->_inputState
+   event = [[UIKeyboardEvent alloc] initWithInputState:&state
                                                    key:key
                                               scanCode:scancode
                                                 action:action
@@ -455,7 +483,8 @@ static inline int   shouldDiscardEvent( GLFWOSWindow *self, NSUInteger eventType
 
 - (void) _charCallback:(unsigned int) codepoint
 {
-   UIEvent    *event;
+   UIEvent               *event;
+   struct UIInputState   state;
 
    UIOSWindowEventLog( nil, "");
 
@@ -465,7 +494,13 @@ static inline int   shouldDiscardEvent( GLFWOSWindow *self, NSUInteger eventType
       return;
    }
 
-   event = [[UIUnicodeEvent alloc] initWithInputState:&self->_inputState
+   NSLockingDo( _inputStateLock)
+   {
+      self->_inputState.timestamp = mulle_absolutetime_now();
+      state = self->_inputState;
+   }
+
+   event = [[UIUnicodeEvent alloc] initWithInputState:&state
                                             character:codepoint];
   _otherRetainedEventsCallback( self, event);
 }
@@ -475,8 +510,9 @@ static inline int   shouldDiscardEvent( GLFWOSWindow *self, NSUInteger eventType
                        action:(int) glfwAction
                     modifiers:(int) glfwModifiers
 {
-   UIEvent      *event;
-   NSUInteger   button;
+   UIEvent              *event;
+   NSUInteger            button;
+   struct UIInputState   state;
 
    UIOSWindowEventLog( "modifiers=0x%x", glfwModifiers);
 
@@ -489,12 +525,38 @@ static inline int   shouldDiscardEvent( GLFWOSWindow *self, NSUInteger eventType
    MULLE_C_ASSERT( UIEventButtonActionRepeat == GLFW_REPEAT);
 
    button = (NSUInteger) (1ULL << glfwButton);
-   self->_inputState.keyModifiers = glfwModifiers;
+
+   NSLockingDo( _inputStateLock)
+   {
+      self->_inputState.timestamp    = mulle_absolutetime_now();
+      self->_inputState.keyModifiers = glfwModifiers;
+
+      if( glfwAction == GLFW_PRESS)
+         self->_inputState.buttonStates |= button;
+      else
+         self->_inputState.buttonStates &= ~button;
+
+      state = self->_inputState;
+   }
 
    if( glfwAction == GLFW_PRESS)
-      self->_inputState.buttonStates |= button;
-   else
-      self->_inputState.buttonStates &= ~button;
+   {
+      CGFloat  dx;
+      CGFloat  dy;
+      BOOL     isMultiClick;
+
+      dx = state.locationInWindow.x - _lastMouseButtonPressLocation.x;
+      dy = state.locationInWindow.y - _lastMouseButtonPressLocation.y;
+
+      isMultiClick = dx * dx + dy * dy < 5.0 * 5.0
+                     && state.timestamp - _lastMouseButtonPressTime < [UIMouseButtonEvent doubleClickInterval];
+      if( ! isMultiClick)
+         _mouseButtonClickCount = 0;
+      ++_mouseButtonClickCount;
+
+      _lastMouseButtonPressTime     = state.timestamp;
+      _lastMouseButtonPressLocation = state.locationInWindow;
+   }
 
    if( shouldDiscardEvent( self, UIEventTypeTouches))
    {
@@ -502,10 +564,10 @@ static inline int   shouldDiscardEvent( GLFWOSWindow *self, NSUInteger eventType
       return;
    }
 
-
-   event = [[UIMouseButtonEvent alloc] initWithInputState:&_inputState
+   event = [[UIMouseButtonEvent alloc] initWithInputState:&state
                                                    button:button
-                                                   action:glfwAction];
+                                                   action:glfwAction
+                                               clickCount:_mouseButtonClickCount];
   _otherRetainedEventsCallback( self, event);
 
    // [self dump];
@@ -514,7 +576,8 @@ static inline int   shouldDiscardEvent( GLFWOSWindow *self, NSUInteger eventType
 
 - (void) _mouseMotionCallback:(CGPoint) pos
 {
-   UIEvent   *event;
+   UIEvent       *event;
+   struct UIInputState   state;
 
    UIOSWindowMouseMotionEventLog( "%.1f, %.1f", pos.x, pos.y);
 
@@ -522,11 +585,19 @@ static inline int   shouldDiscardEvent( GLFWOSWindow *self, NSUInteger eventType
    // Coordinates are window relative! So for screen coordinates we'd need
    // to add the window frame.x/y.
    //
-   // we get not events for the window title bar
+   // We don't seem to get events for the window title bar.
+   //
    // TODO: we might need to scale the values for DPI or ?
    // need this info, even if we don't send the event (for other events)
-   self->_inputState.locationInWindow.x = pos.x;
-   self->_inputState.locationInWindow.y = pos.y;
+   //
+   NSLockingDo( _inputStateLock)
+   {
+      self->_inputState.timestamp        = mulle_absolutetime_now();
+      self->_inputState.locationInWindow = pos;
+
+      state = self->_inputState;   // this can be avoided, since "we" are single-threaded
+                                   // anyway, its only the callers that are multi-threaded
+   }
 
    //
    // Observed behaviour on linux: Depending on mouse sensitivity, it may
@@ -547,16 +618,17 @@ static inline int   shouldDiscardEvent( GLFWOSWindow *self, NSUInteger eventType
 
    // TODO: buttonStates need to be reset when the mouse leaves the
    //       window, but isn't
-   event = [[UIMouseMotionEvent alloc] initWithInputState:&self->_inputState];
+   event = [[UIMouseMotionEvent alloc] initWithInputState:&state];
    _otherRetainedEventsCallback( self, event);
 }
 
 
 - (void) _mouseScrollCallback:(CGPoint) offset
 {
-   UIEvent   *event;
-   CGPoint   scrollOffset;
-   CGFloat   sensitivity;
+   UIEvent      *event;
+   struct UIInputState  state;
+   CGPoint       scrollOffset;
+   CGFloat       sensitivity;
 
    UIOSWindowEventLog("");
 
@@ -564,6 +636,12 @@ static inline int   shouldDiscardEvent( GLFWOSWindow *self, NSUInteger eventType
    {
       UIOSWindowEventLogVerbose( "discarded event");
       return;
+   }
+
+   NSLockingDo( _inputStateLock)
+   {
+      self->_inputState.timestamp = mulle_absolutetime_now();
+      state = self->_inputState;
    }
 
    sensitivity = [self scrollWheelSensitivity];
@@ -578,52 +656,11 @@ static inline int   shouldDiscardEvent( GLFWOSWindow *self, NSUInteger eventType
    else
       scrollOffset = CGPointMake( -offset.x, -offset.y);
 
-   event = [[UIMouseScrollEvent alloc] initWithInputState:&self->_inputState
+   event = [[UIMouseScrollEvent alloc] initWithInputState:&state
                                              scrollOffset:scrollOffset];
    _otherRetainedEventsCallback( self, event);
 }
 
 
-- (void) os_pollInputState:(struct UIInputState *)state
-{
-   double   x, y;
-
-   assert( _window);
-   // Get mouse position
-   glfwGetCursorPos( _window, &x, &y);
-   state->locationInWindow.x = x;
-   state->locationInWindow.y = y;
-
-   // Get mouse button states
-   state->buttonStates = 0;
-   if( glfwGetMouseButton( _window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-      state->buttonStates |= (1 << 0);
-   if( glfwGetMouseButton( _window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
-      state->buttonStates |= (1 << 1);
-   if( glfwGetMouseButton( _window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS)
-      state->buttonStates |= (1 << 2);
-   if( glfwGetMouseButton( _window, GLFW_MOUSE_BUTTON_4) == GLFW_PRESS) // X1 button
-      state->buttonStates |= (1 << 3);
-   if( glfwGetMouseButton( _window, GLFW_MOUSE_BUTTON_5) == GLFW_PRESS) // X2 button
-      state->buttonStates |= (1 << 4);
-
-   // Get keyboard modifiers
-   state->keyModifiers = 0;
-   if( glfwGetKey( _window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
-       glfwGetKey( _window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS)
-      state->keyModifiers |= (1 << 0);
-
-   if( glfwGetKey( _window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS ||
-       glfwGetKey( _window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS)
-      state->keyModifiers |= (1 << 1);
-
-   if( glfwGetKey( _window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS ||
-       glfwGetKey( _window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS)
-      state->keyModifiers |= (1 << 2);
-
-   if( glfwGetKey( _window, GLFW_KEY_LEFT_SUPER) == GLFW_PRESS ||
-       glfwGetKey( _window, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS)
-      state->keyModifiers |= (1 << 3);
-}
 
 @end

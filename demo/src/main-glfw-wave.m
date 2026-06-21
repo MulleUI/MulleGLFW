@@ -540,7 +540,7 @@ int main(int argc, char* argv[])
    gWindow = [GLFWOSWindow windowWithFrame:CGRectMake( 0, 0, 640, 480)
                           titleUTF8String:"Wave Simulation"
                                 styleMask:UIWindowStyleResizable
-                            graphicsHints:0];
+                            graphicsHints:GLFW_DEFAULT_CONTEXT];
    [app addWindow:gWindow];
 
 //   glfwSetKeyCallback(window, key_callback);

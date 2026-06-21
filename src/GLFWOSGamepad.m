@@ -201,21 +201,23 @@ static inline void   UIGamepadInfoMemcpyGLFWHats( unsigned char *dst, unsigned c
       }
       else
       {
-         glfwGetGamepadState( _handle, (GLFWgamepadstate *) &glfwState);
+         if( glfwGetGamepadState( _handle, (GLFWgamepadstate *) &glfwState))
+         {
+            // copy button state, except dpad state( if there are buttons behind)
+            // these are compatible
+            memcpy( _info.buttons, glfwState.buttons, UIGamepadButtonRightThumb + 1);
+            memcpy( _info.axes, glfwState.axes, 6);
 
-         // copy button state, except dpad state( if there are buttons behind)
-         // these are compatible
-         memcpy( _info.buttons, glfwState.buttons, UIGamepadButtonRightThumb + 1);
-         memcpy( _info.axes, glfwState.axes, 6);
+            _info.sticks[ 0] = (glfwState.buttons[ GLFW_GAMEPAD_BUTTON_DPAD_UP] ? CADirectionUp : 0)
+                                     | (glfwState.buttons[ GLFW_GAMEPAD_BUTTON_DPAD_DOWN] ? CADirectionDown : 0)
+                                     | (glfwState.buttons[ GLFW_GAMEPAD_BUTTON_DPAD_LEFT] ? CADirectionLeft : 0)
+                                     | (glfwState.buttons[ GLFW_GAMEPAD_BUTTON_DPAD_RIGHT] ? CADirectionRight : 0);
 
-         _info.sticks[ 0] = (glfwState.buttons[ GLFW_GAMEPAD_BUTTON_DPAD_UP] ? CADirectionUp : 0)
-                                  | (glfwState.buttons[ GLFW_GAMEPAD_BUTTON_DPAD_DOWN] ? CADirectionDown : 0)
-                                  | (glfwState.buttons[ GLFW_GAMEPAD_BUTTON_DPAD_LEFT] ? CADirectionLeft : 0)
-                                  | (glfwState.buttons[ GLFW_GAMEPAD_BUTTON_DPAD_RIGHT] ? CADirectionRight : 0);
-
-         _info.numberOfButtons = 14;
-         _info.numberOfSticks  = 1;
-         _info.numberOfAxes    = 6;
+            _info.numberOfButtons = 14;
+            _info.numberOfSticks  = 1;
+            _info.numberOfAxes    = 6;
+         }
+         // else: _info was already zeroed by memset at line 174 — safe fallback
       }
    }
 }

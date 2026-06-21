@@ -19,7 +19,7 @@ export TEST_PROJECT_NAME="MulleGLFW"
 #
 #
 #
-export MULLE_CRAFT_PLATFORMS="${MULLE_UNAME}:windows"
+export MULLE_CRAFT_PLATFORMS="${MULLE_UNAME}"
 
 
 #

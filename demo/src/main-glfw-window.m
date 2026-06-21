@@ -48,7 +48,6 @@ static void   windowMoveCallback( GLFWwindow* window, int xpos, int ypos)
 static void   windowResizeCallback( GLFWwindow* window, int width, int height)
 {
    GLFWOSWindow   *self;
-   CGRect         frame;
 
    self = glfwGetWindowUserPointer( window);
    if( log_enabled)
@@ -66,7 +65,7 @@ static void   usage( char *argv0)
    s = strrchr( argv0, '/');
    s = s ? s + 1 : argv0;
 
-   fprintf( stderr, "%s [framerate]\n"
+   mulle_fprintf( stderr, "%s [framerate]\n"
 "\n"
 "Framerate:\n"
 "   --synced            : redraw synced to monitor\n"
@@ -132,6 +131,7 @@ int   main( int argc, char *argv[])
          break;
       }
 
+      mulle_fprintf( stderr, "error: unknown \"%s\"\n", argv[ i]);
       usage( argv[ 0]);
    }
 
@@ -142,32 +142,32 @@ int   main( int argc, char *argv[])
    {
       [screen getScreenInfo:&info];
 
-      printf( "#%td\n", i);
-      printf( "\tname         : \"%s\"\n",          [screen nameUTF8String]);
-      printf( "\trefreshRate  : %.6fs\n",           info.refreshRate);
-      printf( "\tframe        : %.3f %.3f %.3f %.3f\n",
+      mulle_printf( "#%td\n", i);
+      mulle_printf( "\tname         : \"%s\"\n",          [screen nameUTF8String]);
+      mulle_printf( "\trefreshRate  : %.6fs (%.3f Hz)\n", info.refreshRate, info.refreshRate > 0.0 ? 1.0 / info.refreshRate : 0.0);
+      mulle_printf( "\tframe        : %.3f %.3f %.3f %.3f\n",
                                                     info.frame.origin.x,
                                                     info.frame.origin.y,
                                                     info.frame.size.width,
                                                     info.frame.size.height);
-      printf( "\tcanvas       : %.3f %.3f %.3f %.3f\n",
+      mulle_printf( "\tcanvas       : %.3f %.3f %.3f %.3f\n",
                                                     info.canvas.origin.x,
                                                     info.canvas.origin.y,
                                                     info.canvas.size.width,
                                                     info.canvas.size.height);
-      printf( "\tcontentScale : %.3f %.3f\n",       info.contentScale.dx, info.contentScale.dy);
-      printf( "\tphysicalSize : %.3f m %.3f m\n",   info.physicalSize.width, info.physicalSize.height);
-      printf( "\tdpi          : %.3f\n",            info.dpi);
-      printf( "\tred          : %d bit\n",          info.colorBits[ 0]);
-      printf( "\tgreen        : %d bit\n",          info.colorBits[ 1]);
-      printf( "\tblue         : %d bit\n",          info.colorBits[ 2]);
-      printf( "\talpha        : %d bit\n",          info.colorBits[ 3]);
+      mulle_printf( "\tcontentScale : %.3f %.3f\n",       info.contentScale.dx, info.contentScale.dy);
+      mulle_printf( "\tphysicalSize : %.3f m %.3f m\n",   info.physicalSize.width, info.physicalSize.height);
+      mulle_printf( "\tdpi          : %.3f\n",            info.dpi);
+      mulle_printf( "\tred          : %d bit\n",          info.colorBits[ 0]);
+      mulle_printf( "\tgreen        : %d bit\n",          info.colorBits[ 1]);
+      mulle_printf( "\tblue         : %d bit\n",          info.colorBits[ 2]);
+      mulle_printf( "\talpha        : %d bit\n",          info.colorBits[ 3]);
    }
 
    window = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0.0, 0.0, 500.0, 500.0)
                                  titleUTF8String:"Demo"
                                        styleMask:styleMask // UIWindowOpenGLDeprecated
-                                   graphicsHints:0] autorelease];
+                                   graphicsHints:GLFW_DEFAULT_CONTEXT] autorelease];
    assert( window);
    [window setFrameRate:frameRate];
    [window setFrameCallback:frameCallback];

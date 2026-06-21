@@ -1,13 +1,6 @@
 //
 // Copyright (c) 2020 Nat!, Mulle kybernetiK
 //
-#ifdef __has_include
-# if __has_include( "UIApplication.h")
-#  import "UIApplication.h"
-# endif
-#endif
-
-
 #import "import-private.h"
 
 #import "GLFWOSScreen.h"
@@ -41,7 +34,7 @@
 @end
 
 
-@implementation UIApplication ( GLFW)
+@implementation UIApplication ( OS)
 
 #ifdef GLFW_LOG_ERROR
 static void   callback_glfw_error(int code, const char* description)

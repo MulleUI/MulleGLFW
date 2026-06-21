@@ -338,7 +338,7 @@ int main(int argc, char *argv[])
       gWindow = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0.0, 0.0, 300.0, 300.0)
                                   titleUTF8String:"Demo"
                                         styleMask:UIWindowStyleBare|UIWindowOpenGLDeprecated|UIWindowStyleResizable|UIWindowStyleTransparent
-                                    graphicsHints:0] autorelease];
+                                    graphicsHints:GLFW_DEFAULT_CONTEXT] autorelease];
 
       if (!gWindow)
       {

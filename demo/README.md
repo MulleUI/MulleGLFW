@@ -106,3 +106,39 @@ mulle-sde craft --[release|debug]
 ```
 
 The resultant demo will be in `kitchen/{Release/Debug}`.
+
+## Running with Mesa debug libraries
+
+To run any demo against the Mesa debug build in `/opt/mesa/debug/` instead of
+the system GL driver, use the provided helper script:
+
+```bash
+# Default: runs glfw-triangle-opengl
+./run-with-mesa-debug.sh
+
+# Run any other demo
+./run-with-mesa-debug.sh glfw-gears
+./run-with-mesa-debug.sh glfw-wave
+```
+
+The script sets these environment variables:
+
+| Variable | Value | Purpose |
+|---|---|---|
+| `LD_LIBRARY_PATH` | `/opt/mesa/debug/26.2.0-devel/lib/x86_64-linux-gnu` | Load Mesa's libGLX/libEGL instead of system |
+| `LIBGL_DRIVERS_PATH` | `…/dri` | Where Mesa looks for DRI drivers (e.g. radeonsi, swrast) |
+| `__GLX_VENDOR_LIBRARY_NAME` | `mesa` | Tell glvnd to pick Mesa over nvidia/other |
+| `MESA_DEBUG` | `1` | Enable Mesa debug output |
+
+You can verify Mesa is active by checking the GL version string — Mesa reports
+**GL 4.6.0** whereas the nvidia driver reports 3.2.0.
+
+For GDB tracing into Mesa source:
+```bash
+MESA=/opt/mesa/debug/26.2.0-devel
+LD_LIBRARY_PATH=$MESA/lib/x86_64-linux-gnu __GLX_VENDOR_LIBRARY_NAME=mesa \
+  gdb kitchen/Debug/glfw-triangle-opengl
+# Inside gdb:
+# set substitute-path /mesa /home/src/srcU/mesa
+```
+

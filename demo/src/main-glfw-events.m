@@ -45,7 +45,7 @@ static UIWindowDisplayBits   renderFrame( id <UIOSWindow> window_in)
 
 
 //#define HINTS  GLFW_NO_CONTEXT
-#define HINTS 0
+#define HINTS GLFW_DEFAULT_CONTEXT
 
 int   main( int argc, char *argv[])
 {
@@ -63,7 +63,7 @@ int   main( int argc, char *argv[])
       window = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0.0, 0.0, 500.0, 500.0)
                                     titleUTF8String:"Demo"
                                           styleMask:UIWindowStyleResizable
-                                      graphicsHints:HINTS] autorelease];
+                                      graphicsHints:GLFW_DEFAULT_CONTEXT] autorelease];
       [app addWindow:window];
 
       [window setWindowEventsCallback:receiveWindowEvents];

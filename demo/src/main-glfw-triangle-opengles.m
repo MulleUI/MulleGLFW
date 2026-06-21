@@ -218,7 +218,7 @@ static void   usage( char *argv0)
    s = strrchr( argv0, '/');
    s = s ? s + 1 : argv0;
 
-   fprintf( stderr, "%s [api] [options]\n"
+   mulle_fprintf( stderr, "%s [api] [options]\n"
 "\n"
 "Api:\n"
 #ifdef USE_GL
@@ -240,7 +240,17 @@ static void   usage( char *argv0)
 "\n"
 "   --native     :\n"
 "   --egl        :\n"
-"   --mesa       :\n", s);
+"   --mesa       :\n"
+"\n"
+"   --driver <spec>  : select GL vendor/driver before GLFW init\n"
+"                      format: <vendor>[:<mesa-driver>][@<gpu>]\n"
+"                      vendor: mesa, nvidia, ...\n"
+"                      mesa-driver: llvmpipe, iris, radeonsi, zink, nouveau, ...\n"
+"                      gpu: DRI_PRIME index for multi-GPU setups\n"
+"                      examples: mesa  mesa:llvmpipe  mesa:iris@1  nvidia@0\n"
+"   --ld-path <dir>  : prepend <dir> to LD_LIBRARY_PATH and set LIBGL_DRIVERS_PATH=<dir>/dri\n"
+"                      e.g. /opt/mesa/debug/26.2.0-devel/lib/x86_64-linux-gnu\n"
+"   --software       : force software rendering via LIBGL_ALWAYS_SOFTWARE=1\n", s);
       exit( 1);
 }
 
@@ -250,23 +260,56 @@ int   main( int argc, char *argv[])
    GLFWOSWindow     *gWindow;
    GLFWwindow       *window;
    NSUInteger       styleMask;
-   int              i;
-   int              api;
-   int              vendor;
-   int              profile;
-   int              hints;
+   GLFWGraphicsHints   hints;
+   int                 i;
 
 #ifdef USE_GL
    hints   = GLFW_GL3_2_CONTEXT;
 #else
    hints   = GLFW_GLES2_CONTEXT;
 #endif
-   api     = -1;
-   vendor  = -1;
-   profile = -1;
 
    for( i = 1; i < argc; i++)
    {
+      if( ! strcmp( argv[ i], "--driver"))
+      {
+         char   spec[ 256];
+         char   *drv;
+         char   *gpu;
+         char   *at;
+         char   *colon;
+
+         if( ++i >= argc)
+            usage( argv[ 0]);
+         strncpy( spec, argv[ i], sizeof( spec) - 1);
+         spec[ sizeof( spec) - 1] = '\0';
+
+         at = strchr( spec, '@');
+         if( at) { *at = '\0'; gpu = at + 1; } else gpu = NULL;
+
+         colon = strchr( spec, ':');
+         if( colon) { *colon = '\0'; drv = colon + 1; } else drv = NULL;
+
+         hints.glx_vendor = strdup( spec);
+         if( drv)
+            hints.driver = strdup( drv);
+         if( gpu)
+            hints.dri_prime = (unsigned int) atoi( gpu) + 1; // 0=unset, so +1
+
+         continue;
+      }
+      if( ! strcmp( argv[ i], "--mesa-path"))
+      {
+         if( ++i >= argc)
+            usage( argv[ 0]);
+         hints.lib_path = argv[ i];
+         continue;
+      }
+      if( ! strcmp( argv[ i], "--software"))
+      {
+         hints.software = 1;
+         continue;
+      }
       if( ! strcmp( argv[ i], "--gl3"))
       {
          hints = GLFW_GL3_CONTEXT;
@@ -296,46 +339,46 @@ int   main( int argc, char *argv[])
       // (0=any, 1=core, 2=compat)
       if( ! strcmp( argv[ i], "--any"))
       {
-         hints = GLFWGraphicsHintsBySettingProfile( hints, 0);
+         hints.profile = 0;
          continue;
       }
       if( ! strcmp( argv[ i], "--core"))
       {
-         hints = GLFWGraphicsHintsBySettingProfile( hints, 1);
+         hints.profile = 1;
          continue;
       }
       if( ! strcmp( argv[ i], "--compat"))
       {
-         hints = GLFWGraphicsHintsBySettingProfile( hints, 2);
+         hints.profile = 2;
          continue;
       }
 
       // forward : GLFW_OPENGL_FORWARD_COMPAT   (0=NO, 1=YES)
       if( ! strcmp( argv[ i], "--no-forward"))
       {
-         hints = GLFWGraphicsHintsBySettingForward( hints, 0);
+         hints.forward = 0;
          continue;
       }
       if( ! strcmp( argv[ i], "--forward"))
       {
-         hints = GLFWGraphicsHintsBySettingForward( hints, 1);
+         hints.forward = 1;
          continue;
       }
 
-      // lib     : GLFW_CONTEXT_CREATION_API    (0=default 1=native,2=egl,3=mesa)
+      // lib     : GLFW_CONTEXT_CREATION_API    (0=default 1=native,2=egl,3=osmesa)
       if( ! strcmp( argv[ i], "--native"))
       {
-         hints = GLFWGraphicsHintsBySettingAPILibrary( hints, 1);
+         hints.lib = 1;
          continue;
       }
       if( ! strcmp( argv[ i], "--egl"))
       {
-         hints = GLFWGraphicsHintsBySettingAPILibrary( hints, 2);
+         hints.lib = 2;
          continue;
       }
-      if( ! strcmp( argv[ i], "--mesa"))
+      if( ! strcmp( argv[ i], "--osmesa"))
       {
-         hints = GLFWGraphicsHintsBySettingAPILibrary( hints, 3);
+         hints.lib = 3;
          continue;
       }
 
@@ -345,7 +388,10 @@ int   main( int argc, char *argv[])
    if( i != argc)
       usage( argv[ 0]);
 
-   fprintf( stderr, "hints : 0x%x\n", hints);
+   mulle_fprintf( stderr, "hints set: { profile=%u forward=%u api=%u lib=%u major=%u minor=%u }\n",
+                           hints.profile, hints.forward, hints.api, hints.lib, hints.major, hints.minor);
+
+   GLFWGraphicsHintsApplyDriverEnv( hints);
 
    app = [UIApplication sharedInstance];
    @autoreleasepool
@@ -368,9 +414,6 @@ int   main( int argc, char *argv[])
                                     styleMask:styleMask
                                 graphicsHints:hints];
 
-      fprintf( stdout, "%s\n", [gWindow os_contextInfoUTF8String]);
-      fflush( stdout);
-
       [app addWindow:gWindow];
 
       window = [gWindow os_window];
@@ -380,6 +423,9 @@ int   main( int argc, char *argv[])
       [gWindow os_activateGraphicsContext];
       {
         [gWindow os_setSwapInterval:1];
+
+        mulle_fprintf( stdout, "%s\n", [gWindow os_contextInfoUTF8String]);
+        mulle_fflush( stdout);
 
         init_scene();
       }

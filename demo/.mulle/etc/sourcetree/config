@@ -1,3 +1,4 @@
+craftinfo/MulleGLFW-craftinfo;local;no-delete,no-header,no-link,no-share,no-subproject,no-update;87769D91-50B9-4AC2-A66D-59A97A347A51;;;;;
 MulleGLFW;${MULLE_GLFW_NODETYPE:-tar};no-singlephase;418314DC-B168-4745-9384-FEBB8EB0D4AA;${MULLE_GLFW_URL:-https://github.com/MulleUI/MulleGLFW/archive/${MULLE_TAG}.tar.gz};${MULLE_GLFW_BRANCH};${MULLE_GLFW_TAG:-latest};;
 CoreVideo;none;no-build,no-cmake-inherit,no-delete,no-dependency,no-fs,no-header,no-share,no-update,only-framework,only-platform-darwin;39912D90-862B-4036-A61E-44ADAA1BD386;;;;;include=<CoreVideo/CoreVideo.h>
 OpenGL;none;no-build,no-cmake-inherit,no-delete,no-dependency,no-fs,no-header,no-share,no-update,only-framework,only-platform-darwin;14556B07-4D91-45B6-9969-9662E1422495;;;;;include=<OpenGL/OpenGL.h>
