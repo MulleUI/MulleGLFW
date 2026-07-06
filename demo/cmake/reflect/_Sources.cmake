@@ -40,5 +40,6 @@ src/main-glfw-window-single-buffer.m
 src/main-glfw-x11-osmesa-grok.m
 src/main-glfw-x11-osmesa.m
 src/main-two-x-two-windows.m
+src/main-two-x-two-windows-ordered.m
 src/main-x11-osmesa.m
 )

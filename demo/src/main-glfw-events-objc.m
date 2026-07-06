@@ -51,13 +51,13 @@ int main( void)
    @autoreleasepool
    {
       //
-      // GLFWOSWindow with GLFW_NO_CONTEXT to only get events. Can this
+      // GLFWOSWindow with GLFWGraphicsHintsNone to only get events. Can this
       // work without OpenGL ? YES and NO. Linking is probably problematic
       //
       gWindow = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0.0, 0.0, 500.0, 500.0)
                                     titleUTF8String:"Demo"
                                           styleMask:UIWindowStyleResizable
-                                      graphicsHints:GLFW_NO_CONTEXT] autorelease];
+                                      graphicsHints:GLFWGraphicsHintsNone] autorelease];
 // not needed since we don't do [app runApp]
 //      [app addWindow:gWindow];
 

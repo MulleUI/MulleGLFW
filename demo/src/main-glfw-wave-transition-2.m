@@ -532,7 +532,7 @@ int main(int argc, char* argv[])
         gWindow = [GLFWOSWindow windowWithFrame:CGRectMake( 0, 0, 640, 480)
                                 titleUTF8String:"Demo"
                                       styleMask:UIWindowStyleBare|UIWindowStyleResizable
-                                  graphicsHints:GLFW_DEFAULT_CONTEXT];
+                                  graphicsHints:GLFWGraphicsHintsDefault];
         [app addWindow:gWindow];
         window = [gWindow os_window];
 //

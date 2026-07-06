@@ -38,17 +38,17 @@ typedef UIOSWindowGraphicsHints GLFWGraphicsHints;
 
 //
 // Preset initialisers — use as base for struct literals:
-//   GLFWGraphicsHints hints = GLFW_GL3_2_CONTEXT;
+//   GLFWGraphicsHints hints = GLFWGraphicsHintsGL3_2;
 //   hints.forward = 1;
 //   hints.glx_vendor = "mesa";
 //
-#define GLFW_DEFAULT_CONTEXT  ((GLFWGraphicsHints){ 0 })
-#define GLFW_NO_CONTEXT       ((GLFWGraphicsHints){ .api = 1 })
-#define GLFW_GL3_CONTEXT      ((GLFWGraphicsHints){ .profile = 1, .api = 3, .major = 3, .minor = 0 })
-#define GLFW_GL3_2_CONTEXT    ((GLFWGraphicsHints){ .profile = 1, .api = 3, .major = 3, .minor = 2 })
-#define GLFW_GLES2_CONTEXT    ((GLFWGraphicsHints){ .profile = 1, .api = 2, .major = 2, .minor = 0 })
-#define GLFW_GLES3_CONTEXT    ((GLFWGraphicsHints){ .profile = 1, .api = 2, .major = 3, .minor = 0 })
-#define GLFW_GLES3_2_CONTEXT  ((GLFWGraphicsHints){ .profile = 1, .api = 2, .major = 3, .minor = 2 })
+#define GLFWGraphicsHintsDefault   ((GLFWGraphicsHints){ 0 })
+#define GLFWGraphicsHintsNone      ((GLFWGraphicsHints){ .api = 1 })
+#define GLFWGraphicsHintsGL3       ((GLFWGraphicsHints){ .profile = 1, .api = 3, .major = 3, .minor = 0 })
+#define GLFWGraphicsHintsGL3_2     ((GLFWGraphicsHints){ .profile = 1, .api = 3, .major = 3, .minor = 2 })
+#define GLFWGraphicsHintsGLES2     ((GLFWGraphicsHints){ .profile = 1, .api = 2, .major = 2, .minor = 0 })
+#define GLFWGraphicsHintsGLES3     ((GLFWGraphicsHints){ .profile = 1, .api = 2, .major = 3, .minor = 0 })
+#define GLFWGraphicsHintsGLES3_2   ((GLFWGraphicsHints){ .profile = 1, .api = 2, .major = 3, .minor = 2 })
 
 // Apply driver-selection env vars from hints fields before glfwInit().
 // Sets __GLX_VENDOR_LIBRARY_NAME, MESA_LOADER_DRIVER_OVERRIDE,
@@ -58,7 +58,7 @@ typedef UIOSWindowGraphicsHints GLFWGraphicsHints;
 void   GLFWGraphicsHintsApplyDriverEnv( GLFWGraphicsHints hints);
 
 
-#define  GLFWOSWindowStyleMaskDefault  0
+#define GLFWOSWindowStyleMaskDefault  0
 
 
 //

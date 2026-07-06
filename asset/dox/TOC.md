@@ -88,7 +88,7 @@ Creation (Main Thread Only):
 
 **Graphics Hints:**
 - `GLFWGraphicsHints` - Bit-packed enum encoding profile, forward-compat, API, library, major, minor
-- Predefined: `GLFW_DEFAULT_CONTEXT`, `GLFW_NO_CONTEXT`, `GLFW_GL3_CONTEXT`, `GLFW_GL3_2_CONTEXT`, `GLFW_GLES2_CONTEXT`, `GLFW_GLES3_CONTEXT`, `GLFW_GLES3_2_CONTEXT`
+- Predefined: `GLFWGraphicsHintsDefault`, `GLFWGraphicsHintsNone`, `GLFWGraphicsHintsGL3`, `GLFWGraphicsHintsGL3_2`, `GLFWGraphicsHintsGLES2`, `GLFWGraphicsHintsGLES3`, `GLFWGraphicsHintsGLES3_2`
 - Helper functions: `GLFWGraphicsHintsMake()`, `GLFWGraphicsHintsGetProfile()`, `GLFWGraphicsHintsGetForward()`, `GLFWGraphicsHintsGetAPI()`, `GLFWGraphicsHintsGetAPILibrary()`, `GLFWGraphicsHintsGetMajor()`, `GLFWGraphicsHintsGetMinor()`, `GLFWGraphicsHintsBySettingProfile()`, etc.
 
 **Properties:**
@@ -454,7 +454,7 @@ UIApplication   *app = [UIApplication sharedInstance];
 **Pattern 2: OpenGL Context Selection**
 ```objective-c
 // Request OpenGL 3.2 Core Profile
-GLFWGraphicsHints hints = GLFW_GL3_2_CONTEXT;
+GLFWGraphicsHints hints = GLFWGraphicsHintsGL3_2;
 hints = GLFWGraphicsHintsBySettingProfile( hints, 2);  // Core profile
 
 GLFWOSWindow *window = [GLFWOSWindow windowWithFrame:frame
@@ -568,7 +568,7 @@ int   main( void)
       window = [GLFWOSWindow windowWithFrame:CGRectMake( 100, 100, 640, 480)
                              titleUTF8String:"OpenGL Window"
                                    styleMask:UIWindowStyleBare
-                               graphicsHints:GLFW_GL3_2_CONTEXT];
+                               graphicsHints:GLFWGraphicsHintsGL3_2];
       if( ! window)
       {
          fprintf( stderr, "Failed to create window\n");
@@ -607,13 +607,13 @@ int   main( void)
       window1 = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0, 0, 320, 240)
                                      titleUTF8String:"Window 1"
                                            styleMask:UIWindowStyleBare
-                                       graphicsHints:GLFW_DEFAULT_CONTEXT] autorelease];
+                                       graphicsHints:GLFWGraphicsHintsDefault] autorelease];
       
       // Create second window that shares textures with first
       window2 = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 330, 0, 320, 240)
                                      titleUTF8String:"Window 2"
                                            styleMask:UIWindowStyleBare
-                                       graphicsHints:GLFW_DEFAULT_CONTEXT
+                                       graphicsHints:GLFWGraphicsHintsDefault
                                        sharingWindow:window1] autorelease];
       
       if( ! window2)

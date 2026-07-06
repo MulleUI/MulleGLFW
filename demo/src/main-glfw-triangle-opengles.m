@@ -264,9 +264,9 @@ int   main( int argc, char *argv[])
    int                 i;
 
 #ifdef USE_GL
-   hints   = GLFW_GL3_2_CONTEXT;
+   hints   = GLFWGraphicsHintsGL3_2;
 #else
-   hints   = GLFW_GLES2_CONTEXT;
+   hints   = GLFWGraphicsHintsGLES2;
 #endif
 
    for( i = 1; i < argc; i++)
@@ -312,27 +312,27 @@ int   main( int argc, char *argv[])
       }
       if( ! strcmp( argv[ i], "--gl3"))
       {
-         hints = GLFW_GL3_CONTEXT;
+         hints = GLFWGraphicsHintsGL3;
          continue;
       }
       if( ! strcmp( argv[ i], "--gl3_2"))
       {
-         hints = GLFW_GL3_2_CONTEXT;
+         hints = GLFWGraphicsHintsGL3_2;
          continue;
       }
       if( ! strcmp( argv[ i], "--gles2"))
       {
-         hints = GLFW_GLES2_CONTEXT;
+         hints = GLFWGraphicsHintsGLES2;
          continue;
       }
       if( ! strcmp( argv[ i], "--gles3"))
       {
-         hints = GLFW_GLES3_CONTEXT;
+         hints = GLFWGraphicsHintsGLES3;
          continue;
       }
       if( ! strcmp( argv[ i], "--gles3_2"))
       {
-         hints = GLFW_GLES3_2_CONTEXT;
+         hints = GLFWGraphicsHintsGLES3_2;
          continue;
       }
 

@@ -198,7 +198,7 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
 //
 - (void) _windowMoveCallback:(CGPixelPoint) position
 {
-   UIWindowEvent   *event;
+   UIWindowMoveEvent   *event;
 
    UIOSWindowEventLog("");
 
@@ -210,14 +210,17 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
    }
    [_windowInfoLock unlock];
 
-   event = [[[UIWindowMoveEvent alloc] initWithOrigin:position] autorelease];
+   event = [UIWindowMoveEvent alloc];
+   event = [event initWithOrigin:position];
+   event = [event autorelease];
+
    _windowEventsCallback( self, event);
 }
 
 
 - (void) _windowResizeCallback:(CGPixelSize) size
 {
-   UIWindowEvent   *event;
+   UIWindowResizeEvent   *event;
 
    UIOSWindowEventLog( "w=%td h=%td", size.width, size.height);
 
@@ -233,14 +236,17 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
    }
    [_windowInfoLock unlock];
 
-   event = [[[UIWindowResizeEvent alloc] initWithSize:size] autorelease];
+   event = [UIWindowResizeEvent alloc];
+   event = [event initWithSize:size];
+   event = [event autorelease];
+
    _windowEventsCallback( self, event);
 }
 
 
 - (void) _windowFramebufferResizeCallback:(CGPixelSize) size
 {
-   UIWindowEvent   *event;
+   UIWindowFramebufferResizeEvent   *event;
 
    UIOSWindowEventLog( "w=%td h=%td", size.width, size.height);
 
@@ -251,7 +257,9 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
    }
    [_windowInfoLock unlock];
 
-   event = [[[UIWindowFramebufferResizeEvent alloc] initWithSize:size] autorelease];
+   event = [UIWindowFramebufferResizeEvent alloc];
+   event = [event initWithSize:size];
+   event = [event autorelease];
 
    // TODO: we should do this atomically
    //
@@ -265,7 +273,9 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
 
    UIOSWindowEventLog( "");
 
-   event = [[[UIWindowRefreshEvent alloc] init] autorelease];
+   event = [UIWindowRefreshEvent alloc];
+   event = [event init];
+   event = [event autorelease];
 //   [self receiveRetainedEvent:event];
    _uninitializedFramebuffer = YES;
 
@@ -279,8 +289,10 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
 
    UIOSWindowEventLog( "");
 
-   event = [[[UIWindowCloseEvent alloc] init] autorelease];
-  _windowEventsCallback( self, event);
+   event = [UIWindowRefreshEvent alloc];
+   event = [event init];
+   event = [event autorelease];
+   _windowEventsCallback( self, event);
 }
 
 
@@ -296,12 +308,14 @@ static void   windowFramebufferResizeCallback( GLFWwindow* window, int width, in
       // so os_pressedKeys can't resync. But GLFW also sends synthetic
       // key-up events on focus loss, so keyboard state is already correct.
       // Nothing to do here for keyboard state.
-      event = [[[UIWindowFocusGainedEvent alloc] init] autorelease];
+      event = [UIWindowRefreshEvent alloc];
    }
    else
    {
-      event = [[[UIWindowFocusLostEvent alloc] init] autorelease];
+      event = [UIWindowFocusLostEvent alloc];
    }
+   event = [event init];
+   event = [event autorelease];
    _windowEventsCallback( self, event);
 }
 
@@ -525,6 +539,14 @@ static inline int   shouldDiscardEvent( GLFWOSWindow *self, NSUInteger eventType
    MULLE_C_ASSERT( UIEventButtonActionRepeat == GLFW_REPEAT);
 
    button = (NSUInteger) (1ULL << glfwButton);
+
+   // ctrl+left click -> right click (macOS convention, on by default)
+   {
+      NSUInteger   modifiers = (NSUInteger) glfwModifiers;
+
+      button        = UIEventMouseButtonWithModifiers( button, &modifiers);
+      glfwModifiers = (int) modifiers;
+   }
 
    NSLockingDo( _inputStateLock)
    {

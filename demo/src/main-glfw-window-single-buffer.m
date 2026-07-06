@@ -20,7 +20,7 @@ int main( int argc, char *argv[])
       gWindow = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0, 0, 640, 480)
                                      titleUTF8String:"Demo"
                                            styleMask:GLFWOSWindowStyleMaskDefault|UIWindowStyleSingleBuffer
-                                       graphicsHints:GLFW_DEFAULT_CONTEXT] autorelease];
+                                       graphicsHints:GLFWGraphicsHintsDefault] autorelease];
       if( ! gWindow)
       {
          fprintf( stderr, "No window for you!. Single buffer style is not supported.\n");

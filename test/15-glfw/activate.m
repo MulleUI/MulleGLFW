@@ -34,7 +34,7 @@ int   main( void)
       window = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0, 0, 128, 128)
                                     titleUTF8String:"Foo"
                                           styleMask:UIWindowStyleBare|UIWindowStyleHidden
-                                      graphicsHints:0] autorelease];
+                                      graphicsHints:GLFWGraphicsHintsDefault] autorelease];
       if( ! window)
       {
          fprintf( stderr, "window: failed\n");

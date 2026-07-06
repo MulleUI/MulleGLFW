@@ -1047,7 +1047,7 @@ retry:
    return( [self initWithFrame:frame
                titleUTF8String:title
                      styleMask:styleMask
-                 graphicsHints:GLFW_DEFAULT_CONTEXT
+                 graphicsHints:GLFWGraphicsHintsDefault
                  sharingWindow:nil]);
 }
 
@@ -1233,7 +1233,9 @@ retry:
    [_contextLock lock];
    if( _haveGraphicsContext)
    {
-      UIOSWindowSwapLog( "activate window: %p", _window);
+      UIOSWindowSwapLog( "activate window: %p (thread=%p before-current=%p)",
+                          _window, [NSThread currentThread],
+                          glfwGetCurrentContext());
       glfwMakeContextCurrent( _window);
       _mulle_atomic_pointer_write( &_atomicActiveThread, [NSThread currentThread]);
    }      
@@ -1273,7 +1275,9 @@ retry:
 
    if( _haveGraphicsContext)
    {
-      UIOSWindowSwapLog( "deactivate window: %p", _window);
+      UIOSWindowSwapLog( "deactivate window: %p (thread=%p before-current=%p)",
+                          _window, [NSThread currentThread],
+                          glfwGetCurrentContext());
       glfwMakeContextCurrent( NULL);
       _mulle_atomic_pointer_write( &_atomicActiveThread, NULL);
    }
@@ -1451,7 +1455,9 @@ static struct
       // https://github.com/glfw/glfw/issues/2109
       if( glfwGetWindowAttrib( _window, GLFW_VISIBLE))
       {
-         UIOSWindowSwapLog( "\033[1mswapped buffers\033[0m");
+         UIOSWindowSwapLog( "\033[1mswapped buffers\033[0m (thread=%p current-before-swap=%p %s)",
+                             [NSThread currentThread], glfwGetCurrentContext(),
+                             glfwGetCurrentContext() == _window ? "MATCH" : "*** MISMATCH ***");
 
 #if MULLE_GLFW_OSMESA
          if( glfwGetWindowAttrib( _window, GLFW_CONTEXT_CREATION_API)

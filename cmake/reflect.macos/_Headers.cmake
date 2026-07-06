@@ -11,7 +11,10 @@ endif()
 # contents are derived from the file locations
 
 set( INCLUDE_DIRS
-src/reflect
+src/reflect.macos
+src/reflect.wayland
+src/reflect.x11
+src/reflect.x11-mesa
 src/generic
 src
 )
@@ -20,8 +23,14 @@ src
 # contents selected with patternfile ??-header--private-generated-headers
 #
 set( PRIVATE_GENERATED_HEADERS
-src/reflect/_MulleGLFW-import-private.h
-src/reflect/_MulleGLFW-include-private.h
+src/reflect.macos/_MulleGLFW-import-private.h
+src/reflect.macos/_MulleGLFW-include-private.h
+src/reflect.wayland/_MulleGLFW-import-private.h
+src/reflect.wayland/_MulleGLFW-include-private.h
+src/reflect.x11/_MulleGLFW-import-private.h
+src/reflect.x11/_MulleGLFW-include-private.h
+src/reflect.x11-mesa/_MulleGLFW-import-private.h
+src/reflect.x11-mesa/_MulleGLFW-include-private.h
 )
 
 #
@@ -36,10 +45,22 @@ src/generic/include-private.h
 # contents selected with patternfile ??-header--public-generated-headers
 #
 set( PUBLIC_GENERATED_HEADERS
-src/reflect/_MulleGLFW-export.h
-src/reflect/_MulleGLFW-import.h
-src/reflect/_MulleGLFW-include.h
-src/reflect/_MulleGLFW-provide.h
+src/reflect.macos/_MulleGLFW-export.h
+src/reflect.macos/_MulleGLFW-import.h
+src/reflect.macos/_MulleGLFW-include.h
+src/reflect.macos/_MulleGLFW-provide.h
+src/reflect.wayland/_MulleGLFW-export.h
+src/reflect.wayland/_MulleGLFW-import.h
+src/reflect.wayland/_MulleGLFW-include.h
+src/reflect.wayland/_MulleGLFW-provide.h
+src/reflect.x11/_MulleGLFW-export.h
+src/reflect.x11/_MulleGLFW-import.h
+src/reflect.x11/_MulleGLFW-include.h
+src/reflect.x11/_MulleGLFW-provide.h
+src/reflect.x11-mesa/_MulleGLFW-export.h
+src/reflect.x11-mesa/_MulleGLFW-import.h
+src/reflect.x11-mesa/_MulleGLFW-include.h
+src/reflect.x11-mesa/_MulleGLFW-provide.h
 )
 
 #
@@ -60,6 +81,5 @@ src/GLFWOSWindow+UIEvent.h
 src/GLFWOSWindow.h
 src/MulleGLFW.h
 src/MulleObjCDeps+MulleGLFW.h
-src/reflect/_MulleGLFW-include-public.h
 )
 

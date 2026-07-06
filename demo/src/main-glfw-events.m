@@ -44,8 +44,8 @@ static UIWindowDisplayBits   renderFrame( id <UIOSWindow> window_in)
 }
 
 
-//#define HINTS  GLFW_NO_CONTEXT
-#define HINTS GLFW_DEFAULT_CONTEXT
+//#define HINTS  GLFWGraphicsHintsNone
+#define HINTS GLFWGraphicsHintsDefault
 
 int   main( int argc, char *argv[])
 {
@@ -57,13 +57,13 @@ int   main( int argc, char *argv[])
    @autoreleasepool
    {
       //
-      // GLFWOSWindow with GLFW_NO_CONTEXT to only get events. Can this
+      // GLFWOSWindow with GLFWGraphicsHintsNone to only get events. Can this
       // work without OpenGL ? YES and NO. Linking is probably problematic
       //
       window = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0.0, 0.0, 500.0, 500.0)
                                     titleUTF8String:"Demo"
                                           styleMask:UIWindowStyleResizable
-                                      graphicsHints:GLFW_DEFAULT_CONTEXT] autorelease];
+                                      graphicsHints:GLFWGraphicsHintsDefault] autorelease];
       [app addWindow:window];
 
       [window setWindowEventsCallback:receiveWindowEvents];

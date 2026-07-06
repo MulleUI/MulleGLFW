@@ -466,7 +466,7 @@ int   main( int argc, char *argv[])
       window = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0.0, 0.0, 500.0, 500.0)
                                     titleUTF8String:"Demo"
                                           styleMask:UIWindowStyleResizable // UIWindowOpenGLDeprecated
-                                      graphicsHints:GLFW_DEFAULT_CONTEXT] autorelease];
+                                      graphicsHints:GLFWGraphicsHintsDefault] autorelease];
       assert( window);
       [window setFrameRate:UIWindowFrameRateAsync];
       [window setFrameCallback:frameCallback];
