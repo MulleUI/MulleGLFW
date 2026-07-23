@@ -77,6 +77,15 @@ Creation (Main Thread Only):
 
 - (instancetype) initWithFrame:(CGRect) frame
                titleUTF8String:(char *) title
+                     styleMask:(NSUInteger) styleMask;
+
+- (instancetype) initWithFrame:(CGRect) frame
+               titleUTF8String:(char *) title
+                     styleMask:(NSUInteger) styleMask
+                 graphicsHints:(GLFWGraphicsHints) graphicsHints;
+
+- (instancetype) initWithFrame:(CGRect) frame
+               titleUTF8String:(char *) title
                      styleMask:(NSUInteger) styleMask
                  graphicsHints:(GLFWGraphicsHints) graphicsHints
                  sharingWindow:(id <UIOSWindow>) sharingWindow;
@@ -87,9 +96,11 @@ Creation (Main Thread Only):
 - Combined with `UIWindowStyle*` flags: `UIWindowStyleBare`, `UIWindowStyleResizable`, `UIWindowStyleFloating`, `UIWindowStyleTransparent`, `UIWindowStyleAntiAlias`, `UIWindowStyleSingleBuffer`, `UIWindowStyleHidden`, `UIWindowOpenGLDeprecated`, `UIWindowOpenGLForward`, `UIWindowOpenGLCoreProfile`, `UIWindowOpenGLLibraryFallback`
 
 **Graphics Hints:**
-- `GLFWGraphicsHints` - Bit-packed enum encoding profile, forward-compat, API, library, major, minor
+- `GLFWGraphicsHints` - Typedef of `UIOSWindowGraphicsHints` (bit-packed struct encoding profile, forward-compat, API, library, major, minor)
 - Predefined: `GLFWGraphicsHintsDefault`, `GLFWGraphicsHintsNone`, `GLFWGraphicsHintsGL3`, `GLFWGraphicsHintsGL3_2`, `GLFWGraphicsHintsGLES2`, `GLFWGraphicsHintsGLES3`, `GLFWGraphicsHintsGLES3_2`
-- Helper functions: `GLFWGraphicsHintsMake()`, `GLFWGraphicsHintsGetProfile()`, `GLFWGraphicsHintsGetForward()`, `GLFWGraphicsHintsGetAPI()`, `GLFWGraphicsHintsGetAPILibrary()`, `GLFWGraphicsHintsGetMajor()`, `GLFWGraphicsHintsGetMinor()`, `GLFWGraphicsHintsBySettingProfile()`, etc.
+- `void GLFWGraphicsHintsApplyDriverEnv(GLFWGraphicsHints hints)` - Must be called before `[UIApplication sharedInstance]`. Sets `__GLX_VENDOR_LIBRARY_NAME`, `MESA_LOADER_DRIVER_OVERRIDE`, and other driver-selection environment variables based on hints fields.
+
+**Note:** Helper accessors for `GLFWGraphicsHints` fields are provided by the `UIOSWindowGraphicsHints` type from `MulleUIApplication`.
 
 **Properties:**
 
@@ -153,6 +164,8 @@ Configuration:
 - (void) os_setTitleUTF8String:(char *) s;
 - (void) os_setCursor:(void *) cursor;
 
+- (void) os_setCursorCaptured:(BOOL) captured;  // GLFW_CURSOR_DISABLED mode for gameplay
+
 - (void) os_show;
 - (void) os_hide;
 - (void) os_destroyWindow;
@@ -197,7 +210,6 @@ Category providing event system initialization.
 - (void) os_initWindowEvents;       // Initialize window callbacks (move, resize, close, refresh)
 - (void) os_initInputEvents;        // Initialize input callbacks (keyboard, mouse, scroll)
 - (void) updateWindowInfo;          // Update cached window info
-- (void) os_pollInputState:(struct UIInputState *) state;  // Query current input state
 ```
 
 ### 3.3. `GLFWOSScreen.h`
@@ -288,7 +300,29 @@ Represents a gamepad/joystick device.
 - (char *) os_guidUTF8String;  // Device GUID
 ```
 
-### 3.5. `MulleObjCDeps+MulleGLFW.h`
+### 3.5. `MulleGLFW.h`
+
+#### Umbrella Header
+The main entry point for the library. Defines version information and controls GL header exposure.
+
+**Purpose:** Provides the version macro and conditions whether GLFW headers expose OpenGL symbols.
+
+**Core Macros:**
+```c
+#define MULLE_GLFW_VERSION  ((0 << 20) | (0 << 8) | 1)
+```
+
+Version encoded as `((MAJOR << 20) | (MINOR << 8) | PATCH)`.
+
+```c
+#ifndef MULLE_GLFW_EXPOSE_OPEN_GL
+# define GLFW_INCLUDE_NONE
+#endif
+```
+
+By default, GLFW does not include GL headers — your code must `#include` the OpenGL headers it needs. Define `MULLE_GLFW_EXPOSE_OPEN_GL` before including `MulleGLFW.h` to let GLFW expose them.
+
+### 3.6. `MulleObjCDeps+MulleGLFW.h`
 
 #### `@interface MulleObjCDeps (MulleGLFW)`
 Dependency declaration for mulle-objc runtime.
@@ -300,7 +334,7 @@ Dependency declaration for mulle-objc runtime.
 + (struct _mulle_objc_dependency *) dependencies;
 ```
 
-### 3.6. `UIApplication+GLFW.m` (Category - no public header)
+### 3.7. `UIApplication+GLFW.m` (Category - no public header)
 
 #### `@interface UIApplication (GLFW)`
 Private category extending UIApplication with GLFW initialization and event handling.
@@ -881,6 +915,7 @@ int   main( void)
 ## 7. Dependencies
 
 Direct mulle-sde dependencies:
+- **MulleObjC** - Provides mulle-objc runtime root classes, threading, and autorelease pools
 - **glfw** - GLFW 3.4 library (tar archive from GitHub)
 - **MulleUIApplication** - Provides UIApplication, UIEvent, UIWindow protocols and base classes
 - **mulle-objc-list** (no-header, no-link) - Build tool dependency for reflection

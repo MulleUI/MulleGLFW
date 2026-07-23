@@ -15,7 +15,10 @@
 - Automatic library fallback only happens when creation fails with no `sharingWindow`, no explicit `hints.lib`, and `UIWindowOpenGLLibraryFallback` set on the style mask.
 - Apply `GLFWGraphicsHintsApplyDriverEnv` before `[UIApplication sharedInstance]`. The header says so, and `demo/src/main-glfw-triangle-opengles.m` does it in that order.
 - OSMesa is special: GLFW can create the context, but direct libGL calls may still hit `NULL` dispatch. `src/GLFWOSWindow.m` and `demo/src/main-two-x-two-windows.m` both require loading functions through `glfwGetProcAddress` or GLAD for that path.
-- The default scroll-wheel sensitivity is high (`20.0`). `demo/src/main-glfw-wave.m` immediately lowers it to `1.0`.
+- The default `scrollWheelSensitivity` is `20.0`. `demo/src/main-glfw-wave.m` immediately lowers it to `1.0`.
+- `os_setCursorCaptured:` disables the normal cursor boundary. While captured, `locationInWindow` in mouse motion events is an unbounded virtual position, not a window-relative coordinate. Always use deltas between consecutive motion events.
+- `discardEventsMask` is a thread-safe property (`MULLE_OBJC_THREADSAFE_PROPERTY`) that filters retained events before they reach the callback or receiver. Inspect it before debugging "missing" input.
+- `setFrameRateHz:` is a convenience setter that stores the value as `1.0 / hz`. The underlying `frameRate` property is `mulle_relativetime_t` (seconds per frame), not Hz.
 
 ## GLFWOSScreen
 

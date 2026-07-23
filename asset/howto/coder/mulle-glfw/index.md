@@ -37,10 +37,11 @@ mulle-sde code search GLFWGraphicsHintsApplyDriverEnv
 | Scenario | Start here | Local rule |
 | --- | --- | --- |
 | Create a platform window or GL context | `GLFWOSWindow` | Create on the main thread after `[UIApplication sharedInstance]`; rendering goes through `frameCallback`, not `CGContext`. |
-| Bridge GLFW callbacks into MulleUI events | `GLFWOSWindow+UIEvent.h`, `demo/src/main-glfw-events.m`, `demo/src/main-glfw-wave.m` | Setting the window/input callbacks is the handoff point; retained events must be released by the receiver. |
-| Choose native/EGL/OSMesa behavior | `GLFWGraphicsHintsApplyDriverEnv`, `demo/src/main-glfw-triangle-opengles.m` | Apply driver env before `[UIApplication sharedInstance]`; explicit context-library selection changes fallback behavior. |
+| Bridge GLFW callbacks into MulleUI events | `GLFWOSWindow+UIEvent.h`, `demo/src/main-glfw-events.m`, `demo/src/main-glfw-wave.m` | Setting the window/input callbacks is the handoff point; retained events must be released by the receiver (`NS_CONSUMED`). |
+| Choose native/EGL/OSMesa behavior | `GLFWGraphicsHintsApplyDriverEnv`, `demo/src/main-glfw-triangle-opengles.m` | Apply driver env before `[UIApplication sharedInstance]`; `GLFWGraphicsHints` bit-fields control profile, forward compat, API, library, and GL version. |
 | Query monitors, DPI, or refresh timing | `GLFWOSScreen`, `demo/src/main-glfw-window.m` | Prefer cached `getScreenInfo:` snapshots for cross-thread reads; raw `os_*` monitor queries stay on the main thread. |
-| Enumerate or poll controllers | `GLFWOSGamepad`, `src/UIApplication+GLFW.m` | Connection events come from the app category, but button/axis state is still polled on demand. |
+| Enumerate or poll controllers | `GLFWOSGamepad`, `src/UIApplication+GLFW.m` | Connection events come from the app category, but button/axis state is polled on demand. Use `osIndexRange` for iteration, not 0..numberOfGamepads-1. |
+| Capture or style the cursor | `GLFWOSWindow`, `src/UIApplication+GLFW.m` | `os_setCursor:` for standard/image cursors; `os_setCursorCaptured:` locks cursor to virtual unbounded position (use deltas, not absolute locationInWindow). |
 
 ## Local workflow
 

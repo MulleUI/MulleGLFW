@@ -1,3 +1,5 @@
+#define MULLE_GLFW_VERSION  ((0 << 20) | (0 << 8) | 1)
+
 #define HAVE_IMPORT__MULLE_GLFW
 
 

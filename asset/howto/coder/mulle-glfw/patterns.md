@@ -34,6 +34,34 @@ return( [app runApp]);
 
 - `demo/src/main-glfw-wave.m` is the clearest local "real app" shape.
 - `demo/src/main-glfw-window.m` shows the lighter single-window version and prints screen info before entering the run loop.
+- `setFrameRateHz:` is the preferred way to set a target frame rate (stores seconds-per-frame internally).
+
+## Retained event receivers
+
+The `eventsReceiver` callback (`otherRetainedEventsCallback`) receives `NS_CONSUMED UIEvent *` objects. The receiver MUST release them:
+
+```objective-c
+- (void) receiveRetainedEvent:(NS_CONSUMED UIEvent *) event
+{
+   @try
+   {
+      switch( [event eventType])
+      {
+         case UIEventTypePresses : /* handle key */ break;
+         case UIEventTypeMotion  : /* handle mouse */ break;
+         case UIEventTypeTouches : /* handle button */ break;
+      }
+   }
+   @finally
+   {
+      [event release];
+   }
+}
+```
+
+- `demo/src/main-glfw-wave.m` and `demo/src/main-glfw-events.m` both show this pattern.
+- Window events via `windowEventsReceiver` are autoreleased and must NOT be released.
+- The `NS_CONSUMED` attribute on the parameter is a compiler annotation; the release is still manual.
 
 ## Event-only or raw-GLFW escape hatch
 
@@ -127,6 +155,37 @@ for( i = 0; screen = [app screenAtIndex:i]; i++)
 
 - `demo/src/main-glfw-window.m` is the local example for printing monitor data.
 - `src/GLFWOSScreen.m` shows that `frame`, `canvas`, and `refreshRate` are lock-backed cached reads, while the `os_*` monitor calls stay main-thread-only.
+
+## Cursor management
+
+Standard cursors and image cursors are created through the `UIApplication` GLFW category, then assigned to a window:
+
+```objective-c
+void *cursor;
+
+cursor = [app os_createStandardCursor:UICursorDrag];
+[window os_setCursor:cursor];
+```
+
+For image cursors, provide a `CGBitmap` and a hot-spot pixel:
+
+```objective-c
+void *cursor;
+
+cursor = [app os_createCursorWithBitmap:bitmap
+                                hotSpot:hotSpot];
+[window os_setCursor:cursor];
+```
+
+Cursor capture mode (for games, FPS-style) locks the pointer to unbounded virtual movement:
+
+```objective-c
+[window os_setCursorCaptured:YES];
+```
+
+- `os_setCursorCaptured:` is main-thread only.
+- While captured, `locationInWindow` in motion events is a virtual position, not a window-relative pixel. Use deltas between frames.
+- Clean up cursors with `[app os_destroyCursor:cursor]`.
 
 ## Gamepad polling
 

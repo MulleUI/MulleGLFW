@@ -46,3 +46,9 @@ export MULLE_SDE_VIBECODING=""
 export MULLE_VIBECODING=""
 
 
+#
+#
+#
+export vibecoding="off"
+
+

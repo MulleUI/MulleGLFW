@@ -1,7 +1,7 @@
 #
 #
 #
-export MULLE_SOURCETREE_CONFIG_NAME="wayland"
+export MULLE_SOURCETREE_CONFIG_NAME="x11"
 
 
 #
