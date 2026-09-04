@@ -22,25 +22,31 @@ if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
       list( APPEND ALL_LOAD_OS_SPECIFIC_LIBRARIES "GL")
    else()
       if( NOT GL_LIBRARY)
-         find_library( GL_LIBRARY NAMES
-            GL
-         )
+         foreach( _TMP_GL_LIBRARY_TARGET GL)
+            if( TARGET ${_TMP_GL_LIBRARY_TARGET})
+               set( GL_LIBRARY ${_TMP_GL_LIBRARY_TARGET})
+               break()
+            endif()
+         endforeach()
+         if( NOT GL_LIBRARY)
+            find_library( GL_LIBRARY NAMES
+               GL
+            )
+         endif()
          message( STATUS "GL_LIBRARY is ${GL_LIBRARY}")
-         #
-         # The order looks ascending, but due to the way this file is read
-         # it ends up being descending, which is what we need.
-         #
-         if( GL_LIBRARY)
+      endif()
+      if( GL_LIBRARY)
             #
             # Add GL_LIBRARY to ALL_LOAD_OS_SPECIFIC_LIBRARIES list.
             # Disable with: `mulle-sourcetree mark GL no-cmake-add`
             #
-            list( APPEND ALL_LOAD_OS_SPECIFIC_LIBRARIES ${GL_LIBRARY})
+            if( NOT ${GL_LIBRARY} IN_LIST ALL_LOAD_OS_SPECIFIC_LIBRARIES)
+               list( APPEND ALL_LOAD_OS_SPECIFIC_LIBRARIES ${GL_LIBRARY})
+            endif()
             # intentionally left blank
-         else()
-            # Disable with: `mulle-sourcetree mark GL no-require-link`
-            message( SEND_ERROR "GL_LIBRARY was not found in GL")
-         endif()
+      else()
+         # Disable with: `mulle-sourcetree mark GL no-require-link`
+         message( SEND_ERROR "GL_LIBRARY was not found in GL")
       endif()
    endif()
 endif()
@@ -57,25 +63,31 @@ if( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
       list( APPEND ALL_LOAD_OS_SPECIFIC_FRAMEWORKS "CoreVideo")
    else()
       if( NOT CORE_VIDEO_FRAMEWORK)
-         find_library( CORE_VIDEO_FRAMEWORK NAMES
-            CoreVideo
-         )
+         foreach( _TMP_CORE_VIDEO_FRAMEWORK_TARGET CoreVideo)
+            if( TARGET ${_TMP_CORE_VIDEO_FRAMEWORK_TARGET})
+               set( CORE_VIDEO_FRAMEWORK ${_TMP_CORE_VIDEO_FRAMEWORK_TARGET})
+               break()
+            endif()
+         endforeach()
+         if( NOT CORE_VIDEO_FRAMEWORK)
+            find_library( CORE_VIDEO_FRAMEWORK NAMES
+               CoreVideo
+            )
+         endif()
          message( STATUS "CORE_VIDEO_FRAMEWORK is ${CORE_VIDEO_FRAMEWORK}")
-         #
-         # The order looks ascending, but due to the way this file is read
-         # it ends up being descending, which is what we need.
-         #
-         if( CORE_VIDEO_FRAMEWORK)
+      endif()
+      if( CORE_VIDEO_FRAMEWORK)
             #
             # Add CORE_VIDEO_FRAMEWORK to ALL_LOAD_OS_SPECIFIC_FRAMEWORKS list.
             # Disable with: `mulle-sourcetree mark CoreVideo no-cmake-add`
             #
-            list( APPEND ALL_LOAD_OS_SPECIFIC_FRAMEWORKS ${CORE_VIDEO_FRAMEWORK})
+            if( NOT ${CORE_VIDEO_FRAMEWORK} IN_LIST ALL_LOAD_OS_SPECIFIC_FRAMEWORKS)
+               list( APPEND ALL_LOAD_OS_SPECIFIC_FRAMEWORKS ${CORE_VIDEO_FRAMEWORK})
+            endif()
             # intentionally left blank
-         else()
-            # Disable with: `mulle-sourcetree mark CoreVideo no-require-link`
-            message( SEND_ERROR "CORE_VIDEO_FRAMEWORK was not found in CoreVideo")
-         endif()
+      else()
+         # Disable with: `mulle-sourcetree mark CoreVideo no-require-link`
+         message( SEND_ERROR "CORE_VIDEO_FRAMEWORK was not found in CoreVideo")
       endif()
    endif()
 endif()
@@ -92,25 +104,31 @@ if( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
       list( APPEND ALL_LOAD_OS_SPECIFIC_FRAMEWORKS "OpenGL")
    else()
       if( NOT OPEN_GL_FRAMEWORK)
-         find_library( OPEN_GL_FRAMEWORK NAMES
-            OpenGL
-         )
+         foreach( _TMP_OPEN_GL_FRAMEWORK_TARGET OpenGL)
+            if( TARGET ${_TMP_OPEN_GL_FRAMEWORK_TARGET})
+               set( OPEN_GL_FRAMEWORK ${_TMP_OPEN_GL_FRAMEWORK_TARGET})
+               break()
+            endif()
+         endforeach()
+         if( NOT OPEN_GL_FRAMEWORK)
+            find_library( OPEN_GL_FRAMEWORK NAMES
+               OpenGL
+            )
+         endif()
          message( STATUS "OPEN_GL_FRAMEWORK is ${OPEN_GL_FRAMEWORK}")
-         #
-         # The order looks ascending, but due to the way this file is read
-         # it ends up being descending, which is what we need.
-         #
-         if( OPEN_GL_FRAMEWORK)
+      endif()
+      if( OPEN_GL_FRAMEWORK)
             #
             # Add OPEN_GL_FRAMEWORK to ALL_LOAD_OS_SPECIFIC_FRAMEWORKS list.
             # Disable with: `mulle-sourcetree mark OpenGL no-cmake-add`
             #
-            list( APPEND ALL_LOAD_OS_SPECIFIC_FRAMEWORKS ${OPEN_GL_FRAMEWORK})
+            if( NOT ${OPEN_GL_FRAMEWORK} IN_LIST ALL_LOAD_OS_SPECIFIC_FRAMEWORKS)
+               list( APPEND ALL_LOAD_OS_SPECIFIC_FRAMEWORKS ${OPEN_GL_FRAMEWORK})
+            endif()
             # intentionally left blank
-         else()
-            # Disable with: `mulle-sourcetree mark OpenGL no-require-link`
-            message( SEND_ERROR "OPEN_GL_FRAMEWORK was not found in OpenGL")
-         endif()
+      else()
+         # Disable with: `mulle-sourcetree mark OpenGL no-require-link`
+         message( SEND_ERROR "OPEN_GL_FRAMEWORK was not found in OpenGL")
       endif()
    endif()
 endif()

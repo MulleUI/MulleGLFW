@@ -1,0 +1,42 @@
+## Usage
+
+`GLFWOSWindow` is the concrete OS window: it wraps a native GLFW window and
+gives you low-level access to it:
+
+``` objc
+#import <MulleGLFW/MulleGLFW.h>
+
+int  main( void)
+{
+   GLFWOSWindow  *window;
+
+   window = [GLFWOSWindow windowWithFrame:CGRectMake( 0.0, 0.0, 320.0, 240.0)
+                          titleUTF8String:"Hello, MulleGLFW"
+                                styleMask:UIWindowStyleResizable];
+
+   [window os_show];
+   [window os_setSwapInterval:1];            // sync buffer swaps to the monitor
+   [window os_setTitleUTF8String:"A better title"];
+
+   fprintf( stderr, "framebuffer %tdx%td\n",
+                   [window os_framebufferSize].width,
+                   [window os_framebufferSize].height);
+
+   [window os_destroyWindow];
+   return( 0);
+}
+```
+
+Normally you won't talk to a `GLFWOSWindow` directly. A `UIWindow` owns one
+(or more) and hands its events to the responder chain through `UIEvent`.
+MulleUIOS selects the window system, renderer and backend at build time; see
+its [sourcetree configs](//github.com/MulleUI/MulleUIOS).
+
+## Build the demo
+
+The `demo/` folder is a [mulle-sde](//github.com/mulle-sde) project:
+
+``` sh
+cd demo
+mulle-sde craft
+```

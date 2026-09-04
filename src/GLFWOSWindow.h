@@ -1,5 +1,36 @@
 //
-// Copyright (c) 2021 Nat!, Mulle kybernetiK
+//  GLFWOSWindow.h
+//  MulleGLFW
+//
+//  Copyright (c) 2022 Nat! - Mulle kybernetiK.
+//  All rights reserved.
+//
+//
+//  Redistribution and use in source and binary forms, with or without
+//  modification, are permitted provided that the following conditions are met:
+//
+//  Redistributions of source code must retain the above copyright notice, this
+//  list of conditions and the following disclaimer.
+//
+//  Redistributions in binary form must reproduce the above copyright notice,
+//  this list of conditions and the following disclaimer in the documentation
+//  and/or other materials provided with the distribution.
+//
+//  Neither the name of Mulle kybernetiK nor the names of its contributors
+//  may be used to endorse or promote products derived from this software
+//  without specific prior written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+//  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+//  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+//  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//  POSSIBILITY OF SUCH DAMAGE.
 //
 #ifdef __has_include
 # if __has_include( "NSObject.h")
@@ -91,6 +122,14 @@ void   GLFWGraphicsHintsApplyDriverEnv( GLFWGraphicsHints hints);
 
    void                     *_osmesaBlitState;  // struct mulle__osmesa_blit_state*
 
+#ifdef __APPLE__
+   // Opaque CAMetalLayer * (retained) attached to the cocoa content view when
+   // the window is created with GLFW_NO_API on macOS; NULL otherwise. Created
+   // and released through the system-runtime shim (GLFWMetalLayer-apple.m).
+   // Vended as void * via -backendMetalLayer for the Metal CG backend.
+   void                     *_metalLayer;
+#endif
+
 @private
    // _activeThread is not retained(!) if -haveGraphicsContext returns NO
    // then this will always be nil
@@ -155,6 +194,7 @@ void   GLFWGraphicsHintsApplyDriverEnv( GLFWGraphicsHints hints);
 
 //
 // window creation must be done on the main thread only
+//
 //
 + (instancetype) windowWithFrame:(CGRect) frame
                  titleUTF8String:(char *) title
@@ -221,7 +261,10 @@ void   GLFWGraphicsHintsApplyDriverEnv( GLFWGraphicsHints hints);
 
 
 - (void *) os_window                               MULLE_OBJC_THREADSAFE_METHOD;         // GLFW window, use this for glfw functions
-- (void) os_setSwapInterval:(NSUInteger) value     MULLE_OBJC_THREADSAFE_METHOD;
+
+// On macOS, for a GLFW_NO_API window, returns the attached CAMetalLayer * as
+// an opaque void * (for the Metal CG backend / nvgCreateMTL). NULL otherwise.
+- (void *) backendMetalLayer                       MULLE_OBJC_THREADSAFE_METHOD;- (void) os_setSwapInterval:(NSUInteger) value     MULLE_OBJC_THREADSAFE_METHOD;
 - (void) os_swapBuffers                            MULLE_OBJC_THREADSAFE_METHOD;
 
 // bind GL context of the window to the current thread

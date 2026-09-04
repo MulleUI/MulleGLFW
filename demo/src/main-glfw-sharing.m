@@ -184,7 +184,6 @@ int main(int argc, char** argv)
 {
     GLFWwindow   *windows[3];
     GLuint       texture[ 3];
-    GLuint       junk;
     int          i;
     char         buf[ 64];
 

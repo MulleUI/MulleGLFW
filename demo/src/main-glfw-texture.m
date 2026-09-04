@@ -107,7 +107,6 @@ static void   init_texture()
 //
 static UIWindowDisplayBits   display( id <UIOSWindow> window_in)
 {
-   GLFWOSWindow  *window = MULLE_OBJC_CLASS_CAST( GLFWOSWindow, window_in);
 
    static GLint faces[][4] = {{4,5,6,7},
                               {1,2,6,5},

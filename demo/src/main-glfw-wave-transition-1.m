@@ -282,7 +282,7 @@ void calc_grid(void)
 // Print errors
 //========================================================================
 
-static void error_callback(int error, const char* description)
+static void __attribute__((unused)) error_callback(int error, const char* description)
 {
     fprintf(stderr, "Error: %s\n", description);
 }
@@ -404,7 +404,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 }
 
 
-static void   receiveWindowEvents( GLFWOSWindow *window, UIWindowEvent *event)
+static void __attribute__((unused))   receiveWindowEvents( GLFWOSWindow *window, UIWindowEvent *event)
 {
    CGPixelSize   size;
 
@@ -420,7 +420,7 @@ static void   receiveWindowEvents( GLFWOSWindow *window, UIWindowEvent *event)
 }
 
 
-static void   receiveOtherEvents( GLFWOSWindow *window, UIEvent *event)
+static void __attribute__((unused))   receiveOtherEvents( GLFWOSWindow *window, UIEvent *event)
 {
    CGPoint   scrollOffset;
    CGPoint   position;
@@ -436,7 +436,7 @@ static void   receiveOtherEvents( GLFWOSWindow *window, UIEvent *event)
       break;
 
    case UIEventTypeMotion  :
-      position = [event locationInWindow];
+      position = [(UIInputEvent *) event locationInWindow];
       cursor_position_callback( [window os_window],
                                 position.x,
                                 position.y);
@@ -469,7 +469,6 @@ int main(int argc, char* argv[])
     int width, height;
    UIApplication  *app;
    GLFWOSWindow     *gWindow;
-   CGPixelSize   framebufferSize;
 
 //    glfwSetErrorCallback(error_callback);
 //

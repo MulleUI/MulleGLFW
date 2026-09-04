@@ -50,7 +50,7 @@ static void error_callback(int error, const char* description)
     fprintf(stderr, "Error: %s\n", description);
 }
 
-static char   *eglErrorUTF8String( int error)
+static char __attribute__((unused))   *eglErrorUTF8String( int error)
 {
 #ifndef __APPLE__   
    switch( error)

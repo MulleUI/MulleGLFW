@@ -8,7 +8,7 @@
 #
 cmake_minimum_required( VERSION 3.16...99.99)
 
-project( MulleGLFW VERSION 0.0.1 LANGUAGES C)
+project( MulleGLFW VERSION 0.1.0 LANGUAGES C)
 
 
 set( MULLE_PROJECT_TYPE "Library")
@@ -37,6 +37,62 @@ include( Files)
 include( IDESupport OPTIONAL)
 
 
+# ---------------------------------------------------------------------------
+# Apple Metal surface shim (system clang, Apple runtime — NOT mulle-clang)
+#
+# src/GLFWMetalLayer-apple.m touches Apple AppKit/QuartzCore/Metal ObjC objects
+# and uses the system Objective-C runtime + system SDK headers (which require
+# blocks). mulle-clang cannot compile these, so we must NOT let CMake compile
+# this TU with the project toolchain. Instead we compile it to an object file
+# with the *system* clang via a custom command, and inject that object into the
+# library through OTHER_<IDENTIFIER>_OBJECT_FILES (see cmake/share/Library.cmake).
+# ---------------------------------------------------------------------------
+list( REMOVE_ITEM SOURCES "src/GLFWMetalLayer-apple.m")
+
+if( APPLE)
+   # Locate the system clang (Xcode toolchain), explicitly avoiding mulle-clang.
+   find_program( SYSTEM_CLANG
+      NAMES clang
+      PATHS /usr/bin
+      NO_DEFAULT_PATH
+   )
+   if( NOT SYSTEM_CLANG)
+      set( SYSTEM_CLANG "/usr/bin/clang")
+   endif()
+
+   execute_process(
+      COMMAND xcrun --show-sdk-path
+      OUTPUT_VARIABLE MULLE_GLFW_MACOS_SDK
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+   )
+
+   set( MULLE_GLFW_METAL_SHIM_SRC "${PROJECT_SOURCE_DIR}/src/GLFWMetalLayer-apple.m")
+   set( MULLE_GLFW_METAL_SHIM_OBJ "${CMAKE_CURRENT_BINARY_DIR}/GLFWMetalLayer-apple.o")
+
+   add_custom_command(
+      OUTPUT "${MULLE_GLFW_METAL_SHIM_OBJ}"
+      COMMAND "${SYSTEM_CLANG}"
+              -isysroot "${MULLE_GLFW_MACOS_SDK}"
+              -fobjc-arc
+              -fmodules
+              -g -O0 -fPIC
+              -c "${MULLE_GLFW_METAL_SHIM_SRC}"
+              -o "${MULLE_GLFW_METAL_SHIM_OBJ}"
+      DEPENDS "${MULLE_GLFW_METAL_SHIM_SRC}"
+              "${PROJECT_SOURCE_DIR}/src/GLFWMetalLayer-apple.h"
+      COMMENT "Compiling Apple Metal shim with system clang (${SYSTEM_CLANG})"
+      VERBATIM
+   )
+   add_custom_target( MulleGLFWMetalShim
+      DEPENDS "${MULLE_GLFW_METAL_SHIM_OBJ}"
+   )
+
+   set( OTHER_MULLE_GLFW_OBJECT_FILES
+      "${MULLE_GLFW_METAL_SHIM_OBJ}"
+   )
+endif()
+
+
 ### Library
 
 if( HEADER_PHASE)
@@ -62,6 +118,15 @@ target_compile_options( "${LIBRARY_COMPILE_TARGET}" PUBLIC -Wall)
 # use LIBRARY_LINK_TARGET for linker options
 if( LINK_PHASE)
    target_link_options( "${LIBRARY_LINK_TARGET}" PUBLIC)
+endif()
+
+# Frameworks needed by the Apple Metal surface shim (src/GLFWMetalLayer-apple.m)
+if( APPLE AND LINK_PHASE)
+   target_link_libraries( "${LIBRARY_LINK_TARGET}" PUBLIC
+      "-framework Metal"
+      "-framework QuartzCore"
+      "-framework AppKit"
+   )
 endif()
 
 # ---------------------------------------------------------------------------

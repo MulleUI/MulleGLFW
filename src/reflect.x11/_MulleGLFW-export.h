@@ -13,6 +13,7 @@
 #define _mulle_glf_w__export_h__
 
 
+#import "GLFWMetalLayer-apple.h"
 #import "GLFWOSGamepad.h"
 #import "GLFWOSScreen.h"
 #import "GLFWOSWindow+UIEvent.h"

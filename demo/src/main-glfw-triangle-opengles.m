@@ -120,7 +120,7 @@ static const char* fragment_shader_text =
 #endif
 
 
-static void error_callback(int error, const char* description)
+static void __attribute__((unused)) error_callback(int error, const char* description)
 {
     fprintf(stderr, "GLFW Error: %s\n", description);
 }

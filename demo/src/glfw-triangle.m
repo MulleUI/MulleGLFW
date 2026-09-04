@@ -39,10 +39,11 @@ static GLfloat vertices[] =
 
 #define INFOLOG_LEN  512
 
-GLint   common_get_shader_program( char *vertex_shader_source,
-                                   char *fragment_shader_source)
+GLint   common_get_shader_program( const char *vertex_shader_source,
+                                   const char *fragment_shader_source)
 {
-   GLchar  infoLog[ INFOLOG_LEN];
+   const GLchar  *source;
+   GLchar        infoLog[ INFOLOG_LEN];
    GLint   fragment_shader;
    GLint   shader_program;
    GLint   success;
@@ -50,7 +51,8 @@ GLint   common_get_shader_program( char *vertex_shader_source,
 
    /* Vertex shader */
    vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-   glShaderSource( vertex_shader, 1, &vertex_shader_source, NULL);
+   source = vertex_shader_source;
+   glShaderSource( vertex_shader, 1, &source, NULL);
    glCompileShader( vertex_shader);
    glGetShaderiv( vertex_shader, GL_COMPILE_STATUS, &success);
    if( ! success)
@@ -61,7 +63,8 @@ GLint   common_get_shader_program( char *vertex_shader_source,
 
    /* Fragment shader */
    fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-   glShaderSource( fragment_shader, 1, &fragment_shader_source, NULL);
+   source = fragment_shader_source;
+   glShaderSource( fragment_shader, 1, &source, NULL);
    glCompileShader( fragment_shader);
    glGetShaderiv( fragment_shader, GL_COMPILE_STATUS, &success);
 

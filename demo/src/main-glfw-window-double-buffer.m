@@ -30,9 +30,6 @@
 int main( int argc, char *argv[])
 {
    GLFWOSWindow     *gWindow;
-   UIApplication    *app;
-
-   app = [UIApplication sharedInstance];
    @autoreleasepool
    {
       gWindow = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0, 0, 640, 480)

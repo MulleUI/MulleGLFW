@@ -1,15 +1,13 @@
 # MulleGLFW
 
-#### 🌐 MulleGLFW provides platform windows and events
-
-
-# MulleGLFW
+Part of [MulleUI](https://github.com/MulleUI) — UIKit-shaped modular GUI libraries for mulle-objc.
 
 #### 🌐 MulleGLFW provides platform windows and events
+
 
 This is an Objective-C wrapper around GLFW3 to provide windows and events.
 It provides the meat and potatoes code for **UIEvent** and **UIApplication**
-through categories. **UIWindow** owns one more more **GLFWOSWindows**.
+through categories. **UIWindow** owns one or more **GLFWOSWindows**.
 
 The GLFW3 window object is **GLFWOSWindow**. Each GLFWOSWindow has an implicit
 graphics context, that will be later used by a CGContext.
@@ -25,6 +23,55 @@ graphics context, that will be later used by a CGContext.
 
 
 
+## Documentation & Guides
+
+* [API Summary](asset/dox/api/toc)
+* [Coder Guide](asset/howto/coder/mulle-glfw)
+* [Debugger Guide](asset/howto/debugger/mulle-glfw)
+* [Verifier Guide](asset/howto/verifier/mulle-glfw)
+
+## Usage
+
+`GLFWOSWindow` is the concrete OS window: it wraps a native GLFW window and
+gives you low-level access to it:
+
+``` objc
+#import <MulleGLFW/MulleGLFW.h>
+
+int  main( void)
+{
+   GLFWOSWindow  *window;
+
+   window = [GLFWOSWindow windowWithFrame:CGRectMake( 0.0, 0.0, 320.0, 240.0)
+                          titleUTF8String:"Hello, MulleGLFW"
+                                styleMask:UIWindowStyleResizable];
+
+   [window os_show];
+   [window os_setSwapInterval:1];            // sync buffer swaps to the monitor
+   [window os_setTitleUTF8String:"A better title"];
+
+   fprintf( stderr, "framebuffer %tdx%td\n",
+                   [window os_framebufferSize].width,
+                   [window os_framebufferSize].height);
+
+   [window os_destroyWindow];
+   return( 0);
+}
+```
+
+Normally you won't talk to a `GLFWOSWindow` directly. A `UIWindow` owns one
+(or more) and hands its events to the responder chain through `UIEvent`.
+MulleUIOS selects the window system, renderer and backend at build time; see
+its [sourcetree configs](//github.com/MulleUI/MulleUIOS).
+
+## Build the demo
+
+The `demo/` folder is a [mulle-sde](//github.com/mulle-sde) project:
+
+``` sh
+cd demo
+mulle-sde craft
+```
 
 
 ### You are here
@@ -69,8 +116,8 @@ Install the requirements:
 
 | Requirements                                 | Description
 |----------------------------------------------|-----------------------
-| [glfw](https://github.com/glfw/glfw)             | 
-| [MulleUIApplication](https://github.com/MulleUI/MulleUIApplication)             | 𝄢 MulleUIApplication provides abstract classes like UIApplication and UIEvent
+| [glfw](https://github.com/glfw/glfw)             | 🪟 GLFW windowing library (C)
+| [MulleUIApplication](https://github.com/MulleUI/MulleUIApplication)             | 🛖 MulleUIApplication provides abstract classes like UIApplication and UIEvent
 | [mulle-objc-list](https://github.com/mulle-objc/mulle-objc-list)             | 📒 Lists mulle-objc runtime information contained in executables.
 
 Download the latest [tar](https://github.com/MulleUI/MulleGLFW/archive/refs/tags/latest.tar.gz) or [zip](https://github.com/MulleUI/MulleGLFW/archive/refs/tags/latest.zip) archive and unpack it.

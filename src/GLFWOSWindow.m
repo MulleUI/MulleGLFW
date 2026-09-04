@@ -1,5 +1,36 @@
 //
-// Copyright (c) 2021 Nat!, Mulle kybernetiK
+//  GLFWOSWindow.m
+//  MulleGLFW
+//
+//  Copyright (c) 2022 Nat! - Mulle kybernetiK.
+//  All rights reserved.
+//
+//
+//  Redistribution and use in source and binary forms, with or without
+//  modification, are permitted provided that the following conditions are met:
+//
+//  Redistributions of source code must retain the above copyright notice, this
+//  list of conditions and the following disclaimer.
+//
+//  Redistributions in binary form must reproduce the above copyright notice,
+//  this list of conditions and the following disclaimer in the documentation
+//  and/or other materials provided with the distribution.
+//
+//  Neither the name of Mulle kybernetiK nor the names of its contributors
+//  may be used to endorse or promote products derived from this software
+//  without specific prior written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+//  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+//  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+//  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//  POSSIBILITY OF SUCH DAMAGE.
 //
 #define GL_SILENCE_DEPRECATION
 #define GLFW_INCLUDE_GLEXT
@@ -378,6 +409,19 @@ mulle__osmesa_do_blit( struct mulle__osmesa_blit_state *st,
 #endif // MULLE_GLFW_OSMESA
 
 
+// ---------------------------------------------------------------------------
+// Apple Metal surface: we must NOT pull Apple AppKit/Foundation headers into
+// this mulle-objc translation unit (mulle-clang cannot parse them). We only
+// need the cocoa window handle as an opaque pointer, so forward-declare
+// glfwGetCocoaWindow returning void * instead of including glfw3native.h, and
+// use the pure-C shim (GLFWMetalLayer-apple.h) for the actual Metal work.
+// ---------------------------------------------------------------------------
+#ifdef __APPLE__
+extern void   *glfwGetCocoaWindow( void *window);   // real return type is NSWindow *
+# import "GLFWMetalLayer-apple.h"
+#endif
+
+
 
 @interface GLFWOSWindow( UIEventFuture) < MulleObjCFuture>
 
@@ -400,6 +444,7 @@ mulle__osmesa_do_blit( struct mulle__osmesa_blit_state *st,
 
 void   GLFWGraphicsHintsApplyDriverEnv( GLFWGraphicsHints hints)
 {
+#ifndef _WIN32
    if( hints.glx_vendor)
       setenv( "__GLX_VENDOR_LIBRARY_NAME", hints.glx_vendor, 1);
 
@@ -451,6 +496,7 @@ void   GLFWGraphicsHintsApplyDriverEnv( GLFWGraphicsHints hints)
          setenv( "DRI_PRIME", mulle_buffer_get_string( buf), 1);
       }
    }
+#endif // _WIN32
 }
 
 
@@ -491,6 +537,43 @@ static struct
 + (void) setDebuggingFlags:(NSUInteger) flag  MULLE_OBJC_THREADSAFE_METHOD
 {
    ClassStatic._debuggingFlags = flag;
+}
+
+
+//
+// Resolve an intended styleMask against what this backend can honor for the
+// given graphics API. See the contract in the UIOSWindow protocol
+// (UIWindowTypes.h). This is static (argument-driven, no live OS query), so it
+// can be called before a window exists.
+//
+// The graphics API is encoded in hints.api (see the switch in
+// -initWithFrame:...): api==1 is GLFW_NO_API, which on macOS means the window
+// uses a CAMetalLayer (the Metal CG backend). Metal has no equivalent of GL's
+// context sharing, so the retained backing store (offscreen->screen blit that
+// relies on a shared texture namespace) cannot be honored. Drop those bits so
+// the window falls back to the volatile (direct-to-window) backing store.
+//
++ (NSUInteger) effectiveWindowStyleMask:(NSUInteger) styleMask
+                          graphicsHints:(UIOSWindowGraphicsHints) hints
+{
+   // api == 1 -> GLFW_NO_API (Metal on Apple platforms)
+   BOOL   isMetal = (hints.api == 1);
+
+#ifdef __APPLE__
+   if( isMetal)
+   {
+      // no context sharing under Metal -> no retained (two-context) backing store
+      styleMask &= ~(UIWindowStyleRetained | UIWindowStyleRetainedOnMainThread);
+   }
+#endif
+
+   // Wayland hook (future): the Wayland backend cannot honor arbitrary
+   // programmatic resizes the way X11 does, so a Wayland window would clear
+   // UIWindowStyleResizable here. Left unwired until the Wayland path is
+   // verified; documented so the seam is obvious.
+   (void) isMetal;
+
+   return( styleMask);
 }
 
 
@@ -933,6 +1016,24 @@ retry:
    _backend                     = getWindowBackend( (GLFWwindow *) _window);
    _frameCallback               = defaultFrameCallback;
    _haveGraphicsContext         = glfwGetWindowAttrib( _window, GLFW_CLIENT_API) != GLFW_NO_API;
+
+#ifdef __APPLE__
+   //
+   // A GLFW_NO_API window on macOS has no GL context; we attach a CAMetalLayer
+   // so the Metal CG backend has a surface. Only report Metal2 when the layer
+   // was actually created (device present); otherwise leave the backend as
+   // getWindowBackend reported (UIGraphicsBackendNone for NO_API).
+   //
+   if( glfwGetWindowAttrib( _window, GLFW_CLIENT_API) == GLFW_NO_API)
+   {
+      void   *nsWindow;
+
+      nsWindow     = (void *) glfwGetCocoaWindow( _window);
+      _metalLayer  = MulleGLFWMetalLayerCreate( nsWindow);
+      if( _metalLayer)
+         _backend = UIGraphicsBackendMetal2;
+   }
+#endif
    _otherRetainedEventsCallback = GLFWOSWindowRetainedEventDefaultCallback;
    _scrollWheelSensitivity      = 20.0;
    _styleMask                   = styleMask;
@@ -1007,10 +1108,17 @@ retry:
       [self os_show];
 
 #ifdef DEBUG
-   glfwMakeContextCurrent( _window);
    mulle_fprintf( stderr, "window style            : %s\n", [self os_windowInfoUTF8String]);
-   mulle_fprintf( stderr, "window graphics context : %s\n", [self os_contextInfoUTF8String]);
-   glfwMakeContextCurrent( NULL);
+   // os_contextInfoUTF8String calls glGetString, which requires a current GL
+   // context. A GLFW_NO_API window (Metal backend, CAMetalLayer) has none, so
+   // making the context current / querying GL here would crash. Only report
+   // the GL context description when the window actually has a GL context.
+   if( _haveGraphicsContext)
+   {
+      glfwMakeContextCurrent( _window);
+      mulle_fprintf( stderr, "window graphics context : %s\n", [self os_contextInfoUTF8String]);
+      glfwMakeContextCurrent( NULL);
+   }
 #endif
 
    // read values once, afterwards these values are just updated by events
@@ -1078,6 +1186,11 @@ retry:
 #if MULLE_GLFW_OSMESA
    mulle__osmesa_blit_state_destroy( _osmesaBlitState);
    _osmesaBlitState = NULL;
+#endif
+
+#ifdef __APPLE__
+   MulleGLFWMetalLayerRelease( _metalLayer);
+   _metalLayer = NULL;
 #endif
 
    [super dealloc];
@@ -1223,6 +1336,22 @@ retry:
 }
 
 
+//
+// Vends the CAMetalLayer * (as void *) attached on macOS for a GLFW_NO_API
+// window. The Metal CG backend pulls this into its CGContext to feed
+// nvgCreateMTL(). Returns NULL on non-Apple platforms or non-Metal windows.
+// This is a plain C-pointer accessor; it never messages the layer here.
+//
+- (void *) backendMetalLayer
+{
+#ifdef __APPLE__
+   return( _metalLayer);
+#else
+   return( NULL);
+#endif
+}
+
+
 // bind GL context of the window to the current thread
 - (void) os_activateGraphicsContext
 {
@@ -1231,16 +1360,23 @@ retry:
 
    UIOSWindowSwapLog( "lock: %p", _window);
    [_contextLock lock];
+   //
+   // Track the owning thread regardless of backend: the CGContext's
+   // -activeThread delegates to us, and CGContextIsActiveInCurrentThread
+   // gates rendering on it. Only the GL glfwMakeContextCurrent call is
+   // OpenGL-specific; a Metal (GLFW_NO_API) window has no GL context to make
+   // current but still owns a render thread.
+   //
    if( _haveGraphicsContext)
    {
       UIOSWindowSwapLog( "activate window: %p (thread=%p before-current=%p)",
                           _window, [NSThread currentThread],
                           glfwGetCurrentContext());
       glfwMakeContextCurrent( _window);
-      _mulle_atomic_pointer_write( &_atomicActiveThread, [NSThread currentThread]);
-   }      
+   }
    else
-      UIOSWindowLogVerbose( "Activated, but we have no graphics context");
+      UIOSWindowLogVerbose( "Activated without a GL context (Metal/NO_API)");
+   _mulle_atomic_pointer_write( &_atomicActiveThread, [NSThread currentThread]);
 }
 
 
@@ -1259,10 +1395,10 @@ retry:
    {
       UIOSWindowSwapLog( "activate window: %p", _window);
       glfwMakeContextCurrent( _window);
-      _mulle_atomic_pointer_write( &_atomicActiveThread, [NSThread currentThread]);
    }
    else
-      UIOSWindowLogVerbose( "Did activate, but we have no graphics context");
+      UIOSWindowLogVerbose( "Did activate without a GL context (Metal/NO_API)");
+   _mulle_atomic_pointer_write( &_atomicActiveThread, [NSThread currentThread]);
 
    return( YES);
 }
@@ -1279,8 +1415,8 @@ retry:
                           _window, [NSThread currentThread],
                           glfwGetCurrentContext());
       glfwMakeContextCurrent( NULL);
-      _mulle_atomic_pointer_write( &_atomicActiveThread, NULL);
    }
+   _mulle_atomic_pointer_write( &_atomicActiveThread, NULL);
    UIOSWindowSwapLog( "unlock: %p", _window);
    [_contextLock unlock];
 }
@@ -1543,6 +1679,18 @@ static struct
 }
 
 
+- (void) applicationDidChangeWindowCount:(NSUInteger) count
+{
+   MULLE_C_UNUSED( count);
+   // no-op: GLFWOSWindow delegates window-level behaviour to UIWindow.
+   // UIApplication calls this on every window when the count changes; the
+   // higher-level UIWindow (e.g. UIPureWindow) uses it to tune
+   // keepOSGraphicsContextActive. A bare GLFWOSWindow has nothing to do here,
+   // but the UIOSWindow protocol requires the method to exist (UIApplication
+   // invokes it unconditionally).
+}
+
+
 - (void) applicationDidAddWindow:(UIApplication *) app
 {
    MULLE_C_UNUSED( app);
@@ -1595,6 +1743,11 @@ static struct
       // handles (Display*, wl_surface*) that are valid only while _window lives.
       mulle__osmesa_blit_state_destroy( _osmesaBlitState);
       _osmesaBlitState = NULL;
+#endif
+#ifdef __APPLE__
+      // Release the CAMetalLayer before the window/view it is attached to.
+      MulleGLFWMetalLayerRelease( _metalLayer);
+      _metalLayer = NULL;
 #endif
       glfwDestroyWindow( _window);
       _window = NULL;
@@ -1685,6 +1838,19 @@ static struct
    assert( _window);
 
    glfwGetFramebufferSize( _window, &w, &h);  // just to be sure...
+
+#ifdef __APPLE__
+   // Keep the attached CAMetalLayer's drawable resolution in sync with the
+   // window framebuffer size. Metal (unlike GL) has no implicit backbuffer:
+   // nextDrawable's texture is sized from the layer's drawableSize, so if we
+   // never set it the presented drawable does not match the window and nothing
+   // shows. The reference nanovg-Metal demo sets this every frame from
+   // glfwGetFramebufferSize; os_framebufferSize is the equivalent single point
+   // in this integration (called on the main thread on init and on resize).
+   if( _metalLayer && w > 0 && h > 0)
+      MulleGLFWMetalLayerSetDrawableSize( _metalLayer, (double) w, (double) h);
+#endif
+
    return( CGPixelSizeMake( w, h));
 }
 

@@ -1,5 +1,5 @@
 //
-//  GLFWOSScreen.m
+//  GLFWOSScreen.h
 //  MulleGLFW
 //
 //  Copyright (c) 2022 Nat! - Mulle kybernetiK.

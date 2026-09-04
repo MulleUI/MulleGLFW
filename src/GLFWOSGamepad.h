@@ -1,5 +1,5 @@
 //
-//  GLFWOSGamepad.m
+//  GLFWOSGamepad.h
 //  MulleGLFW
 //
 //  Copyright (c) 2024 Nat! - Mulle kybernetiK.

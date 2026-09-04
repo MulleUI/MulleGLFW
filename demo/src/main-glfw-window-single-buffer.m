@@ -12,9 +12,6 @@ int main( int argc, char *argv[])
    struct timespec delay = { 0, 500 * 1000L * 1000L};
 
    GLFWOSWindow    *gWindow;
-   UIApplication   *app;
-
-   app = [UIApplication sharedInstance];
    @autoreleasepool
    {
       gWindow = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0, 0, 640, 480)

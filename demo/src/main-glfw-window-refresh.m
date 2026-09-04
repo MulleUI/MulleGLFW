@@ -290,7 +290,6 @@ static void   draw_texture( size_t position, GLuint handle)
 
 static void   draw_scene( int width, int height)
 {
-   void     *texture;
    size_t   i, n;
    GLuint   handle;
    int      index;

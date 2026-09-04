@@ -421,7 +421,7 @@ static void   receiveOtherEvents( GLFWOSWindow *gWindow, UIEvent *event)
       break;
 
    case UIEventTypeMotion  :
-      position = [event locationInWindow];
+      position = [(UIInputEvent *) event locationInWindow];
       cursor_position_callback( [gWindow os_window],
                                 position.x,
                                 position.y);

@@ -22,7 +22,6 @@
 
 int main(void)
 {
-   struct timespec delay = { 0, 500 * 1000L * 1000L};
    unsigned int   i, j;
 
    if (!glfwInit())

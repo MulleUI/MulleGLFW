@@ -84,10 +84,12 @@ int   main( int argc, char *argv[])
    mulle_relativetime_t  frameRate;
    NSUInteger            i;
    GLFWOSWindow          *window;
+   UIApplication         *app;
    NSUInteger            styleMask;
 
    // get glfw started
    [UIApplication os_initialize];
+   app = [UIApplication sharedInstance];
 
    styleMask = GLFWOSWindowStyleMaskDefault | UIWindowStyleResizable;
    frameRate = 0.5;
@@ -132,7 +134,7 @@ int   main( int argc, char *argv[])
    [window setFrameRate:frameRate];
    [window setFrameCallback:frameCallback];
 
-   return( UIApplicationRunWindow( window));
+   return( [app runWindow:window]);
 }
 
 
