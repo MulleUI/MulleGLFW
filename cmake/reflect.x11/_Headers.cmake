@@ -89,6 +89,5 @@ src/GLFWOSWindow+UIEvent.h
 src/GLFWOSWindow.h
 src/MulleGLFW.h
 src/MulleObjCDeps+MulleGLFW.h
-src/reflect/_MulleGLFW-versioncheck.h
 )
 
