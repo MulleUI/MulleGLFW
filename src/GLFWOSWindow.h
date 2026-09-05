@@ -86,6 +86,7 @@ typedef UIOSWindowGraphicsHints GLFWGraphicsHints;
 // LD_LIBRARY_PATH, LIBGL_DRIVERS_PATH, __EGL_VENDOR_LIBRARY_FILENAMES,
 // LIBGL_ALWAYS_SOFTWARE, DRI_PRIME as needed.
 // Must be called before [UIApplication sharedInstance].
+MULLE_GLFW_GLOBAL
 void   GLFWGraphicsHintsApplyDriverEnv( GLFWGraphicsHints hints);
 
 
@@ -340,7 +341,9 @@ void   GLFWGraphicsHintsApplyDriverEnv( GLFWGraphicsHints hints);
 
 @end
 
+MULLE_GLFW_GLOBAL
 void   GLFWOSWindowEventDefaultCallback( id <UIOSWindow> window, UIWindowEvent *event);
+MULLE_GLFW_GLOBAL
 void   GLFWOSWindowRetainedEventDefaultCallback( id <UIOSWindow> window, UIEvent *retainedEvent);
 
 

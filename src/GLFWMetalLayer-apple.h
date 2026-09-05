@@ -19,22 +19,27 @@ extern "C" {
 // Create + attach a CAMetalLayer to the cocoa window (glfwGetCocoaWindow
 // result, passed as void *). Returns an opaque CAMetalLayer * (retained) or
 // NULL. Release with MulleGLFWMetalLayerRelease.
+MULLE_GLFW_GLOBAL
 void   *MulleGLFWMetalLayerCreate( void *nsWindowPointer);
 
 // Sync the layer's drawableSize to the framebuffer pixel size on resize.
+MULLE_GLFW_GLOBAL
 void    MulleGLFWMetalLayerSetDrawableSize( void *layer, double width, double height);
 
 // Acquire the layer's next drawable, clear it to the given RGBA color via a
 // render pass, and present it. Pure C boundary; all Metal ObjC messaging is
 // contained in the shim. Intended as a minimal on-screen present for tests and
 // as a reference present path.
+MULLE_GLFW_GLOBAL
 void    MulleGLFWMetalLayerPresentClear( void *layer,
                                          double r, double g, double b, double a);
 
 // Borrowed id<MTLDevice> as void * (not retained), or NULL.
+MULLE_GLFW_GLOBAL
 void   *MulleGLFWMetalLayerDevice( void *layer);
 
 // Release the reference from MulleGLFWMetalLayerCreate.
+MULLE_GLFW_GLOBAL
 void    MulleGLFWMetalLayerRelease( void *layer);
 
 #if defined( __cplusplus)
