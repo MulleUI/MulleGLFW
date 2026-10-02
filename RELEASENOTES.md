@@ -1,3 +1,7 @@
+## 0.1.1
+
+* build system maintenance: updated mulle-sde and cmake support, regenerated reflection data
+
 ## 0.1.0
 
 
