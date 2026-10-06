@@ -1,0 +1,94 @@
+# Valgrind suppressions for MulleGLFW tests.
+#
+# All of these match only call stacks that pass through the vendor graphics
+# libraries named below, so leaks/errors originating in MulleGLFW, the
+# Objective-C runtime or the tests themselves are still reported.
+#
+# Rationale: every available GL backend leaks a little EGL/driver state that
+# is not reclaimed by eglTerminate (NVIDIA proprietary, Mesa EGL/llvmpipe and
+# OSMesa alike), and the NVIDIA Wayland EGL layer issues write() syscalls that
+# valgrind cannot model. Same class as suppressed in MulleUIOS. MulleGLFW's own
+# Wayland teardown is fixed (glfw 3.5.1 + os_deinitialize event drain) and is
+# deliberately NOT suppressed.
+
+# --- NVIDIA proprietary EGL driver -----------------------------------------
+
+{
+   mulle-glfw-nvidia-egl-leak
+   Memcheck:Leak
+   match-leak-kinds: definite,possible
+   ...
+   obj:*/libEGL_nvidia.so*
+   ...
+}
+
+{
+   mulle-glfw-nvidia-egl-wayland-leak
+   Memcheck:Leak
+   match-leak-kinds: definite,possible
+   ...
+   obj:*/libnvidia-egl-wayland.so*
+   ...
+}
+
+{
+   mulle-glfw-nvidia-other-leak
+   Memcheck:Leak
+   match-leak-kinds: definite,possible
+   ...
+   obj:*/libnvidia-*.so*
+   ...
+}
+
+# libdbus allocations pulled in through the NVIDIA EGL Wayland layer
+{
+   mulle-glfw-nvidia-dbus-leak
+   Memcheck:Leak
+   match-leak-kinds: definite,possible
+   ...
+   obj:*/libdbus-1.so*
+   ...
+   obj:*/libEGL_nvidia.so*
+   ...
+}
+
+# NVIDIA EGL Wayland layer issues write() syscalls valgrind cannot model
+{
+   mulle-glfw-nvidia-egl-wayland-write
+   Memcheck:Param
+   write(buf)
+   ...
+   obj:*/libnvidia-egl-wayland.so*
+   ...
+}
+
+# --- Mesa software EGL (llvmpipe) / gallium --------------------------------
+
+{
+   mulle-glfw-mesa-egl-leak
+   Memcheck:Leak
+   match-leak-kinds: definite,possible
+   ...
+   obj:*/libEGL_mesa.so*
+   ...
+}
+
+{
+   mulle-glfw-mesa-gallium-leak
+   Memcheck:Leak
+   match-leak-kinds: definite,possible
+   ...
+   obj:*/libgallium*.so*
+   ...
+}
+
+# --- OSMesa software rendering ---------------------------------------------
+
+{
+   mulle-glfw-osmesa-leak
+   Memcheck:Leak
+   match-leak-kinds: definite,possible
+   ...
+   obj:*/libOSMesa.so*
+   ...
+}

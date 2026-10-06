@@ -386,9 +386,9 @@ The main entry point for the library. Defines version information and controls G
 
 **Core Macros:**
 ```c
-#define MULLE_GLFW_VERSION  ((0UL << 20) | (1 << 8) | 0)
+#define MULLE_GLFW_VERSION  ((0UL << 20) | (1 << 8) | 1)
 ```
-Version encoded as `((MAJOR << 20) | (MINOR << 8) | PATCH)` → 0.1.0.
+Version encoded as `((MAJOR << 20) | (MINOR << 8) | PATCH)` → 0.1.1.
 
 ```c
 // do not expose any OpenGL stuff here, unless asked to
@@ -421,7 +421,7 @@ Private category extending UIApplication with GLFW initialization and event hand
 **Key Methods:**
 ```objective-c
 + (void) os_initialize;   // glfwInit() + init hints (GLFW_JOYSTICK_HAT_BUTTONS off)
-+ (void) os_deinitialize; // glfwTerminate() + clear error callback
++ (void) os_deinitialize; // glfwPollEvents() drain, then glfwTerminate() + clear error callback
 - (void) os_init;         // enumerate screens/gamepads, set monitor+joystick callbacks
 - (void) os_finalize;     // clear callbacks
 

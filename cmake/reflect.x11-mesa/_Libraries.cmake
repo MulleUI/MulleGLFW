@@ -5,7 +5,7 @@
 #
 # Disable generation of this file with:
 #
-# mulle-sde environment set MULLE_SOURCETREE_TO_CMAKE_LIBRARIES_FILE DISABLE
+# mulle-sde environment --global set MULLE_SOURCETREE_TO_CMAKE_LIBRARIES_FILE DISABLE
 #
 if( MULLE_TRACE_INCLUDE)
    message( STATUS "# Include \"${CMAKE_CURRENT_LIST_FILE}\"" )
@@ -22,20 +22,27 @@ if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "
       list( APPEND OS_SPECIFIC_LIBRARIES "GL")
    else()
       if( NOT GL_LIBRARY)
-         find_library( GL_LIBRARY NAMES
-            GL
-         )
+         foreach( _TMP_GL_LIBRARY_TARGET GL)
+            if( TARGET ${_TMP_GL_LIBRARY_TARGET})
+               set( GL_LIBRARY ${_TMP_GL_LIBRARY_TARGET})
+               break()
+            endif()
+         endforeach()
+         if( NOT GL_LIBRARY)
+            find_library( GL_LIBRARY NAMES
+               GL
+            )
+         endif()
          message( STATUS "GL_LIBRARY is ${GL_LIBRARY}")
-         #
-         # The order looks ascending, but due to the way this file is read
-         # it ends up being descending, which is what we need.
-         #
-         if( GL_LIBRARY)
+      endif()
+      if( GL_LIBRARY)
             #
             # Add GL_LIBRARY to OS_SPECIFIC_LIBRARIES list.
             # Disable with: `mulle-sourcetree mark GL no-cmake-add`
             #
-            list( APPEND OS_SPECIFIC_LIBRARIES ${GL_LIBRARY})
+            if( NOT ${GL_LIBRARY} IN_LIST OS_SPECIFIC_LIBRARIES)
+               list( APPEND OS_SPECIFIC_LIBRARIES ${GL_LIBRARY})
+            endif()
             #
             # Inherit information from dependency.
             # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
@@ -78,10 +85,9 @@ if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "
                   message( STATUS "${_TMP_GL_DIR} not found")
                endif()
             endforeach()
-         else()
-            # Disable with: `mulle-sourcetree mark GL no-require-link`
-            message( SEND_ERROR "GL_LIBRARY was not found in GL")
-         endif()
+      else()
+         # Disable with: `mulle-sourcetree mark GL no-require-link`
+         message( SEND_ERROR "GL_LIBRARY was not found in GL")
       endif()
    endif()
 endif()
@@ -98,20 +104,27 @@ if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "
       list( APPEND OS_SPECIFIC_LIBRARIES "GLU")
    else()
       if( NOT GLU_LIBRARY)
-         find_library( GLU_LIBRARY NAMES
-            GLU
-         )
+         foreach( _TMP_GLU_LIBRARY_TARGET GLU)
+            if( TARGET ${_TMP_GLU_LIBRARY_TARGET})
+               set( GLU_LIBRARY ${_TMP_GLU_LIBRARY_TARGET})
+               break()
+            endif()
+         endforeach()
+         if( NOT GLU_LIBRARY)
+            find_library( GLU_LIBRARY NAMES
+               GLU
+            )
+         endif()
          message( STATUS "GLU_LIBRARY is ${GLU_LIBRARY}")
-         #
-         # The order looks ascending, but due to the way this file is read
-         # it ends up being descending, which is what we need.
-         #
-         if( GLU_LIBRARY)
+      endif()
+      if( GLU_LIBRARY)
             #
             # Add GLU_LIBRARY to OS_SPECIFIC_LIBRARIES list.
             # Disable with: `mulle-sourcetree mark GLU no-cmake-add`
             #
-            list( APPEND OS_SPECIFIC_LIBRARIES ${GLU_LIBRARY})
+            if( NOT ${GLU_LIBRARY} IN_LIST OS_SPECIFIC_LIBRARIES)
+               list( APPEND OS_SPECIFIC_LIBRARIES ${GLU_LIBRARY})
+            endif()
             #
             # Inherit information from dependency.
             # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
@@ -154,10 +167,9 @@ if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "
                   message( STATUS "${_TMP_GLU_DIR} not found")
                endif()
             endforeach()
-         else()
-            # Disable with: `mulle-sourcetree mark GLU no-require-link`
-            message( SEND_ERROR "GLU_LIBRARY was not found in GLU")
-         endif()
+      else()
+         # Disable with: `mulle-sourcetree mark GLU no-require-link`
+         message( SEND_ERROR "GLU_LIBRARY was not found in GLU")
       endif()
    endif()
 endif()
@@ -174,20 +186,27 @@ if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "
       list( APPEND OS_SPECIFIC_LIBRARIES "GLX_mesa")
    else()
       if( NOT GL_X_MESA_LIBRARY)
-         find_library( GL_X_MESA_LIBRARY NAMES
-            GLX_mesa
-         )
+         foreach( _TMP_GL_X_MESA_LIBRARY_TARGET GLX_mesa)
+            if( TARGET ${_TMP_GL_X_MESA_LIBRARY_TARGET})
+               set( GL_X_MESA_LIBRARY ${_TMP_GL_X_MESA_LIBRARY_TARGET})
+               break()
+            endif()
+         endforeach()
+         if( NOT GL_X_MESA_LIBRARY)
+            find_library( GL_X_MESA_LIBRARY NAMES
+               GLX_mesa
+            )
+         endif()
          message( STATUS "GL_X_MESA_LIBRARY is ${GL_X_MESA_LIBRARY}")
-         #
-         # The order looks ascending, but due to the way this file is read
-         # it ends up being descending, which is what we need.
-         #
-         if( GL_X_MESA_LIBRARY)
+      endif()
+      if( GL_X_MESA_LIBRARY)
             #
             # Add GL_X_MESA_LIBRARY to OS_SPECIFIC_LIBRARIES list.
             # Disable with: `mulle-sourcetree mark GLX_mesa no-cmake-add`
             #
-            list( APPEND OS_SPECIFIC_LIBRARIES ${GL_X_MESA_LIBRARY})
+            if( NOT ${GL_X_MESA_LIBRARY} IN_LIST OS_SPECIFIC_LIBRARIES)
+               list( APPEND OS_SPECIFIC_LIBRARIES ${GL_X_MESA_LIBRARY})
+            endif()
             #
             # Inherit information from dependency.
             # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
@@ -230,10 +249,9 @@ if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "
                   message( STATUS "${_TMP_GL_X_MESA_DIR} not found")
                endif()
             endforeach()
-         else()
-            # Disable with: `mulle-sourcetree mark GLX_mesa no-require-link`
-            message( SEND_ERROR "GL_X_MESA_LIBRARY was not found in GLX_mesa")
-         endif()
+      else()
+         # Disable with: `mulle-sourcetree mark GLX_mesa no-require-link`
+         message( SEND_ERROR "GL_X_MESA_LIBRARY was not found in GLX_mesa")
       endif()
    endif()
 endif()
@@ -250,20 +268,27 @@ if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "
       list( APPEND OS_SPECIFIC_LIBRARIES "X11")
    else()
       if( NOT X11_LIBRARY)
-         find_library( X11_LIBRARY NAMES
-            X11
-         )
+         foreach( _TMP_X11_LIBRARY_TARGET X11)
+            if( TARGET ${_TMP_X11_LIBRARY_TARGET})
+               set( X11_LIBRARY ${_TMP_X11_LIBRARY_TARGET})
+               break()
+            endif()
+         endforeach()
+         if( NOT X11_LIBRARY)
+            find_library( X11_LIBRARY NAMES
+               X11
+            )
+         endif()
          message( STATUS "X11_LIBRARY is ${X11_LIBRARY}")
-         #
-         # The order looks ascending, but due to the way this file is read
-         # it ends up being descending, which is what we need.
-         #
-         if( X11_LIBRARY)
+      endif()
+      if( X11_LIBRARY)
             #
             # Add X11_LIBRARY to OS_SPECIFIC_LIBRARIES list.
             # Disable with: `mulle-sourcetree mark X11 no-cmake-add`
             #
-            list( APPEND OS_SPECIFIC_LIBRARIES ${X11_LIBRARY})
+            if( NOT ${X11_LIBRARY} IN_LIST OS_SPECIFIC_LIBRARIES)
+               list( APPEND OS_SPECIFIC_LIBRARIES ${X11_LIBRARY})
+            endif()
             #
             # Inherit information from dependency.
             # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
@@ -306,10 +331,9 @@ if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "
                   message( STATUS "${_TMP_X11_DIR} not found")
                endif()
             endforeach()
-         else()
-            # Disable with: `mulle-sourcetree mark X11 no-require-link`
-            message( SEND_ERROR "X11_LIBRARY was not found in X11")
-         endif()
+      else()
+         # Disable with: `mulle-sourcetree mark X11 no-require-link`
+         message( SEND_ERROR "X11_LIBRARY was not found in X11")
       endif()
    endif()
 endif()
@@ -326,20 +350,27 @@ if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "
       list( APPEND OS_SPECIFIC_LIBRARIES "Xrandr")
    else()
       if( NOT XRANDR_LIBRARY)
-         find_library( XRANDR_LIBRARY NAMES
-            Xrandr
-         )
+         foreach( _TMP_XRANDR_LIBRARY_TARGET Xrandr)
+            if( TARGET ${_TMP_XRANDR_LIBRARY_TARGET})
+               set( XRANDR_LIBRARY ${_TMP_XRANDR_LIBRARY_TARGET})
+               break()
+            endif()
+         endforeach()
+         if( NOT XRANDR_LIBRARY)
+            find_library( XRANDR_LIBRARY NAMES
+               Xrandr
+            )
+         endif()
          message( STATUS "XRANDR_LIBRARY is ${XRANDR_LIBRARY}")
-         #
-         # The order looks ascending, but due to the way this file is read
-         # it ends up being descending, which is what we need.
-         #
-         if( XRANDR_LIBRARY)
+      endif()
+      if( XRANDR_LIBRARY)
             #
             # Add XRANDR_LIBRARY to OS_SPECIFIC_LIBRARIES list.
             # Disable with: `mulle-sourcetree mark Xrandr no-cmake-add`
             #
-            list( APPEND OS_SPECIFIC_LIBRARIES ${XRANDR_LIBRARY})
+            if( NOT ${XRANDR_LIBRARY} IN_LIST OS_SPECIFIC_LIBRARIES)
+               list( APPEND OS_SPECIFIC_LIBRARIES ${XRANDR_LIBRARY})
+            endif()
             #
             # Inherit information from dependency.
             # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
@@ -382,10 +413,9 @@ if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "
                   message( STATUS "${_TMP_XRANDR_DIR} not found")
                endif()
             endforeach()
-         else()
-            # Disable with: `mulle-sourcetree mark Xrandr no-require-link`
-            message( SEND_ERROR "XRANDR_LIBRARY was not found in Xrandr")
-         endif()
+      else()
+         # Disable with: `mulle-sourcetree mark Xrandr no-require-link`
+         message( SEND_ERROR "XRANDR_LIBRARY was not found in Xrandr")
       endif()
    endif()
 endif()
@@ -402,20 +432,27 @@ if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "
       list( APPEND OS_SPECIFIC_LIBRARIES "Xxf86vm")
    else()
       if( NOT XXF86VM_LIBRARY)
-         find_library( XXF86VM_LIBRARY NAMES
-            Xxf86vm
-         )
+         foreach( _TMP_XXF86VM_LIBRARY_TARGET Xxf86vm)
+            if( TARGET ${_TMP_XXF86VM_LIBRARY_TARGET})
+               set( XXF86VM_LIBRARY ${_TMP_XXF86VM_LIBRARY_TARGET})
+               break()
+            endif()
+         endforeach()
+         if( NOT XXF86VM_LIBRARY)
+            find_library( XXF86VM_LIBRARY NAMES
+               Xxf86vm
+            )
+         endif()
          message( STATUS "XXF86VM_LIBRARY is ${XXF86VM_LIBRARY}")
-         #
-         # The order looks ascending, but due to the way this file is read
-         # it ends up being descending, which is what we need.
-         #
-         if( XXF86VM_LIBRARY)
+      endif()
+      if( XXF86VM_LIBRARY)
             #
             # Add XXF86VM_LIBRARY to OS_SPECIFIC_LIBRARIES list.
             # Disable with: `mulle-sourcetree mark Xxf86vm no-cmake-add`
             #
-            list( APPEND OS_SPECIFIC_LIBRARIES ${XXF86VM_LIBRARY})
+            if( NOT ${XXF86VM_LIBRARY} IN_LIST OS_SPECIFIC_LIBRARIES)
+               list( APPEND OS_SPECIFIC_LIBRARIES ${XXF86VM_LIBRARY})
+            endif()
             #
             # Inherit information from dependency.
             # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
@@ -458,10 +495,9 @@ if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "
                   message( STATUS "${_TMP_XXF86VM_DIR} not found")
                endif()
             endforeach()
-         else()
-            # Disable with: `mulle-sourcetree mark Xxf86vm no-require-link`
-            message( SEND_ERROR "XXF86VM_LIBRARY was not found in Xxf86vm")
-         endif()
+      else()
+         # Disable with: `mulle-sourcetree mark Xxf86vm no-require-link`
+         message( SEND_ERROR "XXF86VM_LIBRARY was not found in Xxf86vm")
       endif()
    endif()
 endif()
@@ -478,20 +514,27 @@ if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "
       list( APPEND OS_SPECIFIC_LIBRARIES "Xinerama")
    else()
       if( NOT XINERAMA_LIBRARY)
-         find_library( XINERAMA_LIBRARY NAMES
-            Xinerama
-         )
+         foreach( _TMP_XINERAMA_LIBRARY_TARGET Xinerama)
+            if( TARGET ${_TMP_XINERAMA_LIBRARY_TARGET})
+               set( XINERAMA_LIBRARY ${_TMP_XINERAMA_LIBRARY_TARGET})
+               break()
+            endif()
+         endforeach()
+         if( NOT XINERAMA_LIBRARY)
+            find_library( XINERAMA_LIBRARY NAMES
+               Xinerama
+            )
+         endif()
          message( STATUS "XINERAMA_LIBRARY is ${XINERAMA_LIBRARY}")
-         #
-         # The order looks ascending, but due to the way this file is read
-         # it ends up being descending, which is what we need.
-         #
-         if( XINERAMA_LIBRARY)
+      endif()
+      if( XINERAMA_LIBRARY)
             #
             # Add XINERAMA_LIBRARY to OS_SPECIFIC_LIBRARIES list.
             # Disable with: `mulle-sourcetree mark Xinerama no-cmake-add`
             #
-            list( APPEND OS_SPECIFIC_LIBRARIES ${XINERAMA_LIBRARY})
+            if( NOT ${XINERAMA_LIBRARY} IN_LIST OS_SPECIFIC_LIBRARIES)
+               list( APPEND OS_SPECIFIC_LIBRARIES ${XINERAMA_LIBRARY})
+            endif()
             #
             # Inherit information from dependency.
             # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
@@ -534,10 +577,9 @@ if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "
                   message( STATUS "${_TMP_XINERAMA_DIR} not found")
                endif()
             endforeach()
-         else()
-            # Disable with: `mulle-sourcetree mark Xinerama no-require-link`
-            message( SEND_ERROR "XINERAMA_LIBRARY was not found in Xinerama")
-         endif()
+      else()
+         # Disable with: `mulle-sourcetree mark Xinerama no-require-link`
+         message( SEND_ERROR "XINERAMA_LIBRARY was not found in Xinerama")
       endif()
    endif()
 endif()
@@ -554,20 +596,27 @@ if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "
       list( APPEND OS_SPECIFIC_LIBRARIES "Xcursor")
    else()
       if( NOT XCURSOR_LIBRARY)
-         find_library( XCURSOR_LIBRARY NAMES
-            Xcursor
-         )
+         foreach( _TMP_XCURSOR_LIBRARY_TARGET Xcursor)
+            if( TARGET ${_TMP_XCURSOR_LIBRARY_TARGET})
+               set( XCURSOR_LIBRARY ${_TMP_XCURSOR_LIBRARY_TARGET})
+               break()
+            endif()
+         endforeach()
+         if( NOT XCURSOR_LIBRARY)
+            find_library( XCURSOR_LIBRARY NAMES
+               Xcursor
+            )
+         endif()
          message( STATUS "XCURSOR_LIBRARY is ${XCURSOR_LIBRARY}")
-         #
-         # The order looks ascending, but due to the way this file is read
-         # it ends up being descending, which is what we need.
-         #
-         if( XCURSOR_LIBRARY)
+      endif()
+      if( XCURSOR_LIBRARY)
             #
             # Add XCURSOR_LIBRARY to OS_SPECIFIC_LIBRARIES list.
             # Disable with: `mulle-sourcetree mark Xcursor no-cmake-add`
             #
-            list( APPEND OS_SPECIFIC_LIBRARIES ${XCURSOR_LIBRARY})
+            if( NOT ${XCURSOR_LIBRARY} IN_LIST OS_SPECIFIC_LIBRARIES)
+               list( APPEND OS_SPECIFIC_LIBRARIES ${XCURSOR_LIBRARY})
+            endif()
             #
             # Inherit information from dependency.
             # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
@@ -610,10 +659,9 @@ if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "
                   message( STATUS "${_TMP_XCURSOR_DIR} not found")
                endif()
             endforeach()
-         else()
-            # Disable with: `mulle-sourcetree mark Xcursor no-require-link`
-            message( SEND_ERROR "XCURSOR_LIBRARY was not found in Xcursor")
-         endif()
+      else()
+         # Disable with: `mulle-sourcetree mark Xcursor no-require-link`
+         message( SEND_ERROR "XCURSOR_LIBRARY was not found in Xcursor")
       endif()
    endif()
 endif()
@@ -629,20 +677,27 @@ if( COLLECT_OS_SPECIFIC_LIBRARIES_AS_NAMES)
    list( APPEND OS_SPECIFIC_LIBRARIES "m")
 else()
    if( NOT M_LIBRARY)
-      find_library( M_LIBRARY NAMES
-         m
-      )
+      foreach( _TMP_M_LIBRARY_TARGET m)
+         if( TARGET ${_TMP_M_LIBRARY_TARGET})
+            set( M_LIBRARY ${_TMP_M_LIBRARY_TARGET})
+            break()
+         endif()
+      endforeach()
+      if( NOT M_LIBRARY)
+         find_library( M_LIBRARY NAMES
+            m
+         )
+      endif()
       message( STATUS "M_LIBRARY is ${M_LIBRARY}")
-      #
-      # The order looks ascending, but due to the way this file is read
-      # it ends up being descending, which is what we need.
-      #
-      if( M_LIBRARY)
+   endif()
+   if( M_LIBRARY)
          #
          # Add M_LIBRARY to OS_SPECIFIC_LIBRARIES list.
          # Disable with: `mulle-sourcetree mark m no-cmake-add`
          #
-         list( APPEND OS_SPECIFIC_LIBRARIES ${M_LIBRARY})
+         if( NOT ${M_LIBRARY} IN_LIST OS_SPECIFIC_LIBRARIES)
+            list( APPEND OS_SPECIFIC_LIBRARIES ${M_LIBRARY})
+         endif()
          #
          # Inherit information from dependency.
          # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
@@ -685,10 +740,9 @@ else()
                message( STATUS "${_TMP_M_DIR} not found")
             endif()
          endforeach()
-      else()
-         # Disable with: `mulle-sourcetree mark m no-require-link`
-         message( SEND_ERROR "M_LIBRARY was not found in m")
-      endif()
+   else()
+      # Disable with: `mulle-sourcetree mark m no-require-link`
+      message( SEND_ERROR "M_LIBRARY was not found in m")
    endif()
 endif()
 
@@ -704,25 +758,31 @@ if( NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR ${CMAKE_SYSTEM_NAME} MATCHES "
       list( APPEND OS_SPECIFIC_LIBRARIES "opengl32")
    else()
       if( NOT OPENGL32_LIBRARY)
-         find_library( OPENGL32_LIBRARY NAMES
-            opengl32
-         )
+         foreach( _TMP_OPENGL32_LIBRARY_TARGET opengl32)
+            if( TARGET ${_TMP_OPENGL32_LIBRARY_TARGET})
+               set( OPENGL32_LIBRARY ${_TMP_OPENGL32_LIBRARY_TARGET})
+               break()
+            endif()
+         endforeach()
+         if( NOT OPENGL32_LIBRARY)
+            find_library( OPENGL32_LIBRARY NAMES
+               opengl32
+            )
+         endif()
          message( STATUS "OPENGL32_LIBRARY is ${OPENGL32_LIBRARY}")
-         #
-         # The order looks ascending, but due to the way this file is read
-         # it ends up being descending, which is what we need.
-         #
-         if( OPENGL32_LIBRARY)
+      endif()
+      if( OPENGL32_LIBRARY)
             #
             # Add OPENGL32_LIBRARY to OS_SPECIFIC_LIBRARIES list.
             # Disable with: `mulle-sourcetree mark opengl32 no-cmake-add`
             #
-            list( APPEND OS_SPECIFIC_LIBRARIES ${OPENGL32_LIBRARY})
+            if( NOT ${OPENGL32_LIBRARY} IN_LIST OS_SPECIFIC_LIBRARIES)
+               list( APPEND OS_SPECIFIC_LIBRARIES ${OPENGL32_LIBRARY})
+            endif()
             # intentionally left blank
-         else()
-            # Disable with: `mulle-sourcetree mark opengl32 no-require-link`
-            message( SEND_ERROR "OPENGL32_LIBRARY was not found in opengl32")
-         endif()
+      else()
+         # Disable with: `mulle-sourcetree mark opengl32 no-require-link`
+         message( SEND_ERROR "OPENGL32_LIBRARY was not found in opengl32")
       endif()
    endif()
 endif()

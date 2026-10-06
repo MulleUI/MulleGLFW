@@ -5,7 +5,7 @@
 #
 # Disable generation of this file with:
 #
-# mulle-sde environment set MULLE_SOURCETREE_TO_CMAKE_LIBRARIES_FILE DISABLE
+# mulle-sde environment --global set MULLE_SOURCETREE_TO_CMAKE_LIBRARIES_FILE DISABLE
 #
 if( MULLE_TRACE_INCLUDE)
    message( STATUS "# Include \"${CMAKE_CURRENT_LIST_FILE}\"" )
@@ -21,20 +21,27 @@ if( COLLECT_OS_SPECIFIC_LIBRARIES_AS_NAMES)
    list( APPEND OS_SPECIFIC_LIBRARIES "m")
 else()
    if( NOT M_LIBRARY)
-      find_library( M_LIBRARY NAMES
-         m
-      )
+      foreach( _TMP_M_LIBRARY_TARGET m)
+         if( TARGET ${_TMP_M_LIBRARY_TARGET})
+            set( M_LIBRARY ${_TMP_M_LIBRARY_TARGET})
+            break()
+         endif()
+      endforeach()
+      if( NOT M_LIBRARY)
+         find_library( M_LIBRARY NAMES
+            m
+         )
+      endif()
       message( STATUS "M_LIBRARY is ${M_LIBRARY}")
-      #
-      # The order looks ascending, but due to the way this file is read
-      # it ends up being descending, which is what we need.
-      #
-      if( M_LIBRARY)
+   endif()
+   if( M_LIBRARY)
          #
          # Add M_LIBRARY to OS_SPECIFIC_LIBRARIES list.
          # Disable with: `mulle-sourcetree mark m no-cmake-add`
          #
-         list( APPEND OS_SPECIFIC_LIBRARIES ${M_LIBRARY})
+         if( NOT ${M_LIBRARY} IN_LIST OS_SPECIFIC_LIBRARIES)
+            list( APPEND OS_SPECIFIC_LIBRARIES ${M_LIBRARY})
+         endif()
          #
          # Inherit information from dependency.
          # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
@@ -77,10 +84,9 @@ else()
                message( STATUS "${_TMP_M_DIR} not found")
             endif()
          endforeach()
-      else()
-         # Disable with: `mulle-sourcetree mark m no-require-link`
-         message( SEND_ERROR "M_LIBRARY was not found in m")
-      endif()
+   else()
+      # Disable with: `mulle-sourcetree mark m no-require-link`
+      message( SEND_ERROR "M_LIBRARY was not found in m")
    endif()
 endif()
 
@@ -95,24 +101,30 @@ if( COLLECT_ALL_LOAD_OS_SPECIFIC_LIBRARIES_AS_NAMES)
    list( APPEND ALL_LOAD_OS_SPECIFIC_LIBRARIES "wayland-client")
 else()
    if( NOT WAYLAND__CLIENT_LIBRARY)
-      find_library( WAYLAND__CLIENT_LIBRARY NAMES
-         wayland-client
-      )
+      foreach( _TMP_WAYLAND__CLIENT_LIBRARY_TARGET wayland-client)
+         if( TARGET ${_TMP_WAYLAND__CLIENT_LIBRARY_TARGET})
+            set( WAYLAND__CLIENT_LIBRARY ${_TMP_WAYLAND__CLIENT_LIBRARY_TARGET})
+            break()
+         endif()
+      endforeach()
+      if( NOT WAYLAND__CLIENT_LIBRARY)
+         find_library( WAYLAND__CLIENT_LIBRARY NAMES
+            wayland-client
+         )
+      endif()
       message( STATUS "WAYLAND__CLIENT_LIBRARY is ${WAYLAND__CLIENT_LIBRARY}")
-      #
-      # The order looks ascending, but due to the way this file is read
-      # it ends up being descending, which is what we need.
-      #
-      if( WAYLAND__CLIENT_LIBRARY)
+   endif()
+   if( WAYLAND__CLIENT_LIBRARY)
          #
          # Add WAYLAND__CLIENT_LIBRARY to ALL_LOAD_OS_SPECIFIC_LIBRARIES list.
          # Disable with: `mulle-sourcetree mark wayland-client no-cmake-add`
          #
-         list( APPEND ALL_LOAD_OS_SPECIFIC_LIBRARIES ${WAYLAND__CLIENT_LIBRARY})
+         if( NOT ${WAYLAND__CLIENT_LIBRARY} IN_LIST ALL_LOAD_OS_SPECIFIC_LIBRARIES)
+            list( APPEND ALL_LOAD_OS_SPECIFIC_LIBRARIES ${WAYLAND__CLIENT_LIBRARY})
+         endif()
          # intentionally left blank
-      else()
-         # Disable with: `mulle-sourcetree mark wayland-client no-require-link`
-         message( SEND_ERROR "WAYLAND__CLIENT_LIBRARY was not found in wayland-client")
-      endif()
+   else()
+      # Disable with: `mulle-sourcetree mark wayland-client no-require-link`
+      message( SEND_ERROR "WAYLAND__CLIENT_LIBRARY was not found in wayland-client")
    endif()
 endif()

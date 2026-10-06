@@ -11,6 +11,7 @@ endif()
 # contents selected with patternfile ??-source--sources
 #
 set( SOURCES
+src/GLFWMetalLayer-apple.m
 src/GLFWOSGamepad.m
 src/GLFWOSScreen.m
 src/GLFWOSWindow+UIEvent.m

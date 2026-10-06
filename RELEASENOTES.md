@@ -1,6 +1,8 @@
-## 0.1.1
+### 0.1.1
 
-* build system maintenance: updated mulle-sde and cmake support, regenerated reflection data
+
+* prevent a Wayland `wl_display_sync` callback leak when a UIApplication shuts down
+* `os_deinitialize` now calls glfwPollEvents() before glfwTerminate()
 
 ## 0.1.0
 

@@ -176,6 +176,13 @@ static void   joystickCallback( int jid, int event)
 {
    // this doesn't exit the app,
 
+   // glfwPostEmptyEvent creates a Wayland wl_display_sync callback, which is
+   // destroyed when its "done" event is dispatched. If we go straight to
+   // glfwTerminate, wl_display_disconnect discards that event and the callback
+   // leaks. There are no windows left at this point, so draining pending
+   // events here is safe.
+   glfwPollEvents();
+
    // This function destroys all remaining windows and cursors, restores any
    // modified gamma ramps and frees any other allocated resources. Once this
    // function is called, you must again call glfwInit successfully before you
