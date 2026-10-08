@@ -910,7 +910,7 @@ int   main( void)
 Direct mulle-sde dependencies (from `.mulle/etc/sourcetree/config`):
 - **glfw** - GLFW 3.4 windowing library (tar archive from GitHub; header `GLFW/glfw3.h`).
 - **MulleUIApplication** - Provides `UIApplication`, `UIEvent`, `UIWindow`, `UIOSWindow`, `UIScreen`, `UIGamepad` protocols and base classes, and the `UIOSWindowGraphicsHints`/`UIOSWindowInfo`/`UIScreenInfo`/`UIGamepadInfo` types used in the public API.
-- **mulle-objc-list** (no-header, no-link) - Build-time tooling for mulle-objc reflection.
+- **mulle-objc-tools** (no-header, no-link) - Build-time tooling for mulle-objc reflection.
 
 Test/CI-only wiring:
 - **craftinfo/glfw-craftinfo** (local, no-header, no-link) - GLFW craft info.

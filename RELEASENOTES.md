@@ -1,6 +1,11 @@
 ### 0.1.1
 
 
+* add instructions for consuming MulleGLFW as a CMake subproject via git submodules
+* correct the mulle-objc reflection tooling dependency from mulle-objc-list to mulle-objc-tools
+
+
+
 * prevent a Wayland `wl_display_sync` callback leak when a UIApplication shuts down
 * `os_deinitialize` now calls glfwPollEvents() before glfwTerminate()
 

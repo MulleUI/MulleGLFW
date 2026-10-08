@@ -1,8 +1,6 @@
 # MulleGLFW
 
-Part of [MulleUI](https://github.com/MulleUI) — UIKit-shaped modular GUI libraries for mulle-objc.
-
-#### 🌐 MulleGLFW provides platform windows and events
+#### Part of [MulleUI](https://github.com/MulleUI) — UIKit-shaped modular GUI libraries for mulle-objc.
 
 
 This is an Objective-C wrapper around GLFW3 to provide windows and events.
@@ -84,22 +82,43 @@ mulle-sde craft
 
 ## Add
 
-Use [mulle-sde](//github.com/mulle-sde) to add MulleGLFW to your project:
+
+
+
+
+### Add MulleGLFW as a cmake subproject
+
+In your code include its header:
+
+``` c
+#include <MulleGLFW/MulleGLFW.h>
+```
+
+Add MulleGLFW and dependencies as git submodules and link against
+them:
+
+``` bash
+git submodule add -f --name "MulleGLFW" \
+                        "https://github.com/MulleUI/MulleGLFW" \
+                        "stash/MulleGLFW"
+git submodule update --init --recursive
+```
+
+``` cmake
+include_directories( SYSTEM "${CMAKE_BINARY_DIR}/include")
+
+add_subdirectory( stash/)
+add_subdirectory( stash/MulleGLFW)
+
+target_link_libraries( ${PROJECT_NAME} PUBLIC )
+target_link_libraries( ${PROJECT_NAME} PUBLIC MulleGLFW)
+```
+
+Or let [mulle-sde](//github.com/mulle-sde) do it:
 
 ``` sh
 mulle-sde add github:MulleUI/MulleGLFW
 ```
-
-To only add the sources of MulleGLFW with dependency
-sources use [clib](https://github.com/clibs/clib):
-
-
-``` sh
-clib install --out src/MulleUI MulleUI/MulleGLFW
-```
-
-Add `-isystem src/MulleUI` to your `CFLAGS` and compile all the sources that were downloaded with your project.
-
 
 ## Install
 
@@ -116,9 +135,9 @@ Install the requirements:
 
 | Requirements                                 | Description
 |----------------------------------------------|-----------------------
-| [glfw](https://github.com/glfw/glfw)             | 🪟 GLFW windowing library (C)
+| [glfw](https://github.com/glfw/glfw)             | 
 | [MulleUIApplication](https://github.com/MulleUI/MulleUIApplication)             | 🛖 MulleUIApplication provides abstract classes like UIApplication and UIEvent
-| [mulle-objc-list](https://github.com/mulle-objc/mulle-objc-list)             | 📒 Lists mulle-objc runtime information contained in executables.
+| [mulle-objc-tools](https://github.com/mulle-objc/mulle-objc-tools)             | 📒 Lists mulle-objc runtime information contained in executables.
 
 Download the latest [tar](https://github.com/MulleUI/MulleGLFW/archive/refs/tags/latest.tar.gz) or [zip](https://github.com/MulleUI/MulleGLFW/archive/refs/tags/latest.zip) archive and unpack it.
 
