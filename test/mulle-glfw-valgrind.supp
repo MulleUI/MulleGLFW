@@ -62,6 +62,17 @@
    ...
 }
 
+# glibc get_nprocs() overlap false positive reached through the NVIDIA EGL
+# core (Wayland EGL path). Vendor code, not fixable downstream. Matched via the
+# vendor object so error stacks not passing through it are still reported.
+{
+   mulle-glfw-nvidia-eglcore-getnprocs-overlap
+   Memcheck:Overlap
+   ...
+   obj:*/libnvidia-eglcore.so*
+   ...
+}
+
 # --- Mesa software EGL (llvmpipe) / gallium --------------------------------
 
 {
